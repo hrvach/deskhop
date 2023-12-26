@@ -23,7 +23,7 @@ All I wanted was a way to use a keyboard shortcut to quickly switch outputs, pai
 
 ## How it works
 
-The device acts as an intermediary between your keyboard/mouse and the computer, establishing and maintaining connections with both computers at once. Then it chooses where to forward your mouse and keystrokes to, depending on your selection. 
+The device acts as an intermediary between your keyboard/mouse and the computer, establishing and maintaining connections with both computers at once. Then it chooses where to forward your mouse and keystrokes to, depending on your selection. Keyboard follows the mouse and vice versa, so just dragging the mouse to the other desktop will switch both.
 
 ## Mouse 
 
