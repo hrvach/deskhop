@@ -128,6 +128,8 @@ The lid is of a snap-fit design, with a screwdriver slot for opening. The markin
 |                    |     |                |          |
 |                    |     |          Total | 11.53    |
 
+USB-A connector can be Molex MX-67643-0910 or a cheaper/budget one that shares the same dimensions.
+
 Additional steps:
 
  - making the PCB ([Gerber provided](pcb/), JLC does it for a few bucks, choose 1.6 mm thickness)
