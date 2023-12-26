@@ -150,6 +150,19 @@ Additional steps:
 
 *I'm not selling anything, this is just a personal, non-commercial hobby project.*
 
+
+4. When the active screen is changed via the mouse, does the keyboard follow (and vice versa)?
+
+Yes, the idea was to make it behave like it was one single computer. 
+
+5. Will this work with keyboard/mouse combo dongles, like the Logitech Unifying receiver?
+
+Not with the current version, as it assumes the mouse is plugged in the other port. I'd have to investigate how Logitech Unifying receiver behaves and try to implement support for it. If I get my hands on one, I'll try it.
+
+6. Will this work with wireless mice and keyboards that have separate wireless receivers (one for the mouse, another for the keyboard)?
+
+It wasn't tested with those, so surprises are always possible but in theory it should work out of the box.
+
 ## Shortcomings
 
 - Code needs cleanup, some refactoring etc.
