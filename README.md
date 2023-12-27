@@ -165,6 +165,7 @@ It wasn't tested with those, so surprises are always possible but in theory it s
 
 ## Shortcomings
 
+- NOTE: Both computers need to be connected and powered on for this to work (as each board gets powered by the computer it plugs into).
 - Code needs cleanup, some refactoring etc.
 - Occasional bugs and weird behavior. 
 - Not tested with a wide variety of devices, I don't know how it will work with your hardware.
