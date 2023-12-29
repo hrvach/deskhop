@@ -166,10 +166,23 @@ It wasn't tested with those, so surprises are always possible but in theory it s
 ## Shortcomings
 
 - NOTE: Both computers need to be connected and powered on for this to work (as each board gets powered by the computer it plugs into).
+- So far it only supports boot protocol, report protocol parsing under development, so advanced fast-polling mice might not be fully supported at first  
 - Code needs cleanup, some refactoring etc.
 - Occasional bugs and weird behavior. 
 - Not tested with a wide variety of devices, I don't know how it will work with your hardware.
 - Pico-PIO-USB was patched to support controlling keyboard LEDs, normally this would be handled by TinyUSB in host mode.
+
+## [Update 29-Dec-2023]
+
+So, what's the deal with all the enthusiasm? I can't believe it - please allow me to thank you all! I've never expected this kind of interest in a simple personal project, so the initial features are pretty basic (just like my cooking skills) and mostly cover my own usecase. Stay tuned for firmware updates that should bring wider device compatibility, more features and less bugs. As this is a hobby project, I appreciate your understanding for being time-constrained and promise to do the best I can.
+
+Planned features:
+- Proper TinyUSB host integration
+- HID report protocol parsing, not just boot protocol
+- Support for unified dongle receivers
+- Support for USB hubs and single-sided operation
+- Configurable screens
+- ... and more!
 
 ## Disclaimer
 
