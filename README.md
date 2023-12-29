@@ -53,10 +53,8 @@ It also remembers the LED state for each computer, so you can pick up exactly ho
 ## How to build
 
 ```
-mkdir build
-cd build
-PICO_BOARD=pico PICO_SDK_PATH=/your/sdk/path cmake ..
-make
+PICO_BOARD=pico PICO_SDK_PATH=/your/sdk/path cmake -S . -B build
+cmake --build build
 ```
 
 ## Using pre-built images
