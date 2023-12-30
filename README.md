@@ -161,6 +161,14 @@ Not with the current version, as it assumes the mouse is plugged in the other po
 
 It wasn't tested with those, so surprises are always possible but in theory it should work out of the box.
 
+## Software Alternatives
+
+There are several software alternatives you can use if that works in your particular situation.
+
+1. [Barrier](https://github.com/debauchee/barrier) - Free, Open Source
+2. [Input Leap](https://github.com/input-leap/input-leap) - Free, Open Source
+3. [Synergy](https://symless.com/synergy) - Commercial
+
 ## Shortcomings
 
 - NOTE: Both computers need to be connected and powered on for this to work (as each board gets powered by the computer it plugs into).
