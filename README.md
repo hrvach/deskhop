@@ -134,6 +134,14 @@ Additional steps:
  
  - 3d printing the case ([stl files provided](case/), ~33g filament)
 
+## Assembly guide
+
+If you have some experience with electronics, you don't need this. However, some of you might not, and in that case this video might help guide you through the process. Please note, after soldering you should clean the flux from the PCB to prevent corrosion. 
+
+The standard process to do that is using isopropyl alcohol and an old toothbrush. But guess what? I'm not putting my old toothbrush online, so you'll just have to improvise that part :)
+
+[![PCB Assembly Guide](img/yt-video-s.jpg)](https://www.youtube.com/watch?v=LxI9NYi_oOU)
+
 ## FAQ
 
 1. I just have two Picos, can I do without a PCB and isolator?
