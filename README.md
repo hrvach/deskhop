@@ -67,15 +67,25 @@ It should appear as a USB drive on your system. Copy the corresponding board_A.u
 
 Option 1 - Open the case, hold the button while connecting each Pico and copy the right uf2 to it.
 
-Option 2 - Switch both Picos to BOOTSEL mode by using a special key combination (**hold down** all of these keys): ```Right Shift,  P,  H,  X,  Left Shift```
+Option 2 - Switch a board to BOOTSEL mode by using a special key combination. (**hold down** all of these keys).
 
-This will make the Picos enter the bootloader upgrade mode and act as USB flash drives. Now you can drag-and-drop the .uf2 files to them (you might need to plug in your mouse directly).
+- board A: ```Right Shift,  F12, A,  Left Shift```
+- board B: ```Right Shift,  F12, B,  Left Shift```
+
+This will make the corresponding Pico board enter the bootloader upgrade mode and act as USB flash drive. Now you can drag-and-drop the .uf2 file to it (you might need to plug in your mouse directly).
 
 ## Misc features
+
+#### Mouse slowdown
 
 Ever tried to move that YT video slider to a specific position but your mouse moves too jumpy and suddenly you are moving your hand super-carefully like you're 5 and playing "Operation" all over again?
 
 **Holding right ALT** while moving the mouse will slow it down considerably, enabling you to get the finer precision work done and still have your mouse moving quickly otherwise.
+
+#### Switch Lock
+
+If you want to lock yourself to one screen, use ```RIGHT CTRL + L```.
+This will make sure you won't accidentally leave your current screen. To turn off, press the same key combo again.
 
 ## Hardware
 
