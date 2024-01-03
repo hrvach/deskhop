@@ -1,35 +1,29 @@
+/* 
+ * This file is part of DeskHop (https://github.com/hrvach/deskhop).
+ * Copyright (c) 2024 Hrvoje Cavrak
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "main.h"
-
-/**================================================== *
- * ==========  Query endpoints for reports  ========= *
- * ================================================== */
-
-void check_endpoints(device_state_t* state) {
-    uint8_t raw_report[64];
-
-    // Iterate through all endpoints and check for data
-    for (int ep_idx = 0; ep_idx < PIO_USB_DEV_EP_CNT; ep_idx++) {
-        endpoint_t* ep = pio_usb_get_endpoint(state->usb_device, ep_idx);
-
-        if (ep == NULL) {
-            continue;
-        }
-
-        int len = pio_usb_get_in_data(ep, raw_report, sizeof(raw_report));
-
-        if (len > 0) {
-            if (BOARD_ROLE == KEYBOARD_PICO_A)
-                process_keyboard_report(raw_report, len, state);
-            else
-                process_mouse_report(raw_report, len, state);
-        }
-    }
-}
 
 /**================================================== *
  * ===========  TinyUSB Device Callbacks  =========== *
  * ================================================== */
 
+/* Invoked when we get GET_REPORT control request. 
+ * We are expected to fill buffer with the report content, update reqlen 
+ * and return its length. We return 0 to STALL the request. */
 uint16_t tud_hid_get_report_cb(uint8_t instance,
                                uint8_t report_id,
                                hid_report_type_t report_type,
@@ -58,33 +52,111 @@ void tud_hid_set_report_cb(uint8_t instance,
         uint8_t leds = buffer[0];
 
         if (KBD_LED_AS_INDICATOR) {
-            leds = leds & 0xFD;  // 1111 1101 (Clear Caps Lock bit)
+            leds = leds & 0xFD;  /* 1111 1101 (Clear Caps Lock bit) */
 
             if (global_state.active_output)
                 leds |= KEYBOARD_LED_CAPSLOCK;
         }
-        
-        global_state.keyboard_leds[global_state.active_output] = leds;        
 
-        // If we are board B, we need to set this information to the other one since that one
-        // has the keyboard connected to it (and LEDs you can turn on :-))
-        if (BOARD_ROLE == MOUSE_PICO_B)
-            send_value(leds, KBD_SET_REPORT_MSG);
+        global_state.keyboard_leds[global_state.active_output] = leds;
 
-        // If we are board A, update LEDs directly
-        else        
+        /* If we are board without the keyboard hooked up directly, we need to send this information 
+           to the other one since that one has the keyboard connected to it (and LEDs you can turn on :)) */           
+        if (global_state.keyboard_connected)
             update_leds(&global_state);
+        else
+            send_value(leds, KBD_SET_REPORT_MSG);
     }
 }
 
-// Invoked when device is mounted
-void tud_mount_cb(void)
-{
-  global_state.tud_connected = true;
+/* Invoked when device is mounted */
+void tud_mount_cb(void) {
+    global_state.tud_connected = true;
 }
 
-// Invoked when device is unmounted
-void tud_umount_cb(void)
-{
-  global_state.tud_connected = false;
+/* Invoked when device is unmounted */
+void tud_umount_cb(void) {
+    global_state.tud_connected = false;
+}
+
+/**================================================== *
+ * ===============  USB HOST Section  =============== *
+ * ================================================== */
+
+void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    switch (itf_protocol) {
+        case HID_ITF_PROTOCOL_KEYBOARD:
+            global_state.keyboard_connected = false;
+            break;
+
+        case HID_ITF_PROTOCOL_MOUSE:
+            global_state.mouse_connected = false;
+
+            /* Clear this so reconnecting a mouse doesn't try to continue in HID REPORT protocol */
+            memset(&global_state.mouse_dev, 0, sizeof(global_state.mouse_dev));            
+            break;
+    }
+}
+    
+void tuh_hid_mount_cb(uint8_t dev_addr,
+                      uint8_t instance,
+                      uint8_t const* desc_report,
+                      uint16_t desc_len) {
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);      
+
+    switch (itf_protocol) {
+        case HID_ITF_PROTOCOL_KEYBOARD:
+            /* Keeping this is needed for setting leds from device set_report callback */
+            global_state.kbd_dev_addr = dev_addr;
+            global_state.kbd_instance = instance;
+
+            global_state.keyboard_connected = true;
+            break;
+
+        case HID_ITF_PROTOCOL_MOUSE:
+            /* Switch to using protocol report instead of boot report, it's more complicated but
+               at least we get all the information we need (looking at you, mouse wheel) */
+            if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
+                tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
+            }
+
+            parse_report_descriptor(&global_state.mouse_dev, MAX_REPORTS, desc_report, desc_len);
+
+            global_state.mouse_connected = true;
+            break;
+    }
+
+    /* Kick off the report querying */
+    tuh_hid_receive_report(dev_addr, instance);
+}
+
+/* Invoked when received report from device via interrupt endpoint */
+void tuh_hid_report_received_cb(uint8_t dev_addr,
+                                uint8_t instance,
+                                uint8_t const* report,
+                                uint16_t len) {
+    (void)len;
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+
+    switch (itf_protocol) {
+        case HID_ITF_PROTOCOL_KEYBOARD:
+            process_keyboard_report((uint8_t*)report, len, &global_state);
+            break;
+
+        case HID_ITF_PROTOCOL_MOUSE:
+            process_mouse_report((uint8_t*)report, len, &global_state);
+            break;
+    }
+
+    /* Continue requesting reports */
+    tuh_hid_receive_report(dev_addr, instance);
+}
+
+/* Set protocol in a callback. If we were called, command succeeded. We're only
+   doing this for the mouse anyway, so we can only be called about the mouse */
+void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol) {
+    (void) dev_addr;
+    (void) idx;
+    global_state.mouse_dev.protocol = protocol;
 }

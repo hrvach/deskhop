@@ -10,7 +10,7 @@
  *
  * */
 
-#define KBD_LED_AS_INDICATOR 1
+#define KBD_LED_AS_INDICATOR 0
 
 /**===================================================== *
  * ===========  Hotkey for output switching  =========== *
@@ -33,9 +33,18 @@
  *
  * This affects how fast the mouse moves.
  *
- * MOUSE_SPEED_FACTOR: [1-128], higher values will make very little sense,
- * 16 works well for my mouse, but the option to adjust is here if you need it.
+ * MOUSE_SPEED_FACTOR_X: [1-128], mouse moves at this speed in X direction
+ * MOUSE_SPEED_FACTOR_Y: [1-128], mouse moves at this speed in Y direction
+ * 
+ * MOUSE_JUMP_THRESHOLD: [0-32768], sets the "force" you need to use to drag the 
+ * mouse to another screen, 0 meaning no force needed at all, and ~500 some force
+ * needed, ~1000 no accidental jumps, you need to really mean it.
+ * 
+ * TODO: make this configurable per-screen.
  *
  * */
 
-#define MOUSE_SPEED_FACTOR 16
+#define MOUSE_SPEED_FACTOR_X 1
+#define MOUSE_SPEED_FACTOR_Y 1
+
+#define MOUSE_JUMP_THRESHOLD 0

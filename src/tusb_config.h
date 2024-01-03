@@ -34,6 +34,21 @@
 // COMMON CONFIGURATION
 //--------------------------------------------------------------------
 
+#define CFG_TUSB_OS     OPT_OS_PICO
+
+// Enable device stack
+#define CFG_TUD_ENABLED     1
+
+// RHPort number used for device is port 0
+#define BOARD_TUD_RHPORT    0
+
+// RHPort number used for host is port 1
+#define BOARD_TUH_RHPORT    1
+
+// Enable host stack with pio-usb if Pico-PIO-USB library is available
+#define CFG_TUH_ENABLED     1
+#define CFG_TUH_RPI_PIO_USB 1
+
 // defined by board.mk
 #ifndef CFG_TUSB_MCU
   #error CFG_TUSB_MCU must be defined
@@ -56,17 +71,8 @@
 #endif
 
 // Device mode with rhport and speed defined by board.mk
-#if   BOARD_DEVICE_RHPORT_NUM == 0
-  #define CFG_TUSB_RHPORT0_MODE     (OPT_MODE_DEVICE | BOARD_DEVICE_RHPORT_SPEED)
-#elif BOARD_DEVICE_RHPORT_NUM == 1
-  #define CFG_TUSB_RHPORT1_MODE     (OPT_MODE_DEVICE | BOARD_DEVICE_RHPORT_SPEED)
-#else
-  #error "Incorrect RHPort configuration"
-#endif
-
-#ifndef CFG_TUSB_OS
-#define CFG_TUSB_OS               OPT_OS_NONE
-#endif
+#define CFG_TUSB_RHPORT0_MODE     (OPT_MODE_DEVICE | BOARD_DEVICE_RHPORT_SPEED)
+#define CFG_TUSB_RHPORT1_MODE     (OPT_MODE_HOST | BOARD_DEVICE_RHPORT_SPEED)
 
 // CFG_TUSB_DEBUG is defined by compiler in DEBUG build
 // #define CFG_TUSB_DEBUG           0
@@ -102,7 +108,22 @@
 #define CFG_TUD_VENDOR            0
 
 // HID buffer size Should be sufficient to hold ID (if any) + Data
-#define CFG_TUD_HID_EP_BUFSIZE    16
+#define CFG_TUD_HID_EP_BUFSIZE    32
+
+//--------------------------------------------------------------------
+// HOST CONFIGURATION
+//--------------------------------------------------------------------
+
+// Size of buffer to hold descriptors and other data used for enumeration
+#define CFG_TUH_ENUMERATION_BUFSIZE 256
+
+#define CFG_TUH_HUB                 1
+// max device support (excluding hub device)
+#define CFG_TUH_DEVICE_MAX          (CFG_TUH_HUB ? 4 : 1) // hub typically has 4 ports
+
+#define CFG_TUH_HID                  4
+#define CFG_TUH_HID_EPIN_BUFSIZE    64
+#define CFG_TUH_HID_EPOUT_BUFSIZE   64
 
 #ifdef __cplusplus
  }

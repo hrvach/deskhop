@@ -1,3 +1,20 @@
+/* 
+ * This file is part of DeskHop (https://github.com/hrvach/deskhop).
+ * Copyright (c) 2024 Hrvoje Cavrak
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /**================================================== *
  * =============  Initial Board Setup  ============== *
  * ================================================== */
@@ -34,19 +51,21 @@ void serial_init() {
  * PIO USB configuration, D+ pin 14, D- pin 15
  * ================================================== */
 
-usb_device_t* pio_usb_init(void) {
+void pio_usb_host_config(void) {
+    /* tuh_configure() must be called before tuh_init() */    
     static pio_usb_configuration_t config = PIO_USB_DEFAULT_CONFIG;
-    config.pin_dp = 14;
-    config.alarm_pool = (void*)alarm_pool_create(2, 1);
+    config.pin_dp = PIO_USB_DP_PIN;     
+    tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &config);
 
-    return pio_usb_host_init(&config);
+    /* Initialize and configure TinyUSB Host */
+    tuh_init(1);
 }
 
 /* ================================================== *
  * Perform initial board/usb setup
  * ================================================== */
 
-usb_device_t* initial_setup(void) {
+void initial_setup(void) {
     /* PIO USB requires a clock multiple of 12 MHz, setting to 120 MHz */
     set_sys_clock_khz(120000, true);
 
@@ -57,23 +76,25 @@ usb_device_t* initial_setup(void) {
     /* Initialize and configure UART */
     serial_init();
 
-    /* Initialize and configure TinyUSB */
-    tusb_init();
-
+    /* Initialize keyboard and mouse queues */
+    queue_init(&global_state.kbd_queue, sizeof(hid_keyboard_report_t), KBD_QUEUE_LENGTH);  
+    queue_init(&global_state.mouse_queue, sizeof(hid_abs_mouse_report_t), MOUSE_QUEUE_LENGTH);  
+    
     /* Setup RP2040 Core 1 */
     multicore_reset_core1();
     multicore_launch_core1(core1_main);
 
-    /* Initialize and configure PIO USB */
-    usb_device_t* pio_usb_device = pio_usb_init();
+    /* Initialize and configure TinyUSB Device */
+    tud_init(BOARD_TUD_RHPORT);
+
+    /* Initialize and configure TinyUSB Host */
+    pio_usb_host_config();
 
     /* Update the core1 initial pass timestamp before enabling the watchdog */
     global_state.core1_last_loop_pass = time_us_64();
 
     /* Setup the watchdog so we reboot and recover from a crash */
     watchdog_enable(WATCHDOG_TIMEOUT, WATCHDOG_PAUSE_ON_DEBUG);
-
-    return pio_usb_device;
 }
 
 /* ==========  End of Initial Board Setup  ========== */

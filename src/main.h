@@ -1,3 +1,20 @@
+/* 
+ * This file is part of DeskHop (https://github.com/hrvach/deskhop).
+ * Copyright (c) 2024 Hrvoje Cavrak
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #include "pico/stdlib.h"
@@ -10,14 +27,16 @@
 #include "pico/bootrom.h"
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
+#include "pico/util/queue.h"
 #include "pio_usb.h"
 #include "tusb.h"
 #include "usb_descriptors.h"
+#include "hid_parser.h"
 #include "user_config.h"
 
 /*********  Misc definitions  **********/
-#define KEYBOARD_PICO_A 0
-#define MOUSE_PICO_B 1
+#define PICO_A 0
+#define PICO_B 1
 
 #define ACTIVE_OUTPUT_A 0
 #define ACTIVE_OUTPUT_B 1
@@ -25,21 +44,28 @@
 #define ENABLE 1
 #define DISABLE 0
 
+#define DIRECTION_X 0
+#define DIRECTION_Y 1
+
+#define MAX_REPORT_ITEMS 16
+#define MOUSE_BOOT_REPORT_LEN 4
+
 /*********  Pinout definitions  **********/
 #define PIO_USB_DP_PIN 14  // D+ is pin 14, D- is pin 15
 #define GPIO_LED_PIN 25    // LED is connected to pin 25 on a PICO
 
-#if BOARD_ROLE == MOUSE_PICO_B
+#if BOARD_ROLE == PICO_B
 #define SERIAL_TX_PIN 16
 #define SERIAL_RX_PIN 17
-#elif BOARD_ROLE == KEYBOARD_PICO_A
+#elif BOARD_ROLE == PICO_A
 #define SERIAL_TX_PIN 12
 #define SERIAL_RX_PIN 13
 #endif
 
 /*********  Serial port definitions  **********/
 #define SERIAL_UART uart0
-#define SERIAL_BAUDRATE 115200
+#define SERIAL_BAUDRATE 3686400
+
 #define SERIAL_DATA_BITS 8
 #define SERIAL_STOP_BITS 1
 #define SERIAL_PARITY UART_PARITY_NONE
@@ -66,6 +92,7 @@ enum packet_type_e : uint8_t {
     FIRMWARE_UPGRADE_MSG = 4,
     MOUSE_ZOOM_MSG = 5,
     KBD_SET_REPORT_MSG = 6,
+    SWITCH_LOCK_MSG = 7,
 };
 
 /*
@@ -96,6 +123,9 @@ typedef struct {
 #define PACKET_LENGTH (TYPE_LENGTH + PACKET_DATA_LENGTH + CHECKSUM_LENGTH)
 #define RAW_PACKET_LENGTH (START_LENGTH + PACKET_LENGTH)
 
+#define KBD_QUEUE_LENGTH 128
+#define MOUSE_QUEUE_LENGTH 256
+
 #define KEYS_IN_USB_REPORT 6
 #define KBD_REPORT_LENGTH 8
 #define MOUSE_REPORT_LENGTH 7
@@ -125,7 +155,9 @@ typedef struct TU_ATTR_PACKED {
 typedef enum { IDLE, READING_PACKET, PROCESSING_PACKET } receiver_state_t;
 
 typedef struct {
-    usb_device_t* usb_device;         // USB device structure (keyboard or mouse)
+    uint8_t kbd_dev_addr;            // Address of the keyboard device
+    uint8_t kbd_instance;            // Keyboard instance (d'uh - isn't this a useless comment)
+
     uint8_t keyboard_leds[2];         // State of keyboard LEDs (index 0 = A, index 1 = B)
     uint64_t last_activity[2];        // Timestamp of the last input activity (-||-)
     receiver_state_t receiver_state;  // Storing the state for the simple receiver state machine
@@ -136,8 +168,17 @@ typedef struct {
     int16_t mouse_x;  // Store and update the location of our mouse pointer
     int16_t mouse_y;
 
+    mouse_t mouse_dev;   // Mouse device specifics, e.g. stores locations for keys in report
+    queue_t kbd_queue;   // Queue that stores keyboard reports
+    queue_t mouse_queue;   // Queue that stores mouse reports
+
     bool tud_connected;  // True when TinyUSB device successfully connects
+    bool keyboard_connected; // True when our keyboard is connected locally
+    bool mouse_connected; // True when a mouse is connected locally
     bool mouse_zoom;     // True when "mouse zoom" is enabled
+    bool switch_lock;   // True when device is prevented from switching
+
+    bool key_pressed;   // We are holding down a key (from the PCs point of view)
 
 } device_state_t;
 
@@ -146,13 +187,16 @@ void process_mouse_report(uint8_t*, int, device_state_t*);
 void check_endpoints(device_state_t* state);
 
 /*********  Setup  **********/
-usb_device_t* initial_setup(void);
+void initial_setup(void);
 void serial_init(void);
 void core1_main(void);
 
 /*********  Keyboard  **********/
 bool keypress_check(hotkey_combo_t, const hid_keyboard_report_t*);
 void process_keyboard_report(uint8_t*, int, device_state_t*);
+void stop_pressing_any_keys(device_state_t*);    
+void queue_kbd_report(hid_keyboard_report_t*, device_state_t*);
+void process_kbd_queue_task(device_state_t*);
 
 /*********  Mouse  **********/
 bool tud_hid_abs_mouse_report(uint8_t report_id,
@@ -161,6 +205,11 @@ bool tud_hid_abs_mouse_report(uint8_t report_id,
                               int16_t y,
                               int8_t vertical,
                               int8_t horizontal);
+
+uint8_t parse_report_descriptor(mouse_t* mouse, uint8_t arr_count, uint8_t const* desc_report, uint16_t desc_len);
+int32_t get_report_value(uint8_t* report, report_val_t *val);
+void process_mouse_queue_task(device_state_t*);
+void queue_mouse_report(hid_abs_mouse_report_t*, device_state_t*);
 
 /*********  UART  **********/
 void receive_char(uart_packet_t*, device_state_t*);
@@ -179,9 +228,11 @@ void kick_watchdog(void);
 
 /*********  Handlers  **********/
 void output_toggle_hotkey_handler(device_state_t*);
-void fw_upgrade_hotkey_handler(device_state_t*);
+void fw_upgrade_hotkey_handler_A(device_state_t*);
+void fw_upgrade_hotkey_handler_B(device_state_t*);
 void mouse_zoom_hotkey_handler(device_state_t*);
 void all_keys_released_handler(device_state_t*);
+void switchlock_hotkey_handler(device_state_t*);
 
 void handle_keyboard_uart_msg(uart_packet_t*, device_state_t*);
 void handle_mouse_abs_uart_msg(uart_packet_t*, device_state_t*);
@@ -189,6 +240,7 @@ void handle_output_select_msg(uart_packet_t*, device_state_t*);
 void handle_fw_upgrade_msg(void);
 void handle_mouse_zoom_msg(uart_packet_t*, device_state_t*);
 void handle_set_report_msg(uart_packet_t*, device_state_t*);
+void handle_switch_lock_msg(uart_packet_t*, device_state_t*);
 
 void switch_output(uint8_t);
 
