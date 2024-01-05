@@ -58,7 +58,8 @@ void core1_main() {
         global_state.core1_last_loop_pass = time_us_64();
 
         // USB host task, needs to run as often as possible
-        tuh_task();
+        if (tuh_inited())	
+            tuh_task();
 
         // Receives data over serial from the other board
         receive_char(&in_packet, &global_state);
