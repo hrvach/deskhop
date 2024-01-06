@@ -166,18 +166,17 @@ The standard process to do that is using isopropyl alcohol and an old toothbrush
 
 *I'm not selling anything, this is just a personal, non-commercial hobby project.*
 
-
 4. When the active screen is changed via the mouse, does the keyboard follow (and vice versa)?
 
 Yes, the idea was to make it behave like it was one single computer. 
 
 5. Will this work with keyboard/mouse combo dongles, like the Logitech Unifying receiver?
 
-Not with the current version, as it assumes the mouse is plugged in the other port. I'd have to investigate how Logitech Unifying receiver behaves and try to implement support for it. If I get my hands on one, I'll try it.
+Not with the current version, but there is work ongoing to add support. Testing is one of the main problems, so if there is anyone with the device and some Logitech gear, let me know.
 
 6. Will this work with wireless mice and keyboards that have separate wireless receivers (one for the mouse, another for the keyboard)?
 
-It wasn't tested with those, so surprises are always possible but in theory it should work out of the box.
+It should work - tried an Anker wireless mouse with a separate receiver and that worked just fine.
 
 ## Software Alternatives
 
@@ -186,26 +185,29 @@ There are several software alternatives you can use if that works in your partic
 1. [Barrier](https://github.com/debauchee/barrier) - Free, Open Source
 2. [Input Leap](https://github.com/input-leap/input-leap) - Free, Open Source
 3. [Synergy](https://symless.com/synergy) - Commercial
+4. [Mouse Without Borders](https://www.microsoft.com/en-us/garage/wall-of-fame/mouse-without-borders/) - Free, Windows only
+5. [Universal Control](https://support.apple.com/en-my/HT212757) - Free, Apple thing
 
 ## Shortcomings
 
-- NOTE: Both computers need to be connected and powered on for this to work (as each board gets powered by the computer it plugs into).
-- So far it only supports boot protocol, report protocol parsing under development, so advanced fast-polling mice might not be fully supported at first  
+- Slow mouse movement reported for modern mice with 16-bit x/y values. Can't reproduce with my 2$ mouse, ordered a better one so once it arrives, I'll hopefully be able to recreate and fix. Apologies and thanks for understanding!
 - Code needs cleanup, some refactoring etc.
 - Occasional bugs and weird behavior. 
-- Not tested with a wide variety of devices, I don't know how it will work with your hardware.
-- Pico-PIO-USB was patched to support controlling keyboard LEDs, normally this would be handled by TinyUSB in host mode.
+- Not tested with a wide variety of devices, I don't know how it will work with your hardware. There is a reasonable chance things might not work out-of-the-box. 
+- NOTE: Both computers need to be connected and powered on for this to work (as each board gets powered by the computer it plugs into).
 
-## [Update 29-Dec-2023]
+## Progress
 
 So, what's the deal with all the enthusiasm? I can't believe it - please allow me to thank you all! I've never expected this kind of interest in a simple personal project, so the initial features are pretty basic (just like my cooking skills) and mostly cover my own usecase. Stay tuned for firmware updates that should bring wider device compatibility, more features and less bugs. As this is a hobby project, I appreciate your understanding for being time-constrained and promise to do the best I can.
 
 Planned features:
-- Proper TinyUSB host integration
-- HID report protocol parsing, not just boot protocol
+- ~~Proper TinyUSB host integration~~ (done)
+- ~~HID report protocol parsing, not just boot protocol~~ (mostly done)
 - Support for unified dongle receivers
-- Support for USB hubs and single-sided operation
+- ~~Support for USB hubs~~ and single-sided operation
 - Configurable screens
+- Permament configuration stored in flash
+- Unified firmware for both Picos
 - ... and more!
 
 ## Disclaimer
