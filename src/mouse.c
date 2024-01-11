@@ -96,30 +96,12 @@ void extract_values_report_protocol(uint8_t* report,
     values->move_y = get_report_value(report, &state->mouse_dev.move_y);
     values->wheel = get_report_value(report, &state->mouse_dev.wheel);
     values->buttons = get_report_value(report, &state->mouse_dev.buttons);
-
-    /* Mice generally come in 3 categories - 8-bit, 12-bit and 16-bit. */
-    switch (state->mouse_dev.move_x.size) {
-        case 12:
-            /* If we're already 12 bit, great! */
-            break;
-        case 16:
-            /* Initially we downscale fancy mice to 12-bits, 
-               adding a 32-bit internal coordinate tracking is TODO */
-            values->move_x >>= 4;
-            values->move_y >>= 4;
-            break;
-        default:
-            /* 8-bit is the default, upscale to 12-bit. */
-            values->move_x <<= 4;
-            values->move_y <<= 4;
-    }
 }
 
 void extract_values_boot_protocol(uint8_t* report, device_state_t* state, mouse_values_t* values) {
     hid_mouse_report_t* mouse_report = (hid_mouse_report_t*)report;
-    /* For 8-bit values, we upscale them to 12-bit, TODO: 16 bit */
-    values->move_x = mouse_report->x << 4;
-    values->move_y = mouse_report->y << 4;
+    values->move_x = mouse_report->x;
+    values->move_y = mouse_report->y;
     values->wheel = mouse_report->wheel;
     values->buttons = mouse_report->buttons;
 }
@@ -170,6 +152,10 @@ void process_mouse_queue_task(device_state_t* state) {
     /* Peek first, if there is anything there... */
     if (!queue_try_peek(&state->mouse_queue, &report))
         return;
+
+    /* If we are suspended, let's wake the host up */
+    if(tud_suspended())
+        tud_remote_wakeup();
 
     /* ... try sending it to the host, if it's successful */
     bool succeeded = tud_hid_abs_mouse_report(REPORT_ID_MOUSE, report.buttons, report.x, report.y,

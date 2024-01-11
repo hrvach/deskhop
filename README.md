@@ -140,8 +140,7 @@ USB-A connector can be Molex MX-67643-0910 or a cheaper/budget one that shares t
 
 Additional steps:
 
- - making the PCB ([Gerber provided](pcb/), JLC does it for a few bucks, choose 1.6 mm thickness)
- 
+ - making the PCB ([Gerber provided](pcb/), choose 1.6 mm thickness)
  - 3d printing the case ([stl files provided](case/), ~33g filament)
 
 ## Assembly guide
@@ -166,6 +165,10 @@ The standard process to do that is using isopropyl alcohol and an old toothbrush
 
 *I'm not selling anything, this is just a personal, non-commercial hobby project.*
 
+[update] There is a manufacturing/assembly company in China that might offer PCBs in qty of 1, assembled boards and boards + case, so stay tuned.
+
+I **don't want to take any commission** on this - the only goal is to provide an alternative for people who don't feel confident enough to assemble the boards themselves.
+
 4. When the active screen is changed via the mouse, does the keyboard follow (and vice versa)?
 
 Yes, the idea was to make it behave like it was one single computer. 
@@ -177,6 +180,10 @@ Not with the current version, but there is work ongoing to add support. Testing 
 6. Will this work with wireless mice and keyboards that have separate wireless receivers (one for the mouse, another for the keyboard)?
 
 It should work - tried an Anker wireless mouse with a separate receiver and that worked just fine.
+
+7. I have issues with build or compilation
+
+Check out the [Troubleshooting Wiki](https://github.com/hrvach/deskhop/wiki/Troubleshooting) that might have some answers.
 
 ## Software Alternatives
 
@@ -190,9 +197,11 @@ There are several software alternatives you can use if that works in your partic
 
 ## Shortcomings
 
-- Slow mouse movement reported for modern mice with 16-bit x/y values. Can't reproduce with my 2$ mouse, ordered a better one so once it arrives, I'll hopefully be able to recreate and fix. Apologies and thanks for understanding!
+- Slow mouse movement with some devices.
+- Windows 10 broke HID absolute coordinates behavior in KB5003637, so you can't use more than 1 screen on Windows (mouse will stay on the main screen).
+- If you have more than one display, the mouse is faster in the X direction on that machine. Will get fixed with per-output configurable speed settings. 
 - Code needs cleanup, some refactoring etc.
-- Occasional bugs and weird behavior. 
+- Occasional bugs and weird behavior.
 - Not tested with a wide variety of devices, I don't know how it will work with your hardware. There is a reasonable chance things might not work out-of-the-box. 
 - NOTE: Both computers need to be connected and powered on for this to work (as each board gets powered by the computer it plugs into).
 
@@ -209,6 +218,10 @@ Planned features:
 - Permament configuration stored in flash
 - Unified firmware for both Picos
 - ... and more!
+
+Mouse polling should now work at 1000 Hz (the dips in the graph is my arm hurting from all the movement :-)):
+
+![Mouse polling rate](img/polling_rate.png)
 
 ## Disclaimer
 

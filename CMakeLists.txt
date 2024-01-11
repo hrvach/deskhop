@@ -86,3 +86,13 @@ target_link_libraries(board_B PUBLIC ${COMMON_LINK_LIBRARIES})
 
 pico_enable_stdio_usb(board_B 0)
 pico_add_extra_outputs(board_B)
+
+target_link_options(board_A PRIVATE
+  -Xlinker
+  --print-memory-usage
+)
+
+target_link_options(board_B PRIVATE
+  -Xlinker
+  --print-memory-usage
+)

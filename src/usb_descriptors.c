@@ -107,7 +107,7 @@ uint8_t const desc_configuration[] = {
                           0,
                           CONFIG_TOTAL_LEN,
                           TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP,
-                          100),
+                          500),
 
     // Interface number, string index, protocol, report descriptor len, EP In address, size &
     // polling interval
@@ -117,7 +117,7 @@ uint8_t const desc_configuration[] = {
                        sizeof(desc_hid_report),
                        EPNUM_HID,
                        CFG_TUD_HID_EP_BUFSIZE,
-                       5)};
+                       1)};
 
 #if TUD_OPT_HIGH_SPEED
 // Per USB specs: high speed capable device must report device_qualifier and
