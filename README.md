@@ -111,6 +111,8 @@ Planned changes:
 - Add 15 ohm resistors for D+ / D- lines
 - Add decoupling capacitance near VBUS line on USB-A connector (~100 uF)
 - Add an ESD protection device near the USB connector
+- Add indications on the silkscreen for pin1 on the ADuM1201
+- Add indications on the silkscreen for which Raspberry Pi Pico pins need to be soldered
 
 ## Case
 
