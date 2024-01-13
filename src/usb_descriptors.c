@@ -38,8 +38,9 @@ tusb_desc_device_t const desc_device = {.bLength = sizeof(tusb_desc_device_t),
                                         .bDeviceProtocol = 0x00,
                                         .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
 
-                                        .idVendor = 0x1209,
-                                        .idProduct = 0x0007,  // Project will apply for its own PID
+                                        // https://github.com/raspberrypi/usb-pid
+                                        .idVendor = 0x2E8A,
+                                        .idProduct = 0x107C,
                                         .bcdDevice = 0x0100,
 
                                         .iManufacturer = 0x01,
@@ -194,7 +195,7 @@ char const* string_desc_arr[] = {
     (const char[]){0x09, 0x04},  // 0: is supported language is English (0x0409)
     "Hrvoje Cavrak",             // 1: Manufacturer
     "DeskHop Switch",            // 2: Product
-    "31415926535",               // 3: Serials, should use chip ID
+    "0",                         // 3: Serials, should use chip ID
 };
 
 static uint16_t _desc_str[32];
