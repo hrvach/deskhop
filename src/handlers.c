@@ -32,7 +32,9 @@ void output_toggle_hotkey_handler(device_state_t* state) {
 
 /* This key combo puts board A in firmware upgrade mode */
 void fw_upgrade_hotkey_handler_A(device_state_t* state) {
-    reset_usb_boot(1 << PICO_DEFAULT_LED_PIN, 0);
+    // reset_usb_boot(1 << PICO_DEFAULT_LED_PIN, 0);
+    // TODO : support both pico and pico_w
+    reset_usb_boot(0, 0);
 };
 
 /* This key combo puts board B in firmware upgrade mode */
@@ -89,7 +91,9 @@ void handle_output_select_msg(uart_packet_t* packet, device_state_t* state) {
 
 /* On firmware upgrade message, reboot into the BOOTSEL fw upgrade mode */
 void handle_fw_upgrade_msg(void) {
-    reset_usb_boot(1 << PICO_DEFAULT_LED_PIN, 0);
+    // reset_usb_boot(1 << PICO_DEFAULT_LED_PIN, 0);
+    // TODO : support both pico and pico_w
+    reset_usb_boot(0, 0);
 }
 
 void handle_mouse_zoom_msg(uart_packet_t* packet, device_state_t* state) {

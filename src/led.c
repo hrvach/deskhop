@@ -22,12 +22,13 @@
  * ==================================================== */
 
 void update_leds(device_state_t* state) {
-    gpio_put(GPIO_LED_PIN, state->active_output == BOARD_ROLE);
+    // TODO : support both pico and pico_w
+    // gpio_put(GPIO_LED_PIN, state->active_output == BOARD_ROLE);
 
-    // TODO: Will be done in a callback
-    if (BOARD_ROLE == PICO_A) {
-        uint8_t* leds = &(state->keyboard_leds[state->active_output]);
-        tuh_hid_set_report(global_state.kbd_dev_addr, global_state.kbd_instance, 0,
-                           HID_REPORT_TYPE_OUTPUT, leds, sizeof(uint8_t));
-    }
+    // // TODO: Will be done in a callback
+    // if (BOARD_ROLE == PICO_A) {
+    //     uint8_t* leds = &(state->keyboard_leds[state->active_output]);
+    //     tuh_hid_set_report(global_state.kbd_dev_addr, global_state.kbd_instance, 0,
+    //                        HID_REPORT_TYPE_OUTPUT, leds, sizeof(uint8_t));
+    // }
 }
