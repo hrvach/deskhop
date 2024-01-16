@@ -48,7 +48,7 @@ void blink_led(device_state_t* state) {
 }
 
 void led_blinking_task(device_state_t* state) {
-    /* 50 ms off, 50 ms on */
+    /* 80 ms off, 80 ms on */
     const int blink_interval_us = 80000;
     static uint8_t leds;
 
