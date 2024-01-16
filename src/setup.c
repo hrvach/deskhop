@@ -70,8 +70,9 @@ void initial_setup(void) {
     set_sys_clock_khz(120000, true);
 
     /* Init and enable the on-board LED GPIO as output */
-    gpio_init(GPIO_LED_PIN);
-    gpio_set_dir(GPIO_LED_PIN, GPIO_OUT);
+    // TODO : support both pico and pico_w
+    // gpio_init(GPIO_LED_PIN);
+    // gpio_set_dir(GPIO_LED_PIN, GPIO_OUT);
 
     /* Initialize and configure UART */
     serial_init();

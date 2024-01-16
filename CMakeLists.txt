@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 set(PICO_SDK_FETCH_FROM_GIT off)
-set(PICO_BOARD=pico)
+set(PICO_BOARD=pico_w)
 
 include(pico_sdk_import.cmake)
 set(CMAKE_CXX_FLAGS "-Ofast -Wall -mcpu=cortex-m0plus -mtune=cortex-m0plus")
