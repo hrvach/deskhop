@@ -155,17 +155,17 @@ The standard process to do that is using isopropyl alcohol and an old toothbrush
 #### Keyboard shortcuts
 
 _Firmware upgrade_
-```Right Shift + F12 + Left Shift + A``` - put board A in FW upgrade mode
-```Right Shift + F12 + Left Shift + B``` - put board B in FW upgrade mode
+- ```Right Shift + F12 + Left Shift + A``` - put board A in FW upgrade mode
+- ```Right Shift + F12 + Left Shift + B``` - put board B in FW upgrade mode
 
 _Usage_
-```Right ALT``` - mouse slows down while it's pressed
-```Right CTRL + L``` - Lock/Unlock mouse desktop switching
-```Caps Lock``` - Switch between outputs
+- ```Right ALT``` - mouse slows down while it's pressed
+- ```Right CTRL + L``` - Lock/Unlock mouse desktop switching
+- ```Caps Lock``` - Switch between outputs
 
 _Config_
-```Right Shift + F12 + D``` - remove flash config
-```Right Shift + F12 + Y``` - save screen switch offset
+- ```Right Shift + F12 + D``` - remove flash config
+- ```Right Shift + F12 + Y``` - save screen switch offset
 
 #### Switch cursor height calibration
 
@@ -201,25 +201,25 @@ Do this test by first plugging the keyboard on one side and then on the other. I
 
 *I'm not selling anything, this is just a personal, non-commercial hobby project.*
 
-[update] There is a manufacturing/assembly company in China that might offer PCBs in qty of 1, assembled boards and boards + case, so stay tuned.
+*[update] There is a manufacturing/assembly company in China that might offer PCBs in qty of 1, assembled boards and boards + case, so stay tuned.*
 
-I **don't want to take any commission** on this - the only goal is to provide an alternative for people who don't feel confident enough to assemble the boards themselves.
+*I **don't want to take any commission** on this - the only goal is to provide an alternative for people who don't feel confident enough to assemble the boards themselves.*
 
 4. When the active screen is changed via the mouse, does the keyboard follow (and vice versa)?
 
-Yes, the idea was to make it behave like it was one single computer. 
+*Yes, the idea was to make it behave like it was one single computer.*
 
 5. Will this work with keyboard/mouse combo dongles, like the Logitech Unifying receiver?
 
-Not tested yet, but the latest version might actually work (please provide feedback).
+*Not tested yet, but the latest version might actually work (please provide feedback).*
 
 6. Will this work with wireless mice and keyboards that have separate wireless receivers (one for the mouse, another for the keyboard)?
 
-It should work - tried an Anker wireless mouse with a separate receiver and that worked just fine.
+*It should work - tried an Anker wireless mouse with a separate receiver and that worked just fine.*
 
 7. I have issues with build or compilation
 
-Check out the [Troubleshooting Wiki](https://github.com/hrvach/deskhop/wiki/Troubleshooting) that might have some answers.
+*Check out the [Troubleshooting Wiki](https://github.com/hrvach/deskhop/wiki/Troubleshooting) that might have some answers.*
 
 ## Software Alternatives
 
