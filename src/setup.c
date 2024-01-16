@@ -54,7 +54,7 @@ void serial_init() {
 void pio_usb_host_config(void) {
     /* tuh_configure() must be called before tuh_init() */    
     static pio_usb_configuration_t config = PIO_USB_DEFAULT_CONFIG;
-    config.pin_dp = PIO_USB_DP_PIN;     
+    config.pin_dp = PIO_USB_DP_PIN_DEFAULT;     
     tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &config);
 
     /* Initialize and configure TinyUSB Host */
@@ -68,6 +68,9 @@ void pio_usb_host_config(void) {
 void initial_setup(void) {
     /* PIO USB requires a clock multiple of 12 MHz, setting to 120 MHz */
     set_sys_clock_khz(120000, true);
+
+    /* Search the persistent storage sector in flash for valid config or use defaults */
+    load_config();
 
     /* Init and enable the on-board LED GPIO as output */
     gpio_init(GPIO_LED_PIN);
@@ -92,7 +95,7 @@ void initial_setup(void) {
 
     /* Update the core1 initial pass timestamp before enabling the watchdog */
     global_state.core1_last_loop_pass = time_us_64();
-
+    
     /* Setup the watchdog so we reboot and recover from a crash */
     watchdog_enable(WATCHDOG_TIMEOUT, WATCHDOG_PAUSE_ON_DEBUG);
 }

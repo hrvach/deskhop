@@ -33,6 +33,7 @@ target_include_directories(Pico-PIO-USB PRIVATE ${PICO_PIO_USB_DIR})
 
 set(COMMON_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/src/usb_descriptors.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/defaults.c
         ${CMAKE_CURRENT_LIST_DIR}/src/hid_parser.c
         ${CMAKE_CURRENT_LIST_DIR}/src/utils.c
         ${CMAKE_CURRENT_LIST_DIR}/src/handlers.c
@@ -54,6 +55,7 @@ set(COMMON_INCLUDES
 
 set(COMMON_LINK_LIBRARIES
   pico_stdlib
+  hardware_flash
   hardware_uart
   hardware_gpio
   hardware_pio
@@ -96,3 +98,6 @@ target_link_options(board_B PRIVATE
   -Xlinker
   --print-memory-usage
 )
+
+pico_set_linker_script(board_A ${CMAKE_SOURCE_DIR}/memory_map.ld)
+pico_set_linker_script(board_B ${CMAKE_SOURCE_DIR}/memory_map.ld)

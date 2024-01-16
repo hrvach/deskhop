@@ -33,7 +33,7 @@ void main(void) {
 
     // Initial state, A is the default output
     switch_output(ACTIVE_OUTPUT_A);
-
+   
     while (true) {
         // USB device task, needs to run as often as possible
         tud_task();
@@ -58,11 +58,14 @@ void core1_main() {
         global_state.core1_last_loop_pass = time_us_64();
 
         // USB host task, needs to run as often as possible
-        if (tuh_inited())	
+        if (tuh_inited())
             tuh_task();
 
         // Receives data over serial from the other board
         receive_char(&in_packet, &global_state);
+
+        // Check if LED needs blinking
+        led_blinking_task(&global_state);
     }
 }
 

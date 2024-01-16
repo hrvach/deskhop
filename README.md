@@ -67,10 +67,7 @@ It should appear as a USB drive on your system. Copy the corresponding board_A.u
 
 Option 1 - Open the case, hold the button while connecting each Pico and copy the right uf2 to it.
 
-Option 2 - Switch a board to BOOTSEL mode by using a special key combination. (**hold down** all of these keys).
-
-- board A: ```Right Shift,  F12, A,  Left Shift```
-- board B: ```Right Shift,  F12, B,  Left Shift```
+Option 2 - Switch a board to BOOTSEL mode by using a special key combination (listed below). 
 
 This will make the corresponding Pico board enter the bootloader upgrade mode and act as USB flash drive. Now you can drag-and-drop the .uf2 file to it (you might need to plug in your mouse directly).
 
@@ -153,6 +150,43 @@ The standard process to do that is using isopropyl alcohol and an old toothbrush
 
 [![PCB Assembly Guide](img/yt-video-s.jpg)](https://www.youtube.com/watch?v=LxI9NYi_oOU)
 
+## Usage guide
+
+#### Keyboard shortcuts
+
+_Firmware upgrade_
+```Right Shift + F12 + Left Shift + A``` - put board A in FW upgrade mode
+```Right Shift + F12 + Left Shift + B``` - put board B in FW upgrade mode
+
+_Usage_
+```Right ALT``` - mouse slows down while it's pressed
+```Right CTRL + L``` - Lock/Unlock mouse desktop switching
+```Caps Lock``` - Switch between outputs
+
+_Config_
+```Right Shift + F12 + D``` - remove flash config
+```Right Shift + F12 + Y``` - save screen switch offset
+
+#### Switch cursor height calibration
+
+This step is not required, but it can be handy if your screens are not perfectly aligned or differ in size. The objective is to have the mouse pointer come out at exactly the same height.
+
+![Image](img/border_top_s.png)
+
+Just park your mouse on the LARGER screen at the height of the smaller/lower screen (illustrated) and press ```Right Shift + F12 + Y```. Your LED (and caps lock) should flash in confirmation.
+
+Repeat for the bottom border (if it's above the larger screen's border). This will get saved to flash and it should keep this calibration value from now on.
+
+#### Other configuration
+
+Mouse speed can now be configured per output screen and per axis. If you have multiple displays under Linux, your X speed is probably too fast, so you need to configure it in user_config.h and rebuild. In the future, this will be configurable without having to do that.
+
+#### Functional verification
+
+When you connect a new USB peripheral, the board will flash the led twice, and instruct the other board to do the same. This way you can test if USB and outgoing communication works for each board.
+
+Do this test by first plugging the keyboard on one side and then on the other. If everything is OK, leds will flash quickly back and forth in both cases.
+
 ## FAQ
 
 1. I just have two Picos, can I do without a PCB and isolator?
@@ -177,7 +211,7 @@ Yes, the idea was to make it behave like it was one single computer.
 
 5. Will this work with keyboard/mouse combo dongles, like the Logitech Unifying receiver?
 
-Not with the current version, but there is work ongoing to add support. Testing is one of the main problems, so if there is anyone with the device and some Logitech gear, let me know.
+Not tested yet, but the latest version might actually work (please provide feedback).
 
 6. Will this work with wireless mice and keyboards that have separate wireless receivers (one for the mouse, another for the keyboard)?
 
@@ -199,12 +233,12 @@ There are several software alternatives you can use if that works in your partic
 
 ## Shortcomings
 
-- Slow mouse movement with some devices.
 - Windows 10 broke HID absolute coordinates behavior in KB5003637, so you can't use more than 1 screen on Windows (mouse will stay on the main screen).
-- If you have more than one display, the mouse is faster in the X direction on that machine. Will get fixed with per-output configurable speed settings. 
 - Code needs cleanup, some refactoring etc.
 - Occasional bugs and weird behavior.
 - Not tested with a wide variety of devices, I don't know how it will work with your hardware. There is a reasonable chance things might not work out-of-the-box. 
+- Advanced keyboards (with knobs, extra buttons or sliders) will probably face issues where this additional hardware doesn't work.
+- Super-modern mice with 300 buttons might see some buttons not work as expected.
 - NOTE: Both computers need to be connected and powered on for this to work (as each board gets powered by the computer it plugs into).
 
 ## Progress
@@ -214,10 +248,10 @@ So, what's the deal with all the enthusiasm? I can't believe it - please allow m
 Planned features:
 - ~~Proper TinyUSB host integration~~ (done)
 - ~~HID report protocol parsing, not just boot protocol~~ (mostly done)
-- Support for unified dongle receivers
-- ~~Support for USB hubs~~ and single-sided operation
-- Configurable screens
-- Permament configuration stored in flash
+- ~~Support for unified dongle receivers~~
+- ~~Support for USB hubs and single-sided operation~~
+- Configurable screens (partially)
+- ~~Permament configuration stored in flash~~
 - Unified firmware for both Picos
 - ... and more!
 

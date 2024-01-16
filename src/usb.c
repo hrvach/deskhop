@@ -63,7 +63,7 @@ void tud_hid_set_report_cb(uint8_t instance,
         /* If we are board without the keyboard hooked up directly, we need to send this information 
            to the other one since that one has the keyboard connected to it (and LEDs you can turn on :)) */           
         if (global_state.keyboard_connected)
-            update_leds(&global_state);
+            restore_leds(&global_state);
         else
             send_value(leds, KBD_SET_REPORT_MSG);
     }
@@ -110,8 +110,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr,
             /* Keeping this is needed for setting leds from device set_report callback */
             global_state.kbd_dev_addr = dev_addr;
             global_state.kbd_instance = instance;
-
-            global_state.keyboard_connected = true;
+            global_state.keyboard_connected = true;        
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
@@ -120,12 +119,17 @@ void tuh_hid_mount_cb(uint8_t dev_addr,
             if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
                 tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
             }
-
             parse_report_descriptor(&global_state.mouse_dev, MAX_REPORTS, desc_report, desc_len);
 
-            global_state.mouse_connected = true;
+            global_state.mouse_connected = true;           
             break;
     }
+    /* Flash local led to indicate a device was connected */
+    blink_led(&global_state);           
+
+    /* Also signal the other board to flash LED, to enable easy verification if serial works */
+    send_value(ENABLE, FLASH_LED_MSG);
+
 
     /* Kick off the report querying */
     tuh_hid_receive_report(dev_addr, instance);

@@ -1,17 +1,17 @@
-/* 
+/*
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
  * Copyright (c) 2024 Hrvoje Cavrak
- * 
- * This program is free software: you can redistribute it and/or modify  
- * it under the terms of the GNU General Public License as published by  
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -19,11 +19,15 @@
 
 #include "pico/stdlib.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "hardware/flash.h"
+#include "hardware/sync.h"
 #include "hardware/watchdog.h"
+#include "hid_parser.h"
 #include "pico/bootrom.h"
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
@@ -31,10 +35,9 @@
 #include "pio_usb.h"
 #include "tusb.h"
 #include "usb_descriptors.h"
-#include "hid_parser.h"
 #include "user_config.h"
 
-/*********  Misc definitions  **********/
+/*********  Misc definitions for better readability **********/
 #define PICO_A 0
 #define PICO_B 1
 
@@ -49,6 +52,8 @@
 
 #define MAX_REPORT_ITEMS 16
 #define MOUSE_BOOT_REPORT_LEN 4
+
+#define NUM_SCREENS 2  // Will be more in the future
 
 /*********  Pinout definitions  **********/
 #define PIO_USB_DP_PIN 14  // D+ is pin 14, D- is pin 15
@@ -85,7 +90,7 @@
  *      - checksum is simply calculated by XORing all bytes together
  */
 
-enum packet_type_e : uint8_t {
+enum packet_type_e {
     KEYBOARD_REPORT_MSG = 1,
     MOUSE_REPORT_MSG = 2,
     OUTPUT_SELECT_MSG = 3,
@@ -93,6 +98,8 @@ enum packet_type_e : uint8_t {
     MOUSE_ZOOM_MSG = 5,
     KBD_SET_REPORT_MSG = 6,
     SWITCH_LOCK_MSG = 7,
+    SYNC_BORDERS_MSG = 8,
+    FLASH_LED_MSG = 9,
 };
 
 /*
@@ -124,7 +131,7 @@ typedef struct {
 #define RAW_PACKET_LENGTH (START_LENGTH + PACKET_LENGTH)
 
 #define KBD_QUEUE_LENGTH 128
-#define MOUSE_QUEUE_LENGTH 2048 
+#define MOUSE_QUEUE_LENGTH 2048
 
 #define KEYS_IN_USB_REPORT 6
 #define KBD_REPORT_LENGTH 8
@@ -132,6 +139,37 @@ typedef struct {
 
 /*********  Screen  **********/
 #define MAX_SCREEN_COORD 32767
+
+/*********  Configuration storage definitions  **********/
+
+typedef struct {
+    int top;     // When jumping from a smaller to a bigger screen, go to THIS top height
+    int bottom;  // When jumping from a smaller to a bigger screen, go to THIS bottom
+                 // height
+} border_size_t;
+
+/* Define output parameters */
+typedef struct {
+    int number;           // Number of this output (e.g. ACTIVE_OUTPUT_A = 0 etc)
+    int screen_count;     // How many monitors per output (e.g. Output A is Windows with 3 monitors)
+    int screen_index;     // Current active screen
+    int speed_x;          // Mouse speed per output, in direction X
+    int speed_y;          // Mouse speed per output, in direction Y
+    border_size_t border; // Screen border size/offset to keep cursor at same height when switching
+} output_t;
+
+/* Data structure defining how configuration is stored */
+typedef struct {
+    uint32_t magic_header;
+    uint8_t force_mouse_boot_mode;
+    output_t output[NUM_SCREENS];
+    uint32_t checksum;
+} config_t;
+
+extern const config_t default_config;
+
+extern config_t ADDR_CONFIG[];
+#define ADDR_CONFIG_BASE_ADDR (ADDR_CONFIG)
 
 // -------------------------------------------------------+
 
@@ -142,6 +180,8 @@ typedef struct {
     uint8_t keys[6];                  // Which keys need to be pressed
     uint8_t key_count;                // How many keys are pressed
     action_handler_t action_handler;  // What to execute when the key combination is detected
+    bool pass_to_os;                  // True if we are to pass the key to the OS too
+    bool acknowledge;                 // True if we are to notify the user about registering keypress
 } hotkey_combo_t;
 
 typedef struct TU_ATTR_PACKED {
@@ -155,12 +195,12 @@ typedef struct TU_ATTR_PACKED {
 typedef enum { IDLE, READING_PACKET, PROCESSING_PACKET } receiver_state_t;
 
 typedef struct {
-    uint8_t kbd_dev_addr;            // Address of the keyboard device
-    uint8_t kbd_instance;            // Keyboard instance (d'uh - isn't this a useless comment)
+    uint8_t kbd_dev_addr;  // Address of the keyboard device
+    uint8_t kbd_instance;  // Keyboard instance (d'uh - isn't this a useless comment)
 
-    uint8_t keyboard_leds[2];         // State of keyboard LEDs (index 0 = A, index 1 = B)
-    uint64_t last_activity[2];        // Timestamp of the last input activity (-||-)
-    receiver_state_t receiver_state;  // Storing the state for the simple receiver state machine
+    uint8_t keyboard_leds[NUM_SCREENS];   // State of keyboard LEDs (index 0 = A, index 1 = B)
+    uint64_t last_activity[NUM_SCREENS];  // Timestamp of the last input activity (-||-)
+    receiver_state_t receiver_state;      // Storing the state for the simple receiver state machine
 
     uint64_t core1_last_loop_pass;  // Timestamp of last core1 loop execution
     uint8_t active_output;          // Currently selected output (0 = A, 1 = B)
@@ -168,23 +208,27 @@ typedef struct {
     int16_t mouse_x;  // Store and update the location of our mouse pointer
     int16_t mouse_y;
 
-    mouse_t mouse_dev;   // Mouse device specifics, e.g. stores locations for keys in report
-    queue_t kbd_queue;   // Queue that stores keyboard reports
-    queue_t mouse_queue;   // Queue that stores mouse reports
+    config_t config;  // Device configuration, loaded from flash or defaults used
 
-    bool tud_connected;  // True when TinyUSB device successfully connects
-    bool keyboard_connected; // True when our keyboard is connected locally
-    bool mouse_connected; // True when a mouse is connected locally
-    bool mouse_zoom;     // True when "mouse zoom" is enabled
-    bool switch_lock;   // True when device is prevented from switching
+    mouse_t mouse_dev;    // Mouse device specifics, e.g. stores locations for keys in report
+    queue_t kbd_queue;    // Queue that stores keyboard reports
+    queue_t mouse_queue;  // Queue that stores mouse reports
 
-    bool key_pressed;   // We are holding down a key (from the PCs point of view)
+    /* Connection status flags */
+    bool tud_connected;       // True when TinyUSB device successfully connects
+    bool keyboard_connected;  // True when our keyboard is connected locally
+    bool mouse_connected;     // True when a mouse is connected locally
+
+    /* Feature flags */
+    bool mouse_zoom;         // True when "mouse zoom" is enabled
+    bool switch_lock;        // True when device is prevented from switching
+    bool onboard_led_state;  // True when LED is ON
+
+    /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
+    int32_t blinks_left;      // How many blink transitions are left
+    int32_t last_led_change;  // Timestamp of the last time led state transitioned
 
 } device_state_t;
-
-/*******  USB Host  *********/
-void process_mouse_report(uint8_t*, int, device_state_t*);
-void check_endpoints(device_state_t* state);
 
 /*********  Setup  **********/
 void initial_setup(void);
@@ -192,11 +236,12 @@ void serial_init(void);
 void core1_main(void);
 
 /*********  Keyboard  **********/
-bool keypress_check(hotkey_combo_t, const hid_keyboard_report_t*);
+bool is_key_pressed(hotkey_combo_t, const hid_keyboard_report_t*);
 void process_keyboard_report(uint8_t*, int, device_state_t*);
-void stop_pressing_any_keys(device_state_t*);    
+void stop_pressing_any_keys(device_state_t*);
 void queue_kbd_report(hid_keyboard_report_t*, device_state_t*);
 void process_kbd_queue_task(device_state_t*);
+void send_key(hid_keyboard_report_t*, device_state_t*);
 
 /*********  Mouse  **********/
 bool tud_hid_abs_mouse_report(uint8_t report_id,
@@ -206,10 +251,15 @@ bool tud_hid_abs_mouse_report(uint8_t report_id,
                               int8_t vertical,
                               int8_t horizontal);
 
-uint8_t parse_report_descriptor(mouse_t* mouse, uint8_t arr_count, uint8_t const* desc_report, uint16_t desc_len);
-int32_t get_report_value(uint8_t* report, report_val_t *val);
+void process_mouse_report(uint8_t*, int, device_state_t*);
+uint8_t parse_report_descriptor(mouse_t* mouse,
+                                uint8_t arr_count,
+                                uint8_t const* desc_report,
+                                uint16_t desc_len);
+int32_t get_report_value(uint8_t* report, report_val_t* val);
 void process_mouse_queue_task(device_state_t*);
 void queue_mouse_report(hid_abs_mouse_report_t*, device_state_t*);
+void send_mouse(hid_abs_mouse_report_t*, device_state_t*);
 
 /*********  UART  **********/
 void receive_char(uart_packet_t*, device_state_t*);
@@ -217,7 +267,9 @@ void send_packet(const uint8_t*, enum packet_type_e, int);
 void send_value(const uint8_t, enum packet_type_e);
 
 /*********  LEDs  **********/
-void update_leds(device_state_t*);
+void restore_leds(device_state_t*);
+void blink_led(device_state_t*);
+void led_blinking_task(device_state_t*);
 
 /*********  Checksum  **********/
 uint8_t calc_checksum(const uint8_t*, int);
@@ -226,21 +278,30 @@ bool verify_checksum(const uart_packet_t*);
 /*********  Watchdog  **********/
 void kick_watchdog(void);
 
+/*********  Configuration  **********/
+void load_config(void);
+void save_config(void);
+void wipe_config(void);
+
 /*********  Handlers  **********/
 void output_toggle_hotkey_handler(device_state_t*);
+void screen_border_hotkey_handler(device_state_t*);
 void fw_upgrade_hotkey_handler_A(device_state_t*);
 void fw_upgrade_hotkey_handler_B(device_state_t*);
 void mouse_zoom_hotkey_handler(device_state_t*);
 void all_keys_released_handler(device_state_t*);
 void switchlock_hotkey_handler(device_state_t*);
+void wipe_config_hotkey_handler(device_state_t*);
 
 void handle_keyboard_uart_msg(uart_packet_t*, device_state_t*);
 void handle_mouse_abs_uart_msg(uart_packet_t*, device_state_t*);
 void handle_output_select_msg(uart_packet_t*, device_state_t*);
-void handle_fw_upgrade_msg(void);
 void handle_mouse_zoom_msg(uart_packet_t*, device_state_t*);
 void handle_set_report_msg(uart_packet_t*, device_state_t*);
 void handle_switch_lock_msg(uart_packet_t*, device_state_t*);
+void handle_sync_borders_msg(uart_packet_t*, device_state_t*);
+void handle_flash_led_msg(uart_packet_t*, device_state_t*);
+void handle_fw_upgrade_msg(void);
 
 void switch_output(uint8_t);
 
