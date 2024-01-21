@@ -21,7 +21,7 @@
  * ==============  Checksum Functions  ============== *
  * ================================================== */
 
-uint8_t calc_checksum(const uint8_t* data, int length) {
+uint8_t calc_checksum(const uint8_t *data, int length) {
     uint8_t checksum = 0;
 
     for (int i = 0; i < length; i++) {
@@ -31,7 +31,7 @@ uint8_t calc_checksum(const uint8_t* data, int length) {
     return checksum;
 }
 
-bool verify_checksum(const uart_packet_t* packet) {
+bool verify_checksum(const uart_packet_t *packet) {
     uint8_t checksum = calc_checksum(packet->data, PACKET_DATA_LENGTH);
     return checksum == packet->checksum;
 }
@@ -40,12 +40,12 @@ bool verify_checksum(const uart_packet_t* packet) {
  * ==============  Watchdog Functions  ============== *
  * ================================================== */
 
-void kick_watchdog(void) {
+void kick_watchdog(device_t *state) {
     /* Read the timer AFTER duplicating the core1 timestamp,
        so it doesn't get updated in the meantime. */
 
-    uint64_t core1_last_loop_pass = global_state.core1_last_loop_pass;
-    uint64_t current_time = time_us_64();
+    uint64_t core1_last_loop_pass = state->core1_last_loop_pass;
+    uint64_t current_time         = time_us_64();
 
     /* If core1 stops updating the timestamp, we'll stop kicking the watchog and reboot */
     if (current_time - core1_last_loop_pass < CORE1_HANG_TIMEOUT_US)
@@ -62,24 +62,85 @@ void wipe_config(void) {
     restore_interrupts(ints);
 }
 
-void load_config(void) {
-    config_t* config = ADDR_CONFIG_BASE_ADDR;
+void load_config(device_t *state) {
+    const config_t *config   = ADDR_CONFIG_BASE_ADDR;
+    config_t *running_config = &state->config;
 
-    /* If no config is detected, copy default values to our struct. TODO checksum */
-    if (config->magic_header != 0x0B00B1E5) {
-        config = (config_t*)&default_config;
-    }
+    /* Load the flash config first, including the checksum */
+    memcpy(running_config, config, sizeof(config_t));
 
-    memcpy(&global_state.config, config, sizeof(config_t));
+    /* Calculate and update checksum, size without checksum */
+    uint8_t checksum = calc_checksum((uint8_t *)running_config, sizeof(config_t) - sizeof(uint32_t));
+
+    /* We expect a certain byte to start the config header */
+    bool magic_header_fail = (running_config->magic_header != 0xB00B1E5);
+
+    /* We expect the checksum to match */
+    bool checksum_fail = (running_config->checksum != checksum);
+
+    /* We expect the config version to match exactly, to avoid erroneous values */
+    bool version_fail = (running_config->version != CURRENT_CONFIG_VERSION);
+
+    /* On any condition failing, we fall back to default config */
+    if (magic_header_fail || checksum_fail || version_fail)
+        memcpy(running_config, &default_config, sizeof(config_t));
 }
 
-void save_config(void) {
+void save_config(device_t *state) {
     uint8_t buf[FLASH_PAGE_SIZE];
-    memcpy(buf, &global_state.config, sizeof(config_t));
+    uint8_t *raw_config = (uint8_t *)&state->config;
 
+    /* Calculate and update checksum, size without checksum */
+    uint8_t checksum       = calc_checksum(raw_config, sizeof(config_t) - sizeof(uint32_t));
+    state->config.checksum = checksum;
+
+    /* Copy the config to buffer and wipe the old one */
+    memcpy(buf, raw_config, sizeof(config_t));
     wipe_config();
 
+    /* Disable interrupts, then write the flash page and re-enable */
     uint32_t ints = save_and_disable_interrupts();
     flash_range_program(PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE, buf, FLASH_PAGE_SIZE);
     restore_interrupts(ints);
+}
+
+/* Have something fun and entertaining when idle */
+void screensaver_task(device_t *state) {
+    const uint64_t idle_timeout_us = SCREENSAVER_TIME_SEC * 1000000;
+    const int mouse_move_delay     = 5000;
+
+    static mouse_abs_report_t report = {.x = 0, .y = 0};
+    static int last_pointer_move     = 0;
+
+    /* "Randomly" chosen initial values */
+    static int dx = 20;
+    static int dy = 25;
+
+    /* If we're not enabled, nothing to do here. */
+    if (!state->config.screensaver_enabled)
+        return;
+
+    /* We are enabled, but idle time still too small to activate. */
+    if (time_us_64() - state->last_activity[BOARD_ROLE] < idle_timeout_us)
+        return;
+
+    /* We're active! Now check if it's time to move the cursor yet. */
+    if ((time_us_32()) - last_pointer_move < mouse_move_delay)
+        return;
+
+    /* Check if we are bouncing off the walls and reverse direction in that case. */
+    if (report.x + dx < MIN_SCREEN_COORD || report.x + dx > MAX_SCREEN_COORD)
+        dx = -dx;
+
+    if (report.y + dy < MIN_SCREEN_COORD || report.y + dy > MAX_SCREEN_COORD)
+        dy = -dy;
+
+    report.x += dx;
+    report.y += dy;
+
+    /* Move mouse pointer */
+    queue_mouse_report(&report, state);
+
+    /* Update timer of the last pointer move */
+    last_pointer_move = time_us_32();
 }

@@ -21,35 +21,40 @@
  * ========== Update pico and keyboard LEDs  ========== *
  * ==================================================== */
 
-void set_keyboard_leds(uint8_t requested_led_state, device_state_t* state) {
+void set_keyboard_leds(uint8_t requested_led_state, device_t *state) {
     static uint8_t new_led_value;
 
     new_led_value = requested_led_state;
     if (state->keyboard_connected) {
-        tuh_hid_set_report(state->kbd_dev_addr, state->kbd_instance, 0, HID_REPORT_TYPE_OUTPUT,
-                           &new_led_value, sizeof(uint8_t));
+        tuh_hid_set_report(state->kbd_dev_addr,
+                           state->kbd_instance,
+                           0,
+                           HID_REPORT_TYPE_OUTPUT,
+                           &new_led_value,
+                           sizeof(uint8_t));
     }
 }
 
-void restore_leds(device_state_t* state) {
+void restore_leds(device_t *state) {
+    /* Light up on-board LED if current board is active output */
     state->onboard_led_state = (state->active_output == BOARD_ROLE);
     gpio_put(GPIO_LED_PIN, state->onboard_led_state);
 
+    /* Light up appropriate keyboard leds (if it's connected locally) */
     if (state->keyboard_connected) {
         uint8_t leds = state->keyboard_leds[state->active_output];
         set_keyboard_leds(leds, state);
     }
 }
 
-void blink_led(device_state_t* state) {
+void blink_led(device_t *state) {
     /* Since LEDs might be ON previously, we go OFF, ON, OFF, ON, OFF */
-    state->blinks_left = 5;
+    state->blinks_left     = 5;
     state->last_led_change = time_us_32();
 }
 
-void led_blinking_task(device_state_t* state) {
-    /* 80 ms off, 80 ms on */
-    const int blink_interval_us = 80000;
+void led_blinking_task(device_t *state) {
+    const int blink_interval_us = 80000; /* 80 ms off, 80 ms on */
     static uint8_t leds;
 
     /* If there is no more blinking to be done, exit immediately */

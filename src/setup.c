@@ -1,17 +1,17 @@
-/* 
+/*
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
  * Copyright (c) 2024 Hrvoje Cavrak
- * 
- * This program is free software: you can redistribute it and/or modify  
- * it under the terms of the GNU General Public License as published by  
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -52,9 +52,9 @@ void serial_init() {
  * ================================================== */
 
 void pio_usb_host_config(void) {
-    /* tuh_configure() must be called before tuh_init() */    
+    /* tuh_configure() must be called before tuh_init() */
     static pio_usb_configuration_t config = PIO_USB_DEFAULT_CONFIG;
-    config.pin_dp = PIO_USB_DP_PIN_DEFAULT;     
+    config.pin_dp                         = PIO_USB_DP_PIN_DEFAULT;
     tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &config);
 
     /* Initialize and configure TinyUSB Host */
@@ -65,12 +65,12 @@ void pio_usb_host_config(void) {
  * Perform initial board/usb setup
  * ================================================== */
 
-void initial_setup(void) {
+void initial_setup(device_t *state) {
     /* PIO USB requires a clock multiple of 12 MHz, setting to 120 MHz */
     set_sys_clock_khz(120000, true);
 
     /* Search the persistent storage sector in flash for valid config or use defaults */
-    load_config();
+    load_config(state);
 
     /* Init and enable the on-board LED GPIO as output */
     gpio_init(GPIO_LED_PIN);
@@ -80,9 +80,9 @@ void initial_setup(void) {
     serial_init();
 
     /* Initialize keyboard and mouse queues */
-    queue_init(&global_state.kbd_queue, sizeof(hid_keyboard_report_t), KBD_QUEUE_LENGTH);  
-    queue_init(&global_state.mouse_queue, sizeof(hid_abs_mouse_report_t), MOUSE_QUEUE_LENGTH);  
-    
+    queue_init(&state->kbd_queue, sizeof(hid_keyboard_report_t), KBD_QUEUE_LENGTH);
+    queue_init(&state->mouse_queue, sizeof(mouse_abs_report_t), MOUSE_QUEUE_LENGTH);
+
     /* Setup RP2040 Core 1 */
     multicore_reset_core1();
     multicore_launch_core1(core1_main);
@@ -94,8 +94,8 @@ void initial_setup(void) {
     pio_usb_host_config();
 
     /* Update the core1 initial pass timestamp before enabling the watchdog */
-    global_state.core1_last_loop_pass = time_us_64();
-    
+    state->core1_last_loop_pass = time_us_64();
+
     /* Setup the watchdog so we reboot and recover from a crash */
     watchdog_enable(WATCHDOG_TIMEOUT, WATCHDOG_PAUSE_ON_DEBUG);
 }

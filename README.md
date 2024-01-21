@@ -73,16 +73,22 @@ This will make the corresponding Pico board enter the bootloader upgrade mode an
 
 ## Misc features
 
-#### Mouse slowdown
+### Mouse slowdown
 
 Ever tried to move that YT video slider to a specific position but your mouse moves too jumpy and suddenly you are moving your hand super-carefully like you're 5 and playing "Operation" all over again?
 
-**Holding right ALT** while moving the mouse will slow it down considerably, enabling you to get the finer precision work done and still have your mouse moving quickly otherwise.
+**Press right CTRL + right ALT** to toggle a slow-mouse mode. The mouse pointer will slow down considerably, enabling you to get the finer precision work done and still have your mouse moving normally by quickly pressing the same keys again.
 
-#### Switch Lock
+### Switch Lock
 
 If you want to lock yourself to one screen, use ```RIGHT CTRL + L```.
 This will make sure you won't accidentally leave your current screen. To turn off, press the same key combo again.
+
+### Screensaver
+
+Supposedly built in to prevent computer from entering standby, but truth be told - it is just fun to watch. Off by default, will make your mouse pointer bounce around the screen like a Pong ball. When enabled, it activates after a period of inactivity defined in user config header and automatically switches off as soon as you send any output towards that screen. 
+
+![Image](img/screensaver.gif)
 
 ## Hardware
 
@@ -152,22 +158,23 @@ The standard process to do that is using isopropyl alcohol and an old toothbrush
 
 ## Usage guide
 
-#### Keyboard shortcuts
+### Keyboard shortcuts
 
 _Firmware upgrade_
 - ```Right Shift + F12 + Left Shift + A``` - put board A in FW upgrade mode
 - ```Right Shift + F12 + Left Shift + B``` - put board B in FW upgrade mode
 
 _Usage_
-- ```Right ALT``` - mouse slows down while it's pressed
+- ```Right CTRL + Right ALT``` - Toggle slower mouse mode
 - ```Right CTRL + L``` - Lock/Unlock mouse desktop switching
 - ```Caps Lock``` - Switch between outputs
 
 _Config_
 - ```Right Shift + F12 + D``` - remove flash config
 - ```Right Shift + F12 + Y``` - save screen switch offset
+- ```Right Shift + F12 + S``` - turn on/off screensaver option
 
-#### Switch cursor height calibration
+### Switch cursor height calibration
 
 This step is not required, but it can be handy if your screens are not perfectly aligned or differ in size. The objective is to have the mouse pointer come out at exactly the same height.
 
@@ -177,11 +184,11 @@ Just park your mouse on the LARGER screen at the height of the smaller/lower scr
 
 Repeat for the bottom border (if it's above the larger screen's border). This will get saved to flash and it should keep this calibration value from now on.
 
-#### Other configuration
+### Other configuration
 
 Mouse speed can now be configured per output screen and per axis. If you have multiple displays under Linux, your X speed is probably too fast, so you need to configure it in user_config.h and rebuild. In the future, this will be configurable without having to do that.
 
-#### Functional verification
+### Functional verification
 
 When you connect a new USB peripheral, the board will flash the led twice, and instruct the other board to do the same. This way you can test if USB and outgoing communication works for each board.
 
@@ -239,7 +246,7 @@ There are several software alternatives you can use if that works in your partic
 - Not tested with a wide variety of devices, I don't know how it will work with your hardware. There is a reasonable chance things might not work out-of-the-box. 
 - Advanced keyboards (with knobs, extra buttons or sliders) will probably face issues where this additional hardware doesn't work.
 - Super-modern mice with 300 buttons might see some buttons not work as expected.
-- NOTE: Both computers need to be connected and powered on for this to work (as each board gets powered by the computer it plugs into).
+- NOTE: Both computers need to be connected and provide power to the USB for this to work (as each board gets powered by the computer it plugs into). Many desktops and laptops will provide power even when shut down nowadays. If you need to run with one board fully disconnected, you should be able to use a USB hub to plug both keyboard and mouse to a single port.
 
 ## Progress
 
@@ -252,6 +259,7 @@ Planned features:
 - ~~Support for USB hubs and single-sided operation~~
 - Configurable screens (partially)
 - ~~Permament configuration stored in flash~~
+- Better support for keyboards with knobs and mice with mickeys
 - Unified firmware for both Picos
 - ... and more!
 

@@ -18,9 +18,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+
+#include "main.h"
+
 #define MAX_REPORTS 32
 
-/* Counts how many collection starts and ends we've seen, when they equalize 
+/* Counts how many collection starts and ends we've seen, when they equalize
    (and not zero), we are at the end of a block */
 typedef struct {
     uint8_t start;
@@ -52,8 +55,8 @@ typedef struct {
 
 /* Describes where can we find a value in a HID report */
 typedef struct {
-    uint16_t offset;  // In bits
-    uint8_t size;     // In bits
+    uint16_t offset; // In bits
+    uint8_t size;    // In bits
     int32_t min;
     int32_t max;
 } report_val_t;
@@ -61,15 +64,14 @@ typedef struct {
 /* Defines information about HID report format for the mouse. */
 typedef struct {
     report_val_t buttons;
-
     report_val_t move_x;
     report_val_t move_y;
-
     report_val_t wheel;
 
-    bool uses_report_id;
     uint8_t report_id;
     uint8_t protocol;
+
+    bool uses_report_id;
 } mouse_t;
 
 /* For each element type we're interested in there is an entry
@@ -79,5 +81,18 @@ typedef struct {
     uint8_t report_usage;
     uint8_t usage_page;
     uint8_t usage;
-    report_val_t* element;
+    report_val_t *element;
 } usage_map_t;
+
+typedef struct {
+    uint8_t usage_count;
+    uint8_t global_usage;
+    uint32_t offset_in_bits;
+    uint8_t usages[64];
+    uint8_t *p_usage;
+
+    collection_t collection;
+    usage_map_t *map;
+
+    globals_t globals[16]; /* as tag is 4 bits, there can be 16 different tags in global header type */
+} parser_state_t;

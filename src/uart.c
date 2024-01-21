@@ -21,7 +21,7 @@
  * ===============  Sending Packets  ================ *
  * ================================================== */
 
-void send_packet(const uint8_t* data, enum packet_type_e packet_type, int length) {
+void send_packet(const uint8_t *data, enum packet_type_e packet_type, int length) {
     uint8_t raw_packet[RAW_PACKET_LENGTH] = {[0] = START1,
                                              [1] = START2,
                                              [2] = packet_type,
@@ -31,60 +31,42 @@ void send_packet(const uint8_t* data, enum packet_type_e packet_type, int length
     if (length > 0)
         memcpy(&raw_packet[START_LENGTH + TYPE_LENGTH], data, length);
 
+    /* Packets are short, fixed length, high speed and there is no flow control to block this */
     uart_write_blocking(SERIAL_UART, raw_packet, RAW_PACKET_LENGTH);
 }
 
 void send_value(const uint8_t value, enum packet_type_e packet_type) {
-    const uint8_t data[8] = {[0] = value};
-
-    send_packet((uint8_t*)&data, packet_type, 1);
+    const uint8_t data = value;
+    send_packet(&data, packet_type, sizeof(uint8_t));
 }
 
 /**================================================== *
  * ===============  Parsing Packets  ================ *
  * ================================================== */
 
-void process_packet(uart_packet_t* packet, device_state_t* state) {
-    if (!verify_checksum(packet)) {
+const uart_handler_t uart_handler[] = {
+    {.type = KEYBOARD_REPORT_MSG, .handler = handle_keyboard_uart_msg},
+    {.type = MOUSE_REPORT_MSG, .handler = handle_mouse_abs_uart_msg},
+    {.type = OUTPUT_SELECT_MSG, .handler = handle_output_select_msg},
+    {.type = FIRMWARE_UPGRADE_MSG, .handler = handle_fw_upgrade_msg},
+    {.type = MOUSE_ZOOM_MSG, .handler = handle_mouse_zoom_msg},
+    {.type = KBD_SET_REPORT_MSG, .handler = handle_set_report_msg},
+    {.type = SWITCH_LOCK_MSG, .handler = handle_switch_lock_msg},
+    {.type = SYNC_BORDERS_MSG, .handler = handle_sync_borders_msg},
+    {.type = FLASH_LED_MSG, .handler = handle_flash_led_msg},
+    {.type = SCREENSAVER_MSG, .handler = handle_screensaver_msg},
+    {.type = WIPE_CONFIG_MSG, .handler = handle_wipe_config_msg},
+};
+
+void process_packet(uart_packet_t *packet, device_t *state) {
+    if (!verify_checksum(packet))
         return;
-    }
 
-    switch (packet->type) {
-        case KEYBOARD_REPORT_MSG:
-            handle_keyboard_uart_msg(packet, state);
-            break;
-
-        case MOUSE_REPORT_MSG:
-            handle_mouse_abs_uart_msg(packet, state);
-            break;
-
-        case OUTPUT_SELECT_MSG:
-            handle_output_select_msg(packet, state);
-            break;
-
-        case FIRMWARE_UPGRADE_MSG:
-            handle_fw_upgrade_msg();
-            break;
-
-        case MOUSE_ZOOM_MSG:
-            handle_mouse_zoom_msg(packet, state);
-            break;
-
-        case KBD_SET_REPORT_MSG:
-            handle_set_report_msg(packet, state);
-            break;
-
-        case SWITCH_LOCK_MSG:
-            handle_switch_lock_msg(packet, state);
-            break;
-
-        case SYNC_BORDERS_MSG:
-            handle_sync_borders_msg(packet, state);
-            break;
-
-        case FLASH_LED_MSG:
-            handle_flash_led_msg(packet, state);
-            break;
+    for (int i = 0; i < ARRAY_SIZE(uart_handler); i++) {
+        if (uart_handler[i].type == packet->type) {
+            uart_handler[i].handler(packet, state);
+            return;
+        }
     }
 }
 
@@ -92,41 +74,59 @@ void process_packet(uart_packet_t* packet, device_state_t* state) {
  * ==============  Receiving Packets  =============== *
  * ================================================== */
 
-void receive_char(uart_packet_t* packet, device_state_t* state) {
-    uint8_t* raw_packet = (uint8_t*)packet;
-    static int count = 0;
+/* We are in IDLE state until we detect the packet start (0xAA 0x55) */
+void handle_idle_state(uint8_t *raw_packet, device_t *state) {
+    if (!uart_is_readable(SERIAL_UART)) {
+        return;
+    }
+
+    raw_packet[0] = raw_packet[1];          /* Remember the previous byte received */
+    raw_packet[1] = uart_getc(SERIAL_UART); /* Try to match packet start */
+
+    /* If we found 0xAA 0x55, we're in sync and can move on to read/process the packet */
+    if (raw_packet[0] == START1 && raw_packet[1] == START2) {
+        state->receiver_state = READING_PACKET;
+    }
+}
+
+/* Read a character off the line until we reach fixed packet length */
+void handle_reading_state(uint8_t *raw_packet, device_t *state, int *count) {
+    if (!uart_is_readable(SERIAL_UART)) {
+        return;
+    }
+
+    /* Read and store the incoming byte */
+    raw_packet[(*count)++] = uart_getc(SERIAL_UART);
+
+    /* Check if a complete packet is received */
+    if (*count >= PACKET_LENGTH) {
+        state->receiver_state = PROCESSING_PACKET;
+    }
+}
+
+/* Process that packet, restart counters and state machine to have it back to IDLE */
+void handle_processing_state(uart_packet_t *packet, device_t *state, int *count) {
+    process_packet(packet, state);
+    state->receiver_state = IDLE;
+    *count                = 0;
+}
+
+/* Very simple state machine to receive and process packets over serial */
+void receive_char(uart_packet_t *packet, device_t *state) {
+    uint8_t *raw_packet = (uint8_t *)packet;
+    static int count    = 0;
 
     switch (state->receiver_state) {
         case IDLE:
-            if (uart_is_readable(SERIAL_UART)) {
-                raw_packet[0] = raw_packet[1];          /* Remember the previous byte received */
-                raw_packet[1] = uart_getc(SERIAL_UART); /* ... and try to match packet start */
-
-                /* If we found 0xAA 0x55, we're in sync and can move on to read/process the packet
-                 */
-                if (raw_packet[0] == START1 && raw_packet[1] == START2) {
-                    state->receiver_state = READING_PACKET;
-                }
-            }
+            handle_idle_state(raw_packet, state);
             break;
 
         case READING_PACKET:
-            if (uart_is_readable(SERIAL_UART)) {
-                raw_packet[count++] = uart_getc(SERIAL_UART);
-
-                /* Check if a complete packet is received */
-                if (count >= PACKET_LENGTH) {
-                    state->receiver_state = PROCESSING_PACKET;
-                }
-            }
+            handle_reading_state(raw_packet, state, &count);
             break;
 
         case PROCESSING_PACKET:
-            process_packet(packet, state);
-
-            /* Cleanup and return to IDLE when done */
-            count = 0;
-            state->receiver_state = IDLE;
+            handle_processing_state(packet, state, &count);
             break;
     }
 }

@@ -1,17 +1,17 @@
-/* 
+/*
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
  * Copyright (c) 2024 Hrvoje Cavrak
- * 
- * This program is free software: you can redistribute it and/or modify  
- * it under the terms of the GNU General Public License as published by  
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -21,14 +21,14 @@
  * ===========  TinyUSB Device Callbacks  =========== *
  * ================================================== */
 
-/* Invoked when we get GET_REPORT control request. 
- * We are expected to fill buffer with the report content, update reqlen 
+/* Invoked when we get GET_REPORT control request.
+ * We are expected to fill buffer with the report content, update reqlen
  * and return its length. We return 0 to STALL the request. */
 uint16_t tud_hid_get_report_cb(uint8_t instance,
                                uint8_t report_id,
                                hid_report_type_t report_type,
-                               uint8_t* buffer,
-                               uint16_t reqlen) {
+                               uint8_t *buffer,
+                               uint16_t request_len) {
     return 0;
 }
 
@@ -42,31 +42,29 @@ uint16_t tud_hid_get_report_cb(uint8_t instance,
 void tud_hid_set_report_cb(uint8_t instance,
                            uint8_t report_id,
                            hid_report_type_t report_type,
-                           uint8_t const* buffer,
+                           uint8_t const *buffer,
                            uint16_t bufsize) {
-    if (report_id == REPORT_ID_KEYBOARD && bufsize == 1 && report_type == HID_REPORT_TYPE_OUTPUT) {
-        /**
-         * If we are using caps lock LED to indicate the chosen output, we will
-         * override whatever is sent through the SetReport message.
-         */
-        uint8_t leds = buffer[0];
+    if (report_id != REPORT_ID_KEYBOARD || bufsize != 1 || report_type != HID_REPORT_TYPE_OUTPUT)
+        return;
 
-        if (KBD_LED_AS_INDICATOR) {
-            leds = leds & 0xFD;  /* 1111 1101 (Clear Caps Lock bit) */
+    uint8_t leds = buffer[0];
 
-            if (global_state.active_output)
-                leds |= KEYBOARD_LED_CAPSLOCK;
-        }
+    /* If we are using caps lock LED to indicate the chosen output, that has priority */
+    if (KBD_LED_AS_INDICATOR) {
+        leds = leds & 0xFD; /* 1111 1101 (Clear Caps Lock bit) */
 
-        global_state.keyboard_leds[global_state.active_output] = leds;
-
-        /* If we are board without the keyboard hooked up directly, we need to send this information 
-           to the other one since that one has the keyboard connected to it (and LEDs you can turn on :)) */           
-        if (global_state.keyboard_connected)
-            restore_leds(&global_state);
-        else
-            send_value(leds, KBD_SET_REPORT_MSG);
+        if (global_state.active_output)
+            leds |= KEYBOARD_LED_CAPSLOCK;
     }
+
+    global_state.keyboard_leds[global_state.active_output] = leds;
+
+    /* If the board doesn't have the keyboard hooked up directly, we need to relay this information
+       to the other one that has (and LEDs you can turn on). */
+    if (global_state.keyboard_connected)
+        restore_leds(&global_state);
+    else
+        send_value(leds, KBD_SET_REPORT_MSG);
 }
 
 /* Invoked when device is mounted */
@@ -85,6 +83,7 @@ void tud_umount_cb(void) {
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
             global_state.keyboard_connected = false;
@@ -94,23 +93,20 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
             global_state.mouse_connected = false;
 
             /* Clear this so reconnecting a mouse doesn't try to continue in HID REPORT protocol */
-            memset(&global_state.mouse_dev, 0, sizeof(global_state.mouse_dev));            
+            memset(&global_state.mouse_dev, 0, sizeof(global_state.mouse_dev));
             break;
     }
 }
-    
-void tuh_hid_mount_cb(uint8_t dev_addr,
-                      uint8_t instance,
-                      uint8_t const* desc_report,
-                      uint16_t desc_len) {
-    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);      
+
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len) {
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
-            /* Keeping this is needed for setting leds from device set_report callback */
-            global_state.kbd_dev_addr = dev_addr;
-            global_state.kbd_instance = instance;
-            global_state.keyboard_connected = true;        
+            /* Keeping this is required for setting leds from device set_report callback */
+            global_state.kbd_dev_addr       = dev_addr;
+            global_state.kbd_instance       = instance;
+            global_state.keyboard_connected = true;
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
@@ -121,35 +117,30 @@ void tuh_hid_mount_cb(uint8_t dev_addr,
             }
             parse_report_descriptor(&global_state.mouse_dev, MAX_REPORTS, desc_report, desc_len);
 
-            global_state.mouse_connected = true;           
+            global_state.mouse_connected = true;
             break;
     }
     /* Flash local led to indicate a device was connected */
-    blink_led(&global_state);           
+    blink_led(&global_state);
 
     /* Also signal the other board to flash LED, to enable easy verification if serial works */
     send_value(ENABLE, FLASH_LED_MSG);
-
 
     /* Kick off the report querying */
     tuh_hid_receive_report(dev_addr, instance);
 }
 
 /* Invoked when received report from device via interrupt endpoint */
-void tuh_hid_report_received_cb(uint8_t dev_addr,
-                                uint8_t instance,
-                                uint8_t const* report,
-                                uint16_t len) {
-    (void)len;
+void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len) {
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
-            process_keyboard_report((uint8_t*)report, len, &global_state);
+            process_keyboard_report((uint8_t *)report, len, &global_state);
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
-            process_mouse_report((uint8_t*)report, len, &global_state);
+            process_mouse_report((uint8_t *)report, len, &global_state);
             break;
     }
 
@@ -158,9 +149,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr,
 }
 
 /* Set protocol in a callback. If we were called, command succeeded. We're only
-   doing this for the mouse anyway, so we can only be called about the mouse */
+   doing this for the mouse for now, so we can only be called about the mouse */
 void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol) {
-    (void) dev_addr;
-    (void) idx;
     global_state.mouse_dev.protocol = protocol;
 }

@@ -18,63 +18,114 @@
 #include "main.h"
 
 /* ==================================================== *
- * Hotkeys to trigger actions via the keyboard
+ * Hotkeys to trigger actions via the keyboard.
  * ==================================================== */
 
 hotkey_combo_t hotkeys[] = {
     /* Main keyboard switching hotkey */
-    {.modifier = 0,
-     .keys = {HOTKEY_TOGGLE},
-     .key_count = 1,
+    {.modifier       = 0,
+     .keys           = {HOTKEY_TOGGLE},
+     .key_count      = 1,
+     .pass_to_os     = false,
      .action_handler = &output_toggle_hotkey_handler},
 
-    /* Holding down right ALT slows the mouse down */
-    {.modifier = KEYBOARD_MODIFIER_RIGHTALT,
-     .keys = {},
-     .key_count = 0,
-     .pass_to_os = true,
+    /* Pressing right ALT + right CTRL toggles the slow mouse mode */
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTALT | KEYBOARD_MODIFIER_RIGHTCTRL,
+     .keys           = {},
+     .key_count      = 0,
+     .pass_to_os     = true,
+     .acknowledge    = true,
      .action_handler = &mouse_zoom_hotkey_handler},
 
     /* Switch lock */
-    {.modifier = KEYBOARD_MODIFIER_RIGHTCTRL,
-     .keys = {HID_KEY_L},
-     .key_count = 1,
-     .acknowledge = true,
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTCTRL,
+     .keys           = {HID_KEY_L},
+     .key_count      = 1,
+     .acknowledge    = true,
      .action_handler = &switchlock_hotkey_handler},
 
     /* Erase stored config */
-    {.modifier = KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys = {HID_KEY_F12, HID_KEY_D},
-     .key_count = 2,
-     .acknowledge = true,
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
+     .keys           = {HID_KEY_F12, HID_KEY_D},
+     .key_count      = 2,
+     .acknowledge    = true,
      .action_handler = &wipe_config_hotkey_handler},
 
+    /* Toggle screensaver function */
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
+     .keys           = {HID_KEY_F12, HID_KEY_S},
+     .key_count      = 2,
+     .acknowledge    = true,
+     .action_handler = &screensaver_hotkey_handler},
+
     /* Record switch y coordinate  */
-    {.modifier = KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys = {HID_KEY_F12, HID_KEY_Y},
-     .key_count = 2,
-     .acknowledge = true,
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
+     .keys           = {HID_KEY_F12, HID_KEY_Y},
+     .key_count      = 2,
+     .acknowledge    = true,
      .action_handler = &screen_border_hotkey_handler},
 
     /* Hold down left shift + right shift + F12 + A ==> firmware upgrade mode for board A (kbd) */
-    {.modifier = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
-     .keys = {HID_KEY_F12, HID_KEY_A},
-     .key_count = 2,
-     .acknowledge = true,
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
+     .keys           = {HID_KEY_F12, HID_KEY_A},
+     .key_count      = 2,
+     .acknowledge    = true,
      .action_handler = &fw_upgrade_hotkey_handler_A},
 
     /* Hold down left shift + right shift + F12 + B ==> firmware upgrade mode for board B (mouse) */
-    {.modifier = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
-     .keys = {HID_KEY_F12, HID_KEY_B},
-     .key_count = 2,
-     .acknowledge = true,
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
+     .keys           = {HID_KEY_F12, HID_KEY_B},
+     .key_count      = 2,
+     .acknowledge    = true,
      .action_handler = &fw_upgrade_hotkey_handler_B}};
+
+/* ============================================================ *
+ * Detect if any hotkeys were pressed
+ * ============================================================ */
+
+/* Tries to find if the keyboard report contains key, returns true/false */
+bool key_in_report(uint8_t key, const hid_keyboard_report_t *report) {
+    for (int j = 0; j < KEYS_IN_USB_REPORT; j++) {
+        if (key == report->keycode[j]) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/* Check if the current report matches a specific hotkey passed on */
+bool check_specific_hotkey(hotkey_combo_t keypress, const hid_keyboard_report_t *report) {
+    /* We expect all modifiers specified to be detected in the report */
+    if (keypress.modifier != (report->modifier & keypress.modifier))
+        return false;
+
+    for (int n = 0; n < keypress.key_count; n++) {
+        if (!key_in_report(keypress.keys[n], report)) {
+            return false;
+        }
+    }
+
+    /* Getting here means all of the keys were found. */
+    return true;
+}
+
+/* Go through the list of hotkeys, check if any of them match. */
+hotkey_combo_t *check_all_hotkeys(hid_keyboard_report_t *report, device_t *state) {
+    for (int n = 0; n < ARRAY_SIZE(hotkeys); n++) {
+        if (check_specific_hotkey(hotkeys[n], report)) {
+            return &hotkeys[n];
+        }
+    }
+
+    return NULL;
+}
 
 /* ==================================================== *
  * Keyboard Queue Section
  * ==================================================== */
 
-void process_kbd_queue_task(device_state_t* state) {
+void process_kbd_queue_task(device_t *state) {
     hid_keyboard_report_t report;
 
     /* If we're not connected, we have nowhere to send reports to. */
@@ -93,7 +144,7 @@ void process_kbd_queue_task(device_state_t* state) {
         queue_try_remove(&state->kbd_queue, &report);
 }
 
-void queue_kbd_report(hid_keyboard_report_t* report, device_state_t* state) {
+void queue_kbd_report(hid_keyboard_report_t *report, device_t *state) {
     /* It wouldn't be fun to queue up a bunch of messages and then dump them all on host */
     if (!state->tud_connected)
         return;
@@ -101,18 +152,18 @@ void queue_kbd_report(hid_keyboard_report_t* report, device_state_t* state) {
     queue_try_add(&state->kbd_queue, report);
 }
 
-void stop_pressing_any_keys(device_state_t* state) {
+void release_all_keys(device_t *state) {
     static hid_keyboard_report_t no_keys_pressed_report = {0, 0, {0}};
     queue_try_add(&state->kbd_queue, &no_keys_pressed_report);
 }
 
 /* If keys need to go locally, queue packet to kbd queue, else send them through UART */
-void send_key(hid_keyboard_report_t* report, device_state_t* state) {
-    if (state->active_output == BOARD_ROLE) {
+void send_key(hid_keyboard_report_t *report, device_t *state) {
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
         queue_kbd_report(report, state);
         state->last_activity[BOARD_ROLE] = time_us_64();
     } else {
-        send_packet((uint8_t*)report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
+        send_packet((uint8_t *)report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
     }
 }
 
@@ -120,81 +171,30 @@ void send_key(hid_keyboard_report_t* report, device_state_t* state) {
  * Parse and interpret the keys pressed on the keyboard
  * ==================================================== */
 
-bool no_keys_are_pressed(const hid_keyboard_report_t* report) {
-    if (report->modifier != 0)
-        return false;
-
-    for (int n = 0; n < KEYS_IN_USB_REPORT; n++) {
-        if (report->keycode[n] != 0)
-            return false;
-    }
-    return true;
-}
-
-hotkey_combo_t* check_hotkeys(hid_keyboard_report_t* report, int length, device_state_t* state) {    
-    /* Go through the list of hotkeys, check if any are pressed, then execute their handler */    
-    for (int n = 0; n < sizeof(hotkeys) / sizeof(hotkeys[0]); n++) {
-        if (is_key_pressed(hotkeys[n], report)) {
-            return &hotkeys[n];
-        }
-    }
-
-    return NULL;
-}
-
-void process_keyboard_report(uint8_t* raw_report, int length, device_state_t* state) {
-    hid_keyboard_report_t* keyboard_report = (hid_keyboard_report_t*)raw_report;
-    hotkey_combo_t* hotkey = NULL;
+void process_keyboard_report(uint8_t *raw_report, int length, device_t *state) {
+    hid_keyboard_report_t *keyboard_report = (hid_keyboard_report_t *)raw_report;
+    hotkey_combo_t *hotkey                 = NULL;
 
     if (length < KBD_REPORT_LENGTH)
         return;
-   
-    /* If no keys are pressed anymore, take care of checking and deactivating stuff */
-    if(no_keys_are_pressed(keyboard_report))
-        all_keys_released_handler(state);
-    else
-        /* Check if it was a hotkey, makes sense only if a key is pressed */
-        hotkey = check_hotkeys(keyboard_report, length, state);
+
+    /* Check if any hotkey was pressed */
+    hotkey = check_all_hotkeys(keyboard_report, state);
 
     /* ... and take appropriate action */
-    if(hotkey != NULL) {
+    if (hotkey != NULL) {
         /* Provide visual feedback we received the action */
         if (hotkey->acknowledge)
             blink_led(state);
-        
+
+        /* Execute the corresponding handler */
         hotkey->action_handler(state);
+
+        /* And pass the key to the output PC if configured to do so. */
         if (!hotkey->pass_to_os)
             return;
     }
-    
+
     /* This method will decide if the key gets queued locally or sent through UART */
     send_key(keyboard_report, state);
-}
-
-/* ============================================================ *
- * Check if a specific key combination is present in the report
- * ============================================================ */
-
-bool is_key_pressed(hotkey_combo_t keypress, const hid_keyboard_report_t* report) {
-    int matches = 0;
-
-    /* We expect all modifiers specified to be detected in the report */
-    if (keypress.modifier != (report->modifier & keypress.modifier))
-        return false;
-
-    for (int n = 0; n < keypress.key_count; n++) {
-        for (int j = 0; j < KEYS_IN_USB_REPORT; j++) {
-            if (keypress.keys[n] == report->keycode[j]) {
-                matches++;
-                break;
-            }
-        }
-        /* If any of the keys are not found, we can bail out early. */
-        if (matches < n + 1) {
-            return false;
-        }
-    }
-
-    /* Getting here means all of the keys were found. */
-    return true;
 }
