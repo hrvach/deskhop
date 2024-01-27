@@ -25,7 +25,7 @@ device_t *device      = &global_state;
  * ==============  Main Program Loops  ============== *
  * ================================================== */
 
-void main(void) {
+int main(void) {
     // Wait for the board to settle
     sleep_ms(10);
 

@@ -41,8 +41,7 @@ void serial_init() {
     /* We do want FIFO, will help us have fewer interruptions */
     uart_set_fifo_enabled(SERIAL_UART, true);
 
-    /* Set the RX/TX pins, they differ based on the device role (A or B, check
-    /* schematics) */
+    /* Set the RX/TX pins, they differ based on the device role (A or B, check schematics) */
     gpio_set_function(SERIAL_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(SERIAL_RX_PIN, GPIO_FUNC_UART);
 }

@@ -91,12 +91,10 @@ void handle_idle_state(uint8_t *raw_packet, device_t *state) {
 
 /* Read a character off the line until we reach fixed packet length */
 void handle_reading_state(uint8_t *raw_packet, device_t *state, int *count) {
-    if (!uart_is_readable(SERIAL_UART)) {
-        return;
+    while (uart_is_readable(SERIAL_UART) && *count < PACKET_LENGTH) {        
+        /* Read and store the incoming byte */
+        raw_packet[(*count)++] = uart_getc(SERIAL_UART);
     }
-
-    /* Read and store the incoming byte */
-    raw_packet[(*count)++] = uart_getc(SERIAL_UART);
 
     /* Check if a complete packet is received */
     if (*count >= PACKET_LENGTH) {

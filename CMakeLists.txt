@@ -1,16 +1,17 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.5)
 
 set(PICO_SDK_FETCH_FROM_GIT off)
 set(PICO_BOARD=pico)
 
 include(pico_sdk_import.cmake)
-set(CMAKE_CXX_FLAGS "-Ofast -Wall -mcpu=cortex-m0plus -mtune=cortex-m0plus")
+set(CMAKE_C_FLAGS "-Ofast -Wall -mcpu=cortex-m0plus -mtune=cortex-m0plus -funroll-loops")
 
 set(PICO_COPY_TO_RAM 1)
 
 project(deskhop_project C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+
 pico_sdk_init()
 
 set(PICO_PIO_USB_DIR ${CMAKE_CURRENT_LIST_DIR}/Pico-PIO-USB)
@@ -66,38 +67,29 @@ set(COMMON_LINK_LIBRARIES
   Pico-PIO-USB
 )
 
-# Pico A - Keyboard
-add_executable(board_A)
+# Pico A - Keyboard (board_role = 0) 
+#      B - Mouse    (board_role = 1)
 
-target_sources(board_A PUBLIC ${COMMON_SOURCES})
-target_compile_definitions(board_A PRIVATE BOARD_ROLE=0 PIO_USB_USE_TINYUSB=1 PIO_USB_DP_PIN_DEFAULT=14)
-target_include_directories(board_A PUBLIC ${COMMON_INCLUDES})
-target_link_libraries(board_A PUBLIC ${COMMON_LINK_LIBRARIES})
+set(binaries board_A board_B)
 
-pico_enable_stdio_usb(board_A 0)
-pico_add_extra_outputs(board_A)
+foreach(board_role RANGE 0 1)
+  list (GET binaries ${board_role} binary)
 
+  add_executable(${binary})
 
-# Pico B - Mouse
-add_executable(board_B)
+  target_sources(${binary} PUBLIC ${COMMON_SOURCES})
+  target_compile_definitions(${binary} PRIVATE BOARD_ROLE=${board_role} PIO_USB_USE_TINYUSB=1 PIO_USB_DP_PIN_DEFAULT=14)
+  target_include_directories(${binary} PUBLIC ${COMMON_INCLUDES})
+  target_link_libraries(${binary} PUBLIC ${COMMON_LINK_LIBRARIES})
 
-target_compile_definitions(board_B PRIVATE BOARD_ROLE=1 PIO_USB_USE_TINYUSB=1 PIO_USB_DP_PIN_DEFAULT=14)
-target_sources(board_B PUBLIC ${COMMON_SOURCES})
-target_include_directories(board_B PUBLIC ${COMMON_INCLUDES})
-target_link_libraries(board_B PUBLIC ${COMMON_LINK_LIBRARIES})
+  pico_enable_stdio_usb(${binary} 0)
+  pico_add_extra_outputs(${binary})
 
-pico_enable_stdio_usb(board_B 0)
-pico_add_extra_outputs(board_B)
+  target_link_options(${binary} PRIVATE
+    -Xlinker
+    --print-memory-usage
+  )
 
-target_link_options(board_A PRIVATE
-  -Xlinker
-  --print-memory-usage
-)
+  pico_set_linker_script(${binary} ${CMAKE_SOURCE_DIR}/memory_map.ld)
 
-target_link_options(board_B PRIVATE
-  -Xlinker
-  --print-memory-usage
-)
-
-pico_set_linker_script(board_A ${CMAKE_SOURCE_DIR}/memory_map.ld)
-pico_set_linker_script(board_B ${CMAKE_SOURCE_DIR}/memory_map.ld)
+endforeach()

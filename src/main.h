@@ -53,7 +53,7 @@
 #define NUM_SCREENS               2 // Will be more in the future
 #define MOUSE_ZOOM_SCALING_FACTOR 2
 
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#define ARRAY_SIZE(arr)                (sizeof(arr) / sizeof((arr)[0]))
 #define CURRENT_BOARD_IS_ACTIVE_OUTPUT (global_state.active_output == BOARD_ROLE)
 
 /*********  Pinout definitions  **********/
@@ -77,9 +77,9 @@
 #define SERIAL_PARITY    UART_PARITY_NONE
 
 /*********  Watchdog definitions  **********/
-#define WATCHDOG_TIMEOUT        500    // In milliseconds => needs to be reset every 500 ms
-#define WATCHDOG_PAUSE_ON_DEBUG 1      // When using a debugger, disable watchdog
-#define CORE1_HANG_TIMEOUT_US   500000 // In microseconds, wait up to 0.5s to declare core1 dead
+#define WATCHDOG_TIMEOUT        1000                    // In milliseconds => needs to be reset every second
+#define WATCHDOG_PAUSE_ON_DEBUG 1                       // When using a debugger, disable watchdog
+#define CORE1_HANG_TIMEOUT_US   WATCHDOG_TIMEOUT * 1000 // Convert to microseconds
 
 /*********  Protocol definitions  *********
  *
