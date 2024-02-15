@@ -71,6 +71,23 @@ Option 2 - Switch a board to BOOTSEL mode by using a special key combination (li
 
 This will make the corresponding Pico board enter the bootloader upgrade mode and act as USB flash drive. Now you can drag-and-drop the .uf2 file to it (you might need to plug in your mouse directly).
 
+## Security and Safety
+
+Some features are missing on purpose, despite the fact it would make the device easier to use or simpler to configure. Here is a quick breakdown of these decisions:
+
+- There is no copy-paste or *any* information sharing between systems. This prevents information leakage.
+- No webhid device management or any inbound connectivity from the output computers, with the only exception of standard keyboard LED on/off messages, hard limited to 1 byte of data.
+- No FW upgrade triggering from the outputs. Only explicit and deliberate user action through a special keyboard shortcut may do that.
+- No plugged-in keyboard/mouse custom endpoints are exposed or information forwarded towards these devices. Their potential vulnerabilities are effectively firewalled from the computer.
+- No input history is allowed to be retained.
+- Outputs are physically separated and galvanically isolated with a minimal isolation voltage of 2kV.
+- All packets exchanged between devices are of fixed length, no code is transferred and no raw config exchange of any kind can take place.
+- There is no bluetooth or wifi, networking, Internet access, usb drives etc.
+- No connected computer is considered trusted under any circumstances.
+- Entirety of the code is open source, without any binary blobs and thoroughly commented to explain its purpose. I encourage you to never trust anyone and always make sure you know what you are running by doing a manual audit.
+
+This still doesn't guarantee anything, but I believe it makes a reasonable set of ground rules to keep you safe and protected.
+
 ## Misc features
 
 ### Mouse slowdown
@@ -117,6 +134,8 @@ Planned changes:
 - Add indications on the silkscreen for pin1 on the ADuM1201
 - Add indications on the silkscreen for which Raspberry Pi Pico pins need to be soldered
 
+... done, waiting on PCBs to re-test and verify everything. Stay tuned for an updated version!
+
 ## Case
 
 Since I'm not very good with 3d, the case is [simple and basic](case/) but does the job. It should be easy to print, uses ~33g of filament and takes a couple of hours.
@@ -142,6 +161,7 @@ The lid is of a snap-fit design, with a screwdriver slot for opening. The markin
 |                    |     |          Total | 11.53    |
 
 USB-A connector can be Molex MX-67643-0910 or a cheaper/budget one that shares the same dimensions.
+TI ISO7721DR can be used instead of the ADuM - it's pin-compatible, much cheaper and with better specs.
 
 Additional steps:
 
@@ -262,6 +282,8 @@ Planned features:
 - Better support for keyboards with knobs and mice with mickeys
 - Unified firmware for both Picos
 - ... and more!
+
+Working on a *lite* version which provides basic functionality with just a single Pico W board, lowering the cost even further and enabling you to try it out even with no added hardware or PCB.
 
 Mouse polling should now work at 1000 Hz (the dips in the graph is my arm hurting from all the movement :-)):
 
