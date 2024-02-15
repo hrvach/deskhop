@@ -71,23 +71,6 @@ Option 2 - Switch a board to BOOTSEL mode by using a special key combination (li
 
 This will make the corresponding Pico board enter the bootloader upgrade mode and act as USB flash drive. Now you can drag-and-drop the .uf2 file to it (you might need to plug in your mouse directly).
 
-## Security and Safety
-
-Some features are missing on purpose, despite the fact it would make the device easier to use or simpler to configure. Here is a quick breakdown of these decisions:
-
-- There is no copy-paste or *any* information sharing between systems. This prevents information leakage.
-- No webhid device management or any inbound connectivity from the output computers, with the only exception of standard keyboard LED on/off messages, hard limited to 1 byte of data.
-- No FW upgrade triggering from the outputs. Only explicit and deliberate user action through a special keyboard shortcut may do that.
-- No plugged-in keyboard/mouse custom endpoints are exposed or information forwarded towards these devices. Their potential vulnerabilities are effectively firewalled from the computer.
-- No input history is allowed to be retained.
-- Outputs are physically separated and galvanically isolated with a minimal isolation voltage of 2kV.
-- All packets exchanged between devices are of fixed length, no code is transferred and no raw config exchange of any kind can take place.
-- There is no bluetooth or wifi, networking, Internet access, usb drives etc.
-- No connected computer is considered trusted under any circumstances.
-- Entirety of the code is open source, without any binary blobs and thoroughly commented to explain its purpose. I encourage you to never trust anyone and always make sure you know what you are running by doing a manual audit.
-
-This still doesn't guarantee anything, but I believe it makes a reasonable set of ground rules to keep you safe and protected.
-
 ## Misc features
 
 ### Mouse slowdown
@@ -213,6 +196,23 @@ Mouse speed can now be configured per output screen and per axis. If you have mu
 When you connect a new USB peripheral, the board will flash the led twice, and instruct the other board to do the same. This way you can test if USB and outgoing communication works for each board.
 
 Do this test by first plugging the keyboard on one side and then on the other. If everything is OK, leds will flash quickly back and forth in both cases.
+
+## Security and Safety
+
+Some features are missing on purpose, despite the fact it would make the device easier to use or simpler to configure. Here is a quick breakdown of these decisions:
+
+- There is no copy-paste or *any* information sharing between systems. This prevents information leakage.
+- No webhid device management or any inbound connectivity from the output computers, with the only exception of standard keyboard LED on/off messages, hard limited to 1 byte of data.
+- No FW upgrade triggering from the outputs. Only explicit and deliberate user action through a special keyboard shortcut may do that.
+- No plugged-in keyboard/mouse custom endpoints are exposed or information forwarded towards these devices. Their potential vulnerabilities are effectively firewalled from the computer.
+- No input history is allowed to be retained.
+- Outputs are physically separated and galvanically isolated with a minimal isolation voltage of 2kV.
+- All packets exchanged between devices are of fixed length, no code is transferred and no raw config exchange of any kind can take place.
+- There is no bluetooth or wifi, networking, Internet access, usb drives etc.
+- No connected computer is considered trusted under any circumstances.
+- Entirety of the code is open source, without any binary blobs and thoroughly commented to explain its purpose. I encourage you to never trust anyone and always make sure you know what you are running by doing a manual audit.
+
+This still doesn't guarantee anything, but I believe it makes a reasonable set of ground rules to keep you safe and protected.
 
 ## FAQ
 
