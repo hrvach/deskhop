@@ -23,6 +23,12 @@
  *
  * defined as HID_KEY_<something>
  *
+ * If you do not want to use a key for switching outputs, you may be tempted
+ * to select HID_KEY_NONE here; don't do that! That code appears in many HID
+ * messages and the result will be a non-functional keyboard. Instead, choose
+ * a key that is unlikely to ever appear on a keyboard that you will use.
+ * HID_KEY_F24 is probably a good choice as keyboards with 24 function keys
+ * are rare.
  * */
 
 #define HOTKEY_TOGGLE HID_KEY_CAPS_LOCK
