@@ -146,7 +146,7 @@ typedef struct {
 
 /*********  Configuration storage definitions  **********/
 
-#define CURRENT_CONFIG_VERSION 2
+#define CURRENT_CONFIG_VERSION 3
 
 typedef struct {
     int top;    // When jumping from a smaller to a bigger screen, go to THIS top height
@@ -164,13 +164,21 @@ typedef struct {
     border_size_t border; // Screen border size/offset to keep cursor at same height when switching
 } output_t;
 
+/* Define screensaver parameters */
+typedef struct {
+    uint8_t enabled;
+    uint8_t only_if_inactive;
+    uint64_t idle_time_us;
+    uint64_t max_time_us;
+} screensaver_t;
+
 /* Data structure defining how configuration is stored */
 typedef struct {
     uint32_t magic_header;
     uint32_t version;
     uint8_t force_mouse_boot_mode;
     output_t output[NUM_SCREENS];
-    uint8_t screensaver_enabled;
+    screensaver_t screensaver[NUM_SCREENS];
     // Keep checksum at the end of the struct
     uint32_t checksum;
 } config_t;
@@ -214,6 +222,7 @@ typedef struct {
 
     uint8_t keyboard_leds[NUM_SCREENS];  // State of keyboard LEDs (index 0 = A, index 1 = B)
     uint64_t last_activity[NUM_SCREENS]; // Timestamp of the last input activity (-||-)
+    bool screensaver_max_time_reached[NUM_SCREENS]; // Screensaver maximum time has been reached (will be reset at the next input activity)
     receiver_state_t receiver_state;     // Storing the state for the simple receiver state machine
     uint64_t core1_last_loop_pass;       // Timestamp of last core1 loop execution
     uint8_t active_output;               // Currently selected output (0 = A, 1 = B)

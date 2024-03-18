@@ -53,6 +53,7 @@ void output_mouse_report(mouse_abs_report_t *report, device_t *state) {
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
         queue_mouse_report(report, state);
         state->last_activity[BOARD_ROLE] = time_us_64();
+	state->screensaver_max_time_reached[BOARD_ROLE] = false;
     } else {
         send_packet((uint8_t *)report, MOUSE_REPORT_MSG, MOUSE_REPORT_LENGTH);
     }
