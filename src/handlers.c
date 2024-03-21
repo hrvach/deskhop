@@ -69,8 +69,8 @@ void wipe_config_hotkey_handler(device_t *state) {
 }
 
 void screensaver_hotkey_handler(device_t *state) {
-    state->config.screensaver_enabled ^= 1;
-    send_value(state->config.screensaver_enabled, SCREENSAVER_MSG);
+    state->config.screensaver[BOARD_ROLE].enabled ^= 1;
+    send_value(state->config.screensaver[BOARD_ROLE].enabled, SCREENSAVER_MSG);
 }
 
 /* When pressed, toggles the current mouse zoom mode state */
@@ -87,6 +87,7 @@ void mouse_zoom_hotkey_handler(device_t *state) {
 void handle_keyboard_uart_msg(uart_packet_t *packet, device_t *state) {
     queue_kbd_report((hid_keyboard_report_t *)packet->data, state);
     state->last_activity[BOARD_ROLE] = time_us_64();
+    state->screensaver_max_time_reached[BOARD_ROLE] = false;
 }
 
 /* Function handles received mouse moves from the other board */
@@ -98,6 +99,7 @@ void handle_mouse_abs_uart_msg(uart_packet_t *packet, device_t *state) {
     state->mouse_y = mouse_report->y;
 
     state->last_activity[BOARD_ROLE] = time_us_64();
+    state->screensaver_max_time_reached[BOARD_ROLE] = false;
 }
 
 /* Function handles request to switch output  */
@@ -149,7 +151,7 @@ void handle_wipe_config_msg(uart_packet_t *packet, device_t *state) {
 }
 
 void handle_screensaver_msg(uart_packet_t *packet, device_t *state) {
-    state->config.screensaver_enabled = packet->data[0];
+    state->config.screensaver[BOARD_ROLE].enabled = packet->data[0];
 }
 
 /**==================================================== *

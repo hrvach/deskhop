@@ -106,23 +106,54 @@ void save_config(device_t *state) {
 
 /* Have something fun and entertaining when idle */
 void screensaver_task(device_t *state) {
-    const uint64_t idle_timeout_us = SCREENSAVER_TIME_SEC * 1000000;
     const int mouse_move_delay     = 5000;
 
     static mouse_abs_report_t report = {.x = 0, .y = 0};
     static int last_pointer_move     = 0;
 
+    uint64_t current_time = time_us_64();
+    static uint64_t last_activation_time = 0;
+
     /* "Randomly" chosen initial values */
     static int dx = 20;
     static int dy = 25;
 
+    /* If the maximum time has been reached, nothing to do here. */
+    if (state->screensaver_max_time_reached[BOARD_ROLE]) {
+	return;
+    }
+
     /* If we're not enabled, nothing to do here. */
-    if (!state->config.screensaver_enabled)
+    if (!state->config.screensaver[BOARD_ROLE].enabled) {
+	last_activation_time = 0;
+	return;
+    }
+
+    /* If we're not the selected output and that is required, nothing to do here. */
+    if (state->config.screensaver[BOARD_ROLE].only_if_inactive &&
+	CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+	last_activation_time = 0;
         return;
+    }
 
     /* We are enabled, but idle time still too small to activate. */
-    if (time_us_64() - state->last_activity[BOARD_ROLE] < idle_timeout_us)
+    if ((current_time - state->last_activity[BOARD_ROLE]) <
+	state->config.screensaver[BOARD_ROLE].idle_time_us) {
+	last_activation_time = 0;
         return;
+    }
+
+    if (last_activation_time == 0) {
+	last_activation_time = current_time;
+    } else {
+	/* We are enabled, but max time has been reached. */
+	if ((current_time - last_activation_time) >
+	    state->config.screensaver[BOARD_ROLE].max_time_us) {
+	    state->screensaver_max_time_reached[BOARD_ROLE] = true;
+	    last_activation_time = 0;
+	    return;
+	}
+    }
 
     /* We're active! Now check if it's time to move the cursor yet. */
     if ((time_us_32()) - last_pointer_move < mouse_move_delay)

@@ -63,17 +63,77 @@
 
 /**================================================== *
  * ==============  Screensaver Config  ============== *
- * ==================================================
+ * ================================================== *
  *
- * Defines how long does an output need to be idle for screensaver to kick in.
- * With this function, after being left idle for a certain amount of time (defined below),
- * mouse cursor starts moving around like a bouncy-ball in pong. No clicking, of course.
- * Move mouse on that active output to stop.
+ * While this feature is called 'screensaver', it's not actually a
+ * screensaver :) Really it's a way to ensure that some sort of mouse
+ * activity will be sent to one (or both) outputs when the user has
+ * not interacted with that output. This can be used to stop a
+ * screensaver or screenlock from activating on the attached computer,
+ * or to just watch the mouse pointer bouncing around!
  *
- * SCREENSAVER_ENABLED: [0 or 1] 0 means screensaver is disabled, 1 means it is enabled.
- * SCREENSAVER_TIME_SEC: time in seconds
+ * When the mode is active on an output, the pointer will jump around
+ * the screen like a bouncing-ball in a Pong game (however no click
+ * events will be generated, of course).
  *
- * */
+ * This mode is activated by 'idle time' on a per-output basis; if the
+ * mode is enabled for output B, and output B doesn't have any
+ * activity for (at least) the specified idle time, then the mode will
+ * be activated and will continue until the inactivity time reaches
+ * the maximum (if one has been specified). This allows you to stop a
+ * screensaver/screenlock from activating while you are still at your
+ * desk (but just interacting with the other computer attached to
+ * Deskhop), but let it activate if you leave your desk for an
+ * extended period of time.
+ *
+ * Additionally, this mode can be automatically disabled if the output
+ * is the currently-active output.
+ *
+ * If you only set the ENABLED options below, and leave the rest of
+ * the defaults in place, then the screensaver mode will activate
+ * after 4 minutes (240 seconds) of inactivity, will continue forever,
+ * but will only activate on an output that is not currently
+ * active.
+ *
+ **/
 
-#define SCREENSAVER_ENABLED  0
-#define SCREENSAVER_TIME_SEC 240
+/**================================================== *
+ *
+ * SCREENSAVER_{A|B}_ENABLED: [0 or 1] 0 means screensaver is
+ * disabled, 1 means it is enabled.
+ *
+ **/
+
+#define SCREENSAVER_A_ENABLED  1
+#define SCREENSAVER_B_ENABLED  0
+
+/**================================================== *
+ *
+ * SCREENSAVER_{A|B}_IDLE_TIME_SEC: Number of seconds that an output
+ * must be inactive before the screensaver mode will be activated.
+ *
+ **/
+
+#define SCREENSAVER_A_IDLE_TIME_SEC 60
+#define SCREENSAVER_B_IDLE_TIME_SEC 240
+
+/**================================================== *
+ *
+ * SCREENSAVER_{A|B}_MAX_TIME_SEC: Number of seconds that an output
+ * can be inactive before the screensaver mode will be deactivated. If
+ * zero, the screensaver will run indefinitely.
+ *
+ **/
+
+#define SCREENSAVER_A_MAX_TIME_SEC  120
+#define SCREENSAVER_B_MAX_TIME_SEC  0
+
+/**================================================== *
+ *
+ * SCREENSAVER_{A|B}_ONLY_IF_INACTIVE: [0 or 1] 1 means the
+ * screensaver will activate only if the output is inactive.
+ *
+ **/
+
+#define SCREENSAVER_A_ONLY_IF_INACTIVE  1
+#define SCREENSAVER_B_ONLY_IF_INACTIVE  1
