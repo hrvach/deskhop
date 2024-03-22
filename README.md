@@ -86,23 +86,25 @@ This will make sure you won't accidentally leave your current screen. To turn of
 
 ### Screensaver
 
-Supposedly built in to prevent computer from entering standby, but truth be told - it is just fun to watch. Off by default, will make your mouse pointer bounce around the screen like a Pong ball. When enabled, it activates after a period of inactivity defined in user config header and automatically switches off as soon as you send any output towards that screen. 
+Supposedly built in to prevent computer from entering standby, but truth be told - it is just fun to watch. **Off by default**, will make your mouse pointer bounce around the screen like a Pong ball. When enabled, it activates after a period of inactivity defined in user config header and automatically switches off as soon as you send any output towards that screen. 
+
+Potential usage example - I have a buggy USB dock that won't resume video from standby, so not allowing it to sleep can be a handy workaround. 
 
 ![Image](img/screensaver.gif)
 
 ## Hardware
 
-[The circuit](schematics/DeskHop.pdf) is based on two Raspberry Pi Pico boards, chosen because they are cheap (4.10 € / pc), can be hand soldered and most suppliers have them in stock.
+[The circuit](schematics/DeskHop_v1.1.pdf) is based on two Raspberry Pi Pico boards, chosen because they are cheap (4.10 € / pc), can be hand soldered and most suppliers have them in stock.
 
-The Picos are connected using UART and separated by an Analog Devices ADuM1201 dual-channel digital isolator (~3€). 
+The Picos are connected using UART and separated by an Analog Devices ADuM1201 dual-channel digital isolator (~3€) or a much cheaper, faster and pin-compatible TI ISO7721DR (~1.5€). 
 
 While they normally don't have support for dual USB, thanks to an [amazing project](https://github.com/sekigon-gonnoc/Pico-PIO-USB) where USB is implemented using the programmable IO wizardry found in RP2040, there is support for it to act both as an USB host and device.  
 
-## PCB
+## PCB [updated]
 
 To keep things as simple as possible for DIY builds, the traces were kept on one side and the number of parts kept to a theoretical minimum.
 
-![Image](img/pcb_render_s.png)
+![Image](img/plocica2.png)
 
 USB D+/D- differential lines should be identical in length, but they are slightly asymmetrical on purpose to counter the length difference on the corresponding GPIO traces PICO PCB itself, so the overall lengths should match.
 
@@ -110,20 +112,22 @@ Zd (differential impedance) is aimed as 90 ohm (managed to get ~107, close enoug
 
 The thickness is designed to be 1.6 mm for snap-fit to work as expected.
 
-Planned changes:
-- Add 15 ohm resistors for D+ / D- lines
-- Add decoupling capacitance near VBUS line on USB-A connector (~100 uF)
-- Add an ESD protection device near the USB connector
-- Add indications on the silkscreen for pin1 on the ADuM1201
-- Add indications on the silkscreen for which Raspberry Pi Pico pins need to be soldered
+There are 2 versions of the PCB (no major differences for the user). Original (v1.0) is easier to solder and assemble, while v1.1 offers some upgrades like:
+ - added ESD protection (TPD4E1U06DBVR)
+ - added VBUS capacitor for the keyboard/mouse connectors
+ - silkscreen orientation markings
+ - holes for clone boards with headers pre-soldered and easier alignment
+ - USB 27 ohm resistors
+ 
+  This version is slightly more difficult to hand solder due to the small transient voltage suppressor IC and 0805 resistors, but it's totally doable. TVS can in theory be omitted (not advised) and it will still work.
 
-... done, waiting on PCBs to re-test and verify everything. Stay tuned for an updated version!
+Upcoming - board with bare rp2040s that doesn't need Picos, is smaller and more convenient.
 
 ## Case
 
 Since I'm not very good with 3d, the case is [simple and basic](case/) but does the job. It should be easy to print, uses ~33g of filament and takes a couple of hours.
 
-Horizontal PCB movements are countered by pegs sliding through holes and vertical movements by snap-fit lugs on the side - no screws required.
+Horizontal PCB movements are countered by pegs sliding through holes and vertical movements by snap-fit lugs on the sides - no screws required. The case was given a slight redesign to feature the logo and two additional snap-fit lugs, so it provides a better seal.
 
 Micro USB connectors on both boards are offset from the side of the case, so slightly larger holes should allow for cables to reach in. 
 
@@ -131,7 +135,10 @@ The lid is of a snap-fit design, with a screwdriver slot for opening. The markin
 
 ![Image](img/deskhop-case.gif)
 
-## Bill of materials
+## Bill of materials 
+
+<details closed>
+  <summary>Click here to view original PCB v1.0 BOM</summary>
 
 | Component          | Qty | Unit Price / € | Price / €|
 |--------------------|-----|----------------|----------|
@@ -143,8 +150,27 @@ The lid is of a snap-fit design, with a screwdriver slot for opening. The markin
 |                    |     |                |          |
 |                    |     |          Total | 11.53    |
 
-USB-A connector can be Molex MX-67643-0910 or a cheaper/budget one that shares the same dimensions.
 TI ISO7721DR can be used instead of the ADuM - it's pin-compatible, much cheaper and with better specs.
+
+</details>
+
+#### PCB v1.1
+
+| Component      | Part                | Qty | Unit Price / € | Price / €|
+|----------------|---------------------|-----|----------------|----------|
+|     U1, U2     | Raspberry Pi Pico   | 2   | 4.10           | 8.20     |
+|     J1, J4     | USB-A PCB conn.     | 2   | 0.20           | 0.40     |
+|       U4       | TI ISO7721DR        | 1   | 1.40           | 1.40     |
+|                | (**OR** ADuM1201BRZ)|     |                |          |
+|     C1, C2     | Cap 0805 SMD 100nF  | 2   | 0.09           | 0.18     |
+| R1, R2, R3, R4 | Res 0805 SMD 27ohm  | 4   | 0.03           | 0.12     |
+|     U3, U5     | TPD4E1U06DBVR       | 2   | 0.31           | 0.62     |
+|     C3, C4     | Cap 4.7uF SMD 0805  | 2   | 0.07           | 0.14     |
+|     J2, J3     | Headers 2.54 1x03   | 2   | 0.08           | 0.16     |
+|                |                     |     |                |          |
+|                |                     |     |          Total | 11.22    |
+
+USB-A connector can be Molex MX-67643-0910 or a cheaper/budget one that shares the same dimensions.
 
 Additional steps:
 
@@ -158,6 +184,8 @@ If you have some experience with electronics, you don't need this. However, some
 The standard process to do that is using isopropyl alcohol and an old toothbrush. But guess what? I'm not putting my old toothbrush online, so you'll just have to improvise that part :)
 
 [![PCB Assembly Guide](img/yt-video-s.jpg)](https://www.youtube.com/watch?v=LxI9NYi_oOU)
+
+[NOTE] The video assembly guide covers pcb v1.0. The revised version is very similar and the procedure is basically the same. 
 
 ## Usage guide
 
@@ -262,11 +290,11 @@ There are several software alternatives you can use if that works in your partic
 
 - Windows 10 broke HID absolute coordinates behavior in KB5003637, so you can't use more than 1 screen on Windows (mouse will stay on the main screen).
 - Code needs cleanup, some refactoring etc.
-- Occasional bugs and weird behavior.
 - Not tested with a wide variety of devices, I don't know how it will work with your hardware. There is a reasonable chance things might not work out-of-the-box. 
 - Advanced keyboards (with knobs, extra buttons or sliders) will probably face issues where this additional hardware doesn't work.
 - Super-modern mice with 300 buttons might see some buttons not work as expected.
 - NOTE: Both computers need to be connected and provide power to the USB for this to work (as each board gets powered by the computer it plugs into). Many desktops and laptops will provide power even when shut down nowadays. If you need to run with one board fully disconnected, you should be able to use a USB hub to plug both keyboard and mouse to a single port.
+- MacOS has issues with more than one screens, latest firmware offers an experimental workaround that fixes it (but for the time being you are required to define the output as MACOS in user_config.h, set number of screens in defaults.c and rebuild). This should be a keyboard shortcut soon with no need to rebuild.
 
 ## Progress
 
@@ -277,7 +305,7 @@ Planned features:
 - ~~HID report protocol parsing, not just boot protocol~~ (mostly done)
 - ~~Support for unified dongle receivers~~
 - ~~Support for USB hubs and single-sided operation~~
-- Configurable screens (partially)
+- ~~Configurable screens (done)~~ 
 - ~~Permament configuration stored in flash~~
 - Better support for keyboards with knobs and mice with mickeys
 - Unified firmware for both Picos
