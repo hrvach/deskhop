@@ -114,7 +114,9 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
                at least we get all the information we need (looking at you, mouse wheel) */
             if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
                 tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
-            }
+            } 
+
+            global_state.mouse_dev.protocol = tuh_hid_get_protocol(dev_addr, instance);
             parse_report_descriptor(&global_state.mouse_dev, MAX_REPORTS, desc_report, desc_len);
 
             global_state.mouse_connected = true;

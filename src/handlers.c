@@ -31,18 +31,24 @@ void output_toggle_hotkey_handler(device_t *state) {
     switch_output(state, state->active_output);
 };
 
-/* This key combo records switch y top coordinate for different-size monitors  */
-void screen_border_hotkey_handler(device_t *state) {
-    border_size_t *border = &state->config.output[state->active_output].border;
-
+void get_border_position(device_t *state, border_size_t *border) {
     /* To avoid having 2 different keys, if we're above half, it's the top coord */
     if (state->mouse_y > (MAX_SCREEN_COORD / 2))
         border->bottom = state->mouse_y;
     else
         border->top = state->mouse_y;
+}
+
+
+/* This key combo records switch y top coordinate for different-size monitors  */
+void screen_border_hotkey_handler(device_t *state) {
+    border_size_t *border = &state->config.output[state->active_output].border;
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+        get_border_position(state, border);
+        save_config(state);
+    }
 
     send_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
-    save_config(state);
 };
 
 /* This key combo puts board A in firmware upgrade mode */
@@ -69,8 +75,8 @@ void wipe_config_hotkey_handler(device_t *state) {
 }
 
 void screensaver_hotkey_handler(device_t *state) {
-    state->config.screensaver[BOARD_ROLE].enabled ^= 1;
-    send_value(state->config.screensaver[BOARD_ROLE].enabled, SCREENSAVER_MSG);
+    state->config.output[BOARD_ROLE].screensaver.enabled ^= 1;
+    send_value(state->config.output[BOARD_ROLE].screensaver.enabled, SCREENSAVER_MSG);    
 }
 
 /* When pressed, toggles the current mouse zoom mode state */
@@ -87,19 +93,18 @@ void mouse_zoom_hotkey_handler(device_t *state) {
 void handle_keyboard_uart_msg(uart_packet_t *packet, device_t *state) {
     queue_kbd_report((hid_keyboard_report_t *)packet->data, state);
     state->last_activity[BOARD_ROLE] = time_us_64();
-    state->screensaver_max_time_reached[BOARD_ROLE] = false;
 }
 
 /* Function handles received mouse moves from the other board */
 void handle_mouse_abs_uart_msg(uart_packet_t *packet, device_t *state) {
-    mouse_abs_report_t *mouse_report = (mouse_abs_report_t *)packet->data;
+    mouse_report_t *mouse_report = (mouse_report_t *)packet->data;
     queue_mouse_report(mouse_report, state);
 
     state->mouse_x = mouse_report->x;
     state->mouse_y = mouse_report->y;
+    state->mouse_buttons = mouse_report->buttons;
 
     state->last_activity[BOARD_ROLE] = time_us_64();
-    state->screensaver_max_time_reached[BOARD_ROLE] = false;
 }
 
 /* Function handles request to switch output  */
@@ -135,7 +140,14 @@ void handle_switch_lock_msg(uart_packet_t *packet, device_t *state) {
 /* Handle border syncing message that lets the other device know about monitor height offset */
 void handle_sync_borders_msg(uart_packet_t *packet, device_t *state) {
     border_size_t *border = &state->config.output[state->active_output].border;
-    memcpy(border, packet->data, sizeof(border_size_t));
+
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+        get_border_position(state, border);
+        send_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
+    }
+    else
+        memcpy(border, packet->data, sizeof(border_size_t));
+
     save_config(state);
 }
 
@@ -151,7 +163,7 @@ void handle_wipe_config_msg(uart_packet_t *packet, device_t *state) {
 }
 
 void handle_screensaver_msg(uart_packet_t *packet, device_t *state) {
-    state->config.screensaver[BOARD_ROLE].enabled = packet->data[0];
+    state->config.output[BOARD_ROLE].screensaver.enabled = packet->data[0];    
 }
 
 /**==================================================== *

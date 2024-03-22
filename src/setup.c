@@ -54,6 +54,12 @@ void pio_usb_host_config(void) {
     /* tuh_configure() must be called before tuh_init() */
     static pio_usb_configuration_t config = PIO_USB_DEFAULT_CONFIG;
     config.pin_dp                         = PIO_USB_DP_PIN_DEFAULT;
+
+    /* Make HID protocol the default for port B as a fix for devices enumerating 
+       themselves as both keyboards and mice, but having just a single common mode */
+    if(BOARD_ROLE == OUTPUT_B)
+        tuh_hid_set_default_protocol(HID_PROTOCOL_REPORT);
+
     tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &config);
 
     /* Initialize and configure TinyUSB Host */
@@ -80,15 +86,15 @@ void initial_setup(device_t *state) {
 
     /* Initialize keyboard and mouse queues */
     queue_init(&state->kbd_queue, sizeof(hid_keyboard_report_t), KBD_QUEUE_LENGTH);
-    queue_init(&state->mouse_queue, sizeof(mouse_abs_report_t), MOUSE_QUEUE_LENGTH);
+    queue_init(&state->mouse_queue, sizeof(mouse_report_t), MOUSE_QUEUE_LENGTH);
 
     /* Setup RP2040 Core 1 */
     multicore_reset_core1();
     multicore_launch_core1(core1_main);
 
     /* Initialize and configure TinyUSB Device */
-    tud_init(BOARD_TUD_RHPORT);
-
+    tud_init(BOARD_TUD_RHPORT);    
+    
     /* Initialize and configure TinyUSB Host */
     pio_usb_host_config();
 

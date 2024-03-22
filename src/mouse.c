@@ -46,14 +46,16 @@ void update_mouse_position(device_t *state, mouse_values_t *values) {
     /* Update movement */
     state->mouse_x = move_and_keep_on_screen(state->mouse_x, offset_x);
     state->mouse_y = move_and_keep_on_screen(state->mouse_y, offset_y);
+    
+    /* Update buttons state */
+    state->mouse_buttons = values->buttons;
 }
 
 /* If we are active output, queue packet to mouse queue, else send them through UART */
-void output_mouse_report(mouse_abs_report_t *report, device_t *state) {
+void output_mouse_report(mouse_report_t *report, device_t *state) {
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
         queue_mouse_report(report, state);
         state->last_activity[BOARD_ROLE] = time_us_64();
-	state->screensaver_max_time_reached[BOARD_ROLE] = false;
     } else {
         send_packet((uint8_t *)report, MOUSE_REPORT_MSG, MOUSE_REPORT_LENGTH);
     }
@@ -90,31 +92,81 @@ int16_t scale_y_coordinate(int screen_from, int screen_to, device_t *state) {
     return ((state->mouse_y - from->border.top) * MAX_SCREEN_COORD) / size_from;
 }
 
-void switch_screen(device_t *state, int new_x, int output_from, int output_to) {
-    mouse_abs_report_t hidden_pointer = {.y = MIN_SCREEN_COORD, .x = MAX_SCREEN_COORD};
+void switch_screen(device_t *state, output_t *output, int new_x, int output_from, int output_to, int direction) {
+    mouse_report_t hidden_pointer = {.y = MIN_SCREEN_COORD, .x = MAX_SCREEN_COORD};
 
     output_mouse_report(&hidden_pointer, state);
     switch_output(state, output_to);
-    state->mouse_x = (output_to == OUTPUT_A) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
-    state->mouse_y = scale_y_coordinate(output_from, output_to, state);
+    state->mouse_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
+    state->mouse_y = scale_y_coordinate(output->number, 1 - output->number, state);
 }
 
-void check_screen_switch(const mouse_values_t *values, device_t *state) {
-    int new_x = state->mouse_x + values->move_x;
+void switch_desktop(device_t *state, output_t *output, int new_index, int direction) {
+    switch (output->os) {
+        case MACOS:
+            /* Send relative mouse movement here as well, one or two pixels in the direction of
+               movement, BEFORE absolute report sets X to 0 */
+            mouse_report_t move_relative_one = {.x = (direction == LEFT) ? 16384-2 : 16384+2, .mode = RELATIVE};
 
-    /* No switching allowed if explicitly disabled */
-    if (state->switch_lock)
+            /* Once doesn't seem reliable enough, do it twice */
+            output_mouse_report(&move_relative_one, state);
+            output_mouse_report(&move_relative_one, state);
+            
+            break;
+
+        case WINDOWS:
+            /* TODO: Switch to relative-only if index > 1, but keep tabs to switch back */
+            break;
+
+        case LINUX:
+        case OTHER:
+            /* Linux should treat all desktops as a single virtual screen, so you should leave
+            screen_count at 1 and it should just work */
+            break;
+    }
+
+    state->mouse_x       = (direction == RIGHT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
+    output->screen_index = new_index;
+}
+
+/*                               BORDER
+                                   |
+       .---------.    .---------.  |  .---------.    .---------.    .---------.
+      ||    B2   ||  ||    B1   || | ||    A1   ||  ||    A2   ||  ||    A3   ||   (output, index)
+      ||  extra  ||  ||   main  || | ||   main  ||  ||  extra  ||  ||  extra  ||   (main or extra)
+       '---------'    '---------'  |  '---------'    '---------'    '---------'
+          )___(          )___(     |     )___(          )___(          )___(
+*/
+void check_screen_switch(const mouse_values_t *values, device_t *state) {
+    int new_x        = state->mouse_x + values->move_x;
+    output_t *output = &state->config.output[state->active_output];
+
+    bool jump_left  = new_x < MIN_SCREEN_COORD - JUMP_THRESHOLD;
+    bool jump_right = new_x > MAX_SCREEN_COORD + JUMP_THRESHOLD;
+
+    int direction = jump_left ? LEFT : RIGHT;
+
+    /* No switching allowed if explicitly disabled or mouse button is held */
+    if (state->switch_lock || state->mouse_buttons)
         return;
 
-    /* End of screen left switches screen A->B  TODO: make configurable */
-    if (new_x < MIN_SCREEN_COORD - JUMP_THRESHOLD && state->active_output == OUTPUT_A) {
-        switch_screen(state, new_x, OUTPUT_A, OUTPUT_B);
+    /* No jump condition met == nothing to do, return */
+    if (!jump_left && !jump_right)
+        return;
+
+    /* We want to jump in the direction of the other computer */
+    if (output->pos != direction) {
+        if (output->screen_index == 1) /* We are at the border -> switch outputs */            
+            switch_screen(state, output, new_x, state->active_output, 1 - state->active_output, direction);
+
+        /* If here, this output has multiple desktops and we are not on the main one */
+        else
+            switch_desktop(state, output, output->screen_index - 1, direction);
     }
 
-    /* End of screen right switches screen B->A  TODO: make configurable */
-    else if (new_x > MAX_SCREEN_COORD + JUMP_THRESHOLD && state->active_output == OUTPUT_B) {
-        switch_screen(state, new_x, OUTPUT_B, OUTPUT_A);
-    }
+    /* We want to jump away from the other computer, only possible if there is another screen to jump to */
+    else if (output->screen_index < output->screen_count)
+        switch_desktop(state, output, output->screen_index + 1, direction);
 }
 
 void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t *values) {
@@ -139,12 +191,13 @@ void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t 
     values->buttons = get_report_value(raw_report, &state->mouse_dev.buttons);
 }
 
-mouse_abs_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
-    mouse_abs_report_t abs_mouse_report = {.buttons = values->buttons,
+mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
+    mouse_report_t abs_mouse_report = {.buttons = values->buttons,
                                            .x       = state->mouse_x,
                                            .y       = state->mouse_y,
                                            .wheel   = values->wheel,
-                                           .pan     = 0};
+                                           .mode    = ABSOLUTE,
+                                           };
     return abs_mouse_report;
 }
 
@@ -158,7 +211,7 @@ void process_mouse_report(uint8_t *raw_report, int len, device_t *state) {
     update_mouse_position(state, &values);
 
     /* Create the report for the output PC based on the updated values */
-    mouse_abs_report_t report = create_mouse_report(state, &values);
+    mouse_report_t report = create_mouse_report(state, &values);
 
     /* Move the mouse, depending where the output is supposed to go */
     output_mouse_report(&report, state);
@@ -172,7 +225,7 @@ void process_mouse_report(uint8_t *raw_report, int len, device_t *state) {
  * ==================================================== */
 
 void process_mouse_queue_task(device_t *state) {
-    mouse_abs_report_t report = {0};
+    mouse_report_t report = {0};
 
     /* We need to be connected to the host to send messages */
     if (!state->tud_connected)
@@ -187,15 +240,15 @@ void process_mouse_queue_task(device_t *state) {
         tud_remote_wakeup();
 
     /* ... try sending it to the host, if it's successful */
-    bool succeeded = tud_hid_abs_mouse_report(
-        REPORT_ID_MOUSE, report.buttons, report.x, report.y, report.wheel, report.pan);
+    bool succeeded = tud_mouse_report(
+        report.mode, report.buttons, report.x, report.y, report.wheel);
 
     /* ... then we can remove it from the queue */
     if (succeeded)
         queue_try_remove(&state->mouse_queue, &report);
 }
 
-void queue_mouse_report(mouse_abs_report_t *report, device_t *state) {
+void queue_mouse_report(mouse_report_t *report, device_t *state) {
     /* It wouldn't be fun to queue up a bunch of messages and then dump them all on host */
     if (!state->tud_connected)
         return;

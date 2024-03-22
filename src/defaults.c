@@ -14,8 +14,16 @@ const config_t default_config = {
                 .bottom = MAX_SCREEN_COORD,
             },
             .screen_count = 1,
-            .screen_index = 0,
-        },
+            .screen_index = 1,
+            .os = OUTPUT_A_OS,
+            .pos = LEFT,
+            .screensaver = {
+                .enabled = SCREENSAVER_A_ENABLED,
+                .only_if_inactive = SCREENSAVER_A_ONLY_IF_INACTIVE,
+                .idle_time_us = SCREENSAVER_A_IDLE_TIME_SEC * 1000000,
+                .max_time_us = SCREENSAVER_A_MAX_TIME_SEC * 1000000,                
+            }
+        },        
     .output[OUTPUT_B] =
         {
             .number = OUTPUT_B,
@@ -26,20 +34,14 @@ const config_t default_config = {
                 .bottom = MAX_SCREEN_COORD,
             },
             .screen_count = 1,
-            .screen_index = 0,
+            .screen_index = 1,
+            .os = OUTPUT_B_OS,
+            .pos = RIGHT,
+            .screensaver = {
+                .enabled = SCREENSAVER_B_ENABLED,
+                .only_if_inactive = SCREENSAVER_B_ONLY_IF_INACTIVE,
+                .idle_time_us = SCREENSAVER_B_IDLE_TIME_SEC * 1000000,
+                .max_time_us = SCREENSAVER_B_MAX_TIME_SEC * 1000000,                
+            }
         },
-    .screensaver[OUTPUT_A] =
-        {
-	    .enabled = SCREENSAVER_A_ENABLED,
-	    .only_if_inactive = SCREENSAVER_A_ONLY_IF_INACTIVE,
-	    .idle_time_us = SCREENSAVER_A_IDLE_TIME_SEC * 1000000,
-	    .max_time_us = SCREENSAVER_A_MAX_TIME_SEC * 1000000,
-	},
-    .screensaver[OUTPUT_B] =
-        {
-	    .enabled = SCREENSAVER_B_ENABLED,
-	    .only_if_inactive = SCREENSAVER_B_ONLY_IF_INACTIVE,
-	    .idle_time_us = SCREENSAVER_B_IDLE_TIME_SEC * 1000000,
-	    .max_time_us = SCREENSAVER_B_MAX_TIME_SEC * 1000000,
-	},
 };

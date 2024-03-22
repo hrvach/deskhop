@@ -29,6 +29,7 @@
  * a key that is unlikely to ever appear on a keyboard that you will use.
  * HID_KEY_F24 is probably a good choice as keyboards with 24 function keys
  * are rare.
+ * 
  * */
 
 #define HOTKEY_TOGGLE HID_KEY_CAPS_LOCK
@@ -54,12 +55,11 @@
 #define MOUSE_SPEED_A_FACTOR_X 16
 #define MOUSE_SPEED_A_FACTOR_Y 16
 
-/* Output B values */
+/* Output B values  */
 #define MOUSE_SPEED_B_FACTOR_X 16
 #define MOUSE_SPEED_B_FACTOR_Y 16
 
 #define JUMP_THRESHOLD 0
-
 
 /**================================================== *
  * ==============  Screensaver Config  ============== *
@@ -104,8 +104,8 @@
  *
  **/
 
-#define SCREENSAVER_A_ENABLED  1
-#define SCREENSAVER_B_ENABLED  0
+#define SCREENSAVER_A_ENABLED 0
+#define SCREENSAVER_B_ENABLED 0
 
 /**================================================== *
  *
@@ -114,19 +114,18 @@
  *
  **/
 
-#define SCREENSAVER_A_IDLE_TIME_SEC 60
+#define SCREENSAVER_A_IDLE_TIME_SEC 240
 #define SCREENSAVER_B_IDLE_TIME_SEC 240
 
 /**================================================== *
  *
- * SCREENSAVER_{A|B}_MAX_TIME_SEC: Number of seconds that an output
- * can be inactive before the screensaver mode will be deactivated. If
- * zero, the screensaver will run indefinitely.
+ * SCREENSAVER_{A|B}_MAX_TIME_SEC: Number of seconds that the screensaver
+ * will run on an output before being deactivated. 0 for indefinitely.
  *
  **/
 
-#define SCREENSAVER_A_MAX_TIME_SEC  120
-#define SCREENSAVER_B_MAX_TIME_SEC  0
+#define SCREENSAVER_A_MAX_TIME_SEC 0
+#define SCREENSAVER_B_MAX_TIME_SEC 0
 
 /**================================================== *
  *
@@ -135,5 +134,22 @@
  *
  **/
 
-#define SCREENSAVER_A_ONLY_IF_INACTIVE  1
-#define SCREENSAVER_B_ONLY_IF_INACTIVE  1
+#define SCREENSAVER_A_ONLY_IF_INACTIVE 0
+#define SCREENSAVER_B_ONLY_IF_INACTIVE 0
+
+/**================================================== *
+ * ================  Output OS Config =============== *
+ * ==================================================
+ *
+ * Defines OS an output connects to. You will need to worry about this only if you have
+ * multiple desktops and one of your outputs is MacOS or Windows.
+ *
+ * Available options: LINUX, MACOS, WINDOWS, OTHER (check main.h for details)
+ *
+ * OUTPUT_A_OS: OS for output A
+ * OUTPUT_B_OS: OS for output B
+ *
+ * */
+
+#define OUTPUT_A_OS LINUX
+#define OUTPUT_B_OS LINUX

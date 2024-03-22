@@ -21,7 +21,6 @@
 #include "main.h"
 
 #define IS_BLOCK_END (collection.start == collection.end)
-#define MAX_BUTTONS  16
 
 enum { SIZE_0_BIT = 0, SIZE_8_BIT = 1, SIZE_16_BIT = 2, SIZE_32_BIT = 3 };
 

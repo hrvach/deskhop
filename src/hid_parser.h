@@ -88,7 +88,7 @@ typedef struct {
     uint8_t usage_count;
     uint8_t global_usage;
     uint32_t offset_in_bits;
-    uint8_t usages[64];
+    uint8_t usages[256];
     uint8_t *p_usage;
 
     collection_t collection;

@@ -47,6 +47,9 @@
 #define ENABLE  1
 #define DISABLE 0
 
+#define ABSOLUTE 0
+#define RELATIVE 1
+
 #define MAX_REPORT_ITEMS      16
 #define MOUSE_BOOT_REPORT_LEN 4
 
@@ -103,6 +106,9 @@ enum packet_type_e {
     FLASH_LED_MSG        = 9,
     SCREENSAVER_MSG      = 10,
     WIPE_CONFIG_MSG      = 11,
+    REL_MOUSE_REPORT_MSG = 12,
+    SWAP_OUTPUTS_MSG     = 13,
+    HEARTBEAT_MSG        = 14,
 };
 
 /*
@@ -146,23 +152,31 @@ typedef struct {
 
 /*********  Configuration storage definitions  **********/
 
-#define CURRENT_CONFIG_VERSION 3
+#define CURRENT_CONFIG_VERSION 4
+
+enum os_type_e {
+    LINUX   = 1,
+    MACOS   = 2,
+    WINDOWS = 3,
+    OTHER   = 255,
+};
+
+enum screen_pos_e {
+    LEFT   = 1,
+    RIGHT  = 2,
+    MIDDLE = 3,
+};
+
+enum itf_num_e {
+    ITF_NUM_HID       = 0,
+    ITF_NUM_HID_REL_M = 1,
+};
 
 typedef struct {
     int top;    // When jumping from a smaller to a bigger screen, go to THIS top height
     int bottom; // When jumping from a smaller to a bigger screen, go to THIS bottom
                 // height
 } border_size_t;
-
-/* Define output parameters */
-typedef struct {
-    int number;           // Number of this output (e.g. OUTPUT_A = 0 etc)
-    int screen_count;     // How many monitors per output (e.g. Output A is Windows with 3 monitors)
-    int screen_index;     // Current active screen
-    int speed_x;          // Mouse speed per output, in direction X
-    int speed_y;          // Mouse speed per output, in direction Y
-    border_size_t border; // Screen border size/offset to keep cursor at same height when switching
-} output_t;
 
 /* Define screensaver parameters */
 typedef struct {
@@ -172,13 +186,26 @@ typedef struct {
     uint64_t max_time_us;
 } screensaver_t;
 
+/* Define output parameters */
+typedef struct {
+    int number;                // Number of this output (e.g. OUTPUT_A = 0 etc)
+    int screen_count;          // How many monitors per output (e.g. Output A is Windows with 3 monitors)
+    int screen_index;          // Current active screen
+    int speed_x;               // Mouse speed per output, in direction X
+    int speed_y;               // Mouse speed per output, in direction Y
+    border_size_t border;      // Screen border size/offset to keep cursor at same height when switching
+    enum os_type_e os;         // Operating system on this output
+    enum screen_pos_e pos;     // Screen position on this output
+    screensaver_t screensaver; // Screensaver parameters for this output
+} output_t;
+
 /* Data structure defining how configuration is stored */
 typedef struct {
     uint32_t magic_header;
     uint32_t version;
     uint8_t force_mouse_boot_mode;
     output_t output[NUM_SCREENS];
-    screensaver_t screensaver[NUM_SCREENS];
+    uint8_t screensaver_enabled;
     // Keep checksum at the end of the struct
     uint32_t checksum;
 } config_t;
@@ -211,8 +238,8 @@ typedef struct TU_ATTR_PACKED {
     int16_t x;
     int16_t y;
     int8_t wheel;
-    int8_t pan;
-} mouse_abs_report_t;
+    uint8_t mode;
+} mouse_report_t;
 
 typedef enum { IDLE, READING_PACKET, PROCESSING_PACKET } receiver_state_t;
 
@@ -222,13 +249,13 @@ typedef struct {
 
     uint8_t keyboard_leds[NUM_SCREENS];  // State of keyboard LEDs (index 0 = A, index 1 = B)
     uint64_t last_activity[NUM_SCREENS]; // Timestamp of the last input activity (-||-)
-    bool screensaver_max_time_reached[NUM_SCREENS]; // Screensaver maximum time has been reached (will be reset at the next input activity)
     receiver_state_t receiver_state;     // Storing the state for the simple receiver state machine
     uint64_t core1_last_loop_pass;       // Timestamp of last core1 loop execution
     uint8_t active_output;               // Currently selected output (0 = A, 1 = B)
 
     int16_t mouse_x; // Store and update the location of our mouse pointer
     int16_t mouse_y;
+    int16_t mouse_buttons; // Store and update the state of mouse buttons
 
     config_t config;     // Device configuration, loaded from flash or defaults used
     mouse_t mouse_dev;   // Mouse device specifics, e.g. stores locations for keys in report
@@ -241,9 +268,9 @@ typedef struct {
     bool mouse_connected;    // True when a mouse is connected locally
 
     /* Feature flags */
-    bool mouse_zoom;        // True when "mouse zoom" is enabled
-    bool switch_lock;       // True when device is prevented from switching
-    bool onboard_led_state; // True when LED is ON
+    bool mouse_zoom;         // True when "mouse zoom" is enabled
+    bool switch_lock;        // True when device is prevented from switching
+    bool onboard_led_state;  // True when LED is ON
 
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
     int32_t blinks_left;     // How many blink transitions are left
@@ -265,16 +292,15 @@ void process_kbd_queue_task(device_t *);
 void send_key(hid_keyboard_report_t *, device_t *);
 
 /*********  Mouse  **********/
-bool tud_hid_abs_mouse_report(
-    uint8_t report_id, uint8_t buttons, int16_t x, int16_t y, int8_t vertical, int8_t horizontal);
+bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel);
 
 void process_mouse_report(uint8_t *, int, device_t *);
 uint8_t
 parse_report_descriptor(mouse_t *mouse, uint8_t arr_count, uint8_t const *desc_report, uint16_t desc_len);
 int32_t get_report_value(uint8_t *report, report_val_t *val);
 void process_mouse_queue_task(device_t *);
-void queue_mouse_report(mouse_abs_report_t *, device_t *);
-void output_mouse_report(mouse_abs_report_t *, device_t *);
+void queue_mouse_report(mouse_report_t *, device_t *);
+void output_mouse_report(mouse_report_t *, device_t *);
 
 /*********  UART  **********/
 void receive_char(uart_packet_t *, device_t *);
