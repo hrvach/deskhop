@@ -173,6 +173,7 @@ int dh_debug_printf(const char *format, ...) {
     tud_cdc_write_flush();
 
     va_end(args);
+    return string_len;
 }
 
 #endif

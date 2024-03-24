@@ -90,7 +90,6 @@ extern "C" {
 //------------- DEBUG -------------//
 #ifdef DH_DEBUG
 #define CFG_TUD_CDC           1
-#define CFG_TUSB_DEBUG        2
 #define CFG_TUD_LOG_LEVEL     3
 #define CFG_TUSB_DEBUG_PRINTF dh_debug_printf
 extern int dh_debug_printf(const char *__restrict __format, ...);

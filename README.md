@@ -52,8 +52,12 @@ It also remembers the LED state for each computer, so you can pick up exactly ho
 
 ## How to build
 
+To avoid version mismatch and reported path issues when building, the project now bundles minimal pico sdk and tinyusb.
+
+You should be able to build by running:
+
 ```
-PICO_BOARD=pico PICO_SDK_PATH=/your/sdk/path cmake -S . -B build
+cmake -S . -B build
 cmake --build build
 ```
 
@@ -198,12 +202,22 @@ _Firmware upgrade_
 _Usage_
 - ```Right CTRL + Right ALT``` - Toggle slower mouse mode
 - ```Right CTRL + L``` - Lock/Unlock mouse desktop switching
+- ```Right ALT + Right Shift + L``` - Lock both outputs at once (set output OS before, see shortcuts below)
 - ```Caps Lock``` - Switch between outputs
 
 _Config_
 - ```Right Shift + F12 + D``` - remove flash config
 - ```Right Shift + F12 + Y``` - save screen switch offset
 - ```Right Shift + F12 + S``` - turn on/off screensaver option
+
+_Number of outputs_
+- ```Right Shift + Backspace + 1``` - set number of screens to 1 on current active output
+- ```Right Shift + Backspace + 2``` - set number of screens to 2 on current active output
+
+_Set operating systems_
+- ```Right Shift + Backspace + 7``` - set os to Linux on current active output
+- ```Right Shift + Backspace + 8``` - set os to Windows on current active output
+- ```Right Shift + Backspace + 9``` - set os to MacOS on current active output
 
 ### Switch cursor height calibration
 
@@ -215,9 +229,16 @@ Just park your mouse on the LARGER screen at the height of the smaller/lower scr
 
 Repeat for the bottom border (if it's above the larger screen's border). This will get saved to flash and it should keep this calibration value from now on.
 
+
+### Multiple screens per output
+
+Windows and Mac have issues with multiple screens and absolute positioning, so workarounds are needed (still experimental). Your main screens need to be in the middle, and secondary screen(s) on the edges. Move the mouse to the screen with multiple desktops and press *right shift + backspace + 2* if you have 2 desktops and *right shift + backspace + 7, 8 or 9* depending on your OS (Linux, Windows, Mac).
+
+![Image](img/deskhop-scr.png)
+
 ### Other configuration
 
-Mouse speed can now be configured per output screen and per axis. If you have multiple displays under Linux, your X speed is probably too fast, so you need to configure it in user_config.h and rebuild. In the future, this will be configurable without having to do that.
+Mouse speed can now be configured per output screen and per axis. If you have multiple displays under Linux, your X speed might be too fast, so you need to configure it in user_config.h and rebuild. In the future, this will be configurable without having to do that.
 
 ### Functional verification
 
@@ -288,13 +309,13 @@ There are several software alternatives you can use if that works in your partic
 
 ## Shortcomings
 
-- Windows 10 broke HID absolute coordinates behavior in KB5003637, so you can't use more than 1 screen on Windows (mouse will stay on the main screen).
+- Windows 10 broke HID absolute coordinates behavior in KB5003637, so you can't use more than 1 screen on Windows (mouse will stay on the main screen). There is an experimental workaround.
 - Code needs cleanup, some refactoring etc.
 - Not tested with a wide variety of devices, I don't know how it will work with your hardware. There is a reasonable chance things might not work out-of-the-box. 
 - Advanced keyboards (with knobs, extra buttons or sliders) will probably face issues where this additional hardware doesn't work.
 - Super-modern mice with 300 buttons might see some buttons not work as expected.
 - NOTE: Both computers need to be connected and provide power to the USB for this to work (as each board gets powered by the computer it plugs into). Many desktops and laptops will provide power even when shut down nowadays. If you need to run with one board fully disconnected, you should be able to use a USB hub to plug both keyboard and mouse to a single port.
-- MacOS has issues with more than one screens, latest firmware offers an experimental workaround that fixes it (but for the time being you are required to define the output as MACOS in user_config.h, set number of screens in defaults.c and rebuild). This should be a keyboard shortcut soon with no need to rebuild.
+- MacOS has issues with more than one screens, latest firmware offers an experimental workaround that fixes it.
 
 ## Progress
 

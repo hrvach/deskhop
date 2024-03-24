@@ -1,0 +1,3 @@
+pico_simple_hardware_headers_only_target(divider)
+target_sources(hardware_divider INTERFACE ${CMAKE_CURRENT_LIST_DIR}/divider.S)
+target_link_libraries(hardware_divider_headers INTERFACE hardware_structs)

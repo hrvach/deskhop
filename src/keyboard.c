@@ -44,6 +44,19 @@ hotkey_combo_t hotkeys[] = {
      .acknowledge    = true,
      .action_handler = &switchlock_hotkey_handler},
 
+    /* Screen lock */
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTALT | KEYBOARD_MODIFIER_RIGHTSHIFT,
+     .keys           = {HID_KEY_L},
+     .key_count      = 1,
+     .acknowledge    = true,
+     .action_handler = &screenlock_hotkey_handler},
+
+    /* Erase stored config */
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
+     .keys           = {HID_KEY_BACKSPACE},
+     .key_count      = 1,
+     .action_handler = &output_config_hotkey_handler},
+
     /* Erase stored config */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
      .keys           = {HID_KEY_F12, HID_KEY_D},
@@ -188,7 +201,7 @@ void process_keyboard_report(uint8_t *raw_report, int length, device_t *state) {
             blink_led(state);
 
         /* Execute the corresponding handler */
-        hotkey->action_handler(state);
+        hotkey->action_handler(state, keyboard_report);
 
         /* And pass the key to the output PC if configured to do so. */
         if (!hotkey->pass_to_os)

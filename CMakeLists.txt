@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 set(PICO_SDK_FETCH_FROM_GIT off)
 set(PICO_BOARD=pico)
+set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/pico-sdk)
 
 include(pico_sdk_import.cmake)
 set(CMAKE_C_FLAGS "-Ofast -Wall -mcpu=cortex-m0plus -mtune=cortex-m0plus -funroll-loops")
@@ -79,6 +80,7 @@ foreach(board_role RANGE 0 1)
 
   target_sources(${binary} PUBLIC ${COMMON_SOURCES})
   target_compile_definitions(${binary} PRIVATE BOARD_ROLE=${board_role} PIO_USB_USE_TINYUSB=1 PIO_USB_DP_PIN_DEFAULT=14)
+
   target_include_directories(${binary} PUBLIC ${COMMON_INCLUDES})
   target_link_libraries(${binary} PUBLIC ${COMMON_LINK_LIBRARIES})
 

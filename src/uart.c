@@ -56,6 +56,7 @@ const uart_handler_t uart_handler[] = {
     {.type = FLASH_LED_MSG, .handler = handle_flash_led_msg},
     {.type = SCREENSAVER_MSG, .handler = handle_screensaver_msg},
     {.type = WIPE_CONFIG_MSG, .handler = handle_wipe_config_msg},
+    {.type = OUTPUT_CONFIG_MSG, .handler = handle_output_config_msg},
 };
 
 void process_packet(uart_packet_t *packet, device_t *state) {

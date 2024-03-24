@@ -106,9 +106,9 @@ enum packet_type_e {
     FLASH_LED_MSG        = 9,
     SCREENSAVER_MSG      = 10,
     WIPE_CONFIG_MSG      = 11,
-    REL_MOUSE_REPORT_MSG = 12,
-    SWAP_OUTPUTS_MSG     = 13,
-    HEARTBEAT_MSG        = 14,
+    SWAP_OUTPUTS_MSG     = 12,
+    HEARTBEAT_MSG        = 13,
+    OUTPUT_CONFIG_MSG    = 14,
 };
 
 /*
@@ -271,6 +271,7 @@ typedef struct {
     bool mouse_zoom;         // True when "mouse zoom" is enabled
     bool switch_lock;        // True when device is prevented from switching
     bool onboard_led_state;  // True when LED is ON
+    bool relative_mouse;     // True when relative mouse mode is used
 
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
     int32_t blinks_left;     // How many blink transitions are left
@@ -290,6 +291,7 @@ void release_all_keys(device_t *);
 void queue_kbd_report(hid_keyboard_report_t *, device_t *);
 void process_kbd_queue_task(device_t *);
 void send_key(hid_keyboard_report_t *, device_t *);
+bool key_in_report(uint8_t, const hid_keyboard_report_t *);
 
 /*********  Mouse  **********/
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel);
@@ -328,19 +330,22 @@ void wipe_config(void);
 void screensaver_task(device_t *);
 
 /*********  Handlers  **********/
-void output_toggle_hotkey_handler(device_t *);
-void screen_border_hotkey_handler(device_t *);
-void fw_upgrade_hotkey_handler_A(device_t *);
-void fw_upgrade_hotkey_handler_B(device_t *);
-void mouse_zoom_hotkey_handler(device_t *);
+void output_toggle_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void screen_border_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void fw_upgrade_hotkey_handler_A(device_t *, hid_keyboard_report_t *);
+void fw_upgrade_hotkey_handler_B(device_t *, hid_keyboard_report_t *);
+void mouse_zoom_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void all_keys_released_handler(device_t *);
-void switchlock_hotkey_handler(device_t *);
-void wipe_config_hotkey_handler(device_t *);
-void screensaver_hotkey_handler(device_t *);
+void switchlock_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void screenlock_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void output_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void wipe_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void screensaver_hotkey_handler(device_t *, hid_keyboard_report_t *);
 
 void handle_keyboard_uart_msg(uart_packet_t *, device_t *);
 void handle_mouse_abs_uart_msg(uart_packet_t *, device_t *);
 void handle_output_select_msg(uart_packet_t *, device_t *);
+void handle_output_config_msg(uart_packet_t *, device_t *);
 void handle_mouse_zoom_msg(uart_packet_t *, device_t *);
 void handle_set_report_msg(uart_packet_t *, device_t *);
 void handle_switch_lock_msg(uart_packet_t *, device_t *);

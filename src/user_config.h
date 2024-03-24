@@ -49,6 +49,8 @@
  *
  * This is now configurable per-screen.
  *
+ * ENABLE_ACCELERATION: [0-1], disables or enables mouse acceleration.
+ * 
  * */
 
 /* Output A values */
@@ -60,6 +62,9 @@
 #define MOUSE_SPEED_B_FACTOR_Y 16
 
 #define JUMP_THRESHOLD 0
+
+/* Mouse acceleration */
+#define ENABLE_ACCELERATION 1
 
 /**================================================== *
  * ==============  Screensaver Config  ============== *

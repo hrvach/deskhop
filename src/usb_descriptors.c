@@ -202,7 +202,7 @@ uint8_t const desc_configuration[] = {
                        sizeof(desc_hid_report_relmouse),
                        EPNUM_HID_REL_M,
                        CFG_TUD_HID_EP_BUFSIZE,
-                       20),
+                       1),
 
 #ifdef DH_DEBUG
     // Interface number, string index, EP notification address and size, EP data address (out, in) and size.

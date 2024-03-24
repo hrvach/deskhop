@@ -31,6 +31,35 @@ int32_t move_and_keep_on_screen(int position, int offset) {
     return position + offset;
 }
 
+/* Implement basic mouse acceleration and define your own curve.
+   This one is probably sub-optimal, so let me know if you have a better one. */
+int32_t accelerate(int32_t offset) {
+    const struct curve {
+        int value;
+        float factor;
+    } acceleration[7] = {
+                   // 4 |                                        *
+        {2, 1},    //   |                                  *
+        {5, 1.1},  // 3 |
+        {15, 1.4}, //   |                       *
+        {30, 1.9}, // 2 |                *
+        {45, 2.6}, //   |        *
+        {60, 3.4}, // 1 |  *
+        {70, 4.0}, //    -------------------------------------------
+    };             //        10    20    30    40    50    60    70
+
+    if (!ENABLE_ACCELERATION)
+        return offset;
+
+    for (int i = 0; i < 7; i++) {
+        if (offset < acceleration[i].value) {
+            return offset * acceleration[i].factor;
+        }
+    }
+
+    return offset * acceleration[6].factor;
+}
+
 void update_mouse_position(device_t *state, mouse_values_t *values) {
     output_t *current    = &state->config.output[state->active_output];
     uint8_t reduce_speed = 0;
@@ -40,13 +69,13 @@ void update_mouse_position(device_t *state, mouse_values_t *values) {
         reduce_speed = MOUSE_ZOOM_SCALING_FACTOR;
 
     /* Calculate movement */
-    int offset_x = values->move_x * (current->speed_x >> reduce_speed);
-    int offset_y = values->move_y * (current->speed_y >> reduce_speed);
+    int offset_x = accelerate(values->move_x) * (current->speed_x >> reduce_speed);
+    int offset_y = accelerate(values->move_y) * (current->speed_y >> reduce_speed);
 
     /* Update movement */
     state->mouse_x = move_and_keep_on_screen(state->mouse_x, offset_x);
     state->mouse_y = move_and_keep_on_screen(state->mouse_y, offset_y);
-    
+
     /* Update buttons state */
     state->mouse_buttons = values->buttons;
 }
@@ -92,7 +121,8 @@ int16_t scale_y_coordinate(int screen_from, int screen_to, device_t *state) {
     return ((state->mouse_y - from->border.top) * MAX_SCREEN_COORD) / size_from;
 }
 
-void switch_screen(device_t *state, output_t *output, int new_x, int output_from, int output_to, int direction) {
+void switch_screen(
+    device_t *state, output_t *output, int new_x, int output_from, int output_to, int direction) {
     mouse_report_t hidden_pointer = {.y = MIN_SCREEN_COORD, .x = MAX_SCREEN_COORD};
 
     output_mouse_report(&hidden_pointer, state);
@@ -106,16 +136,18 @@ void switch_desktop(device_t *state, output_t *output, int new_index, int direct
         case MACOS:
             /* Send relative mouse movement here as well, one or two pixels in the direction of
                movement, BEFORE absolute report sets X to 0 */
-            mouse_report_t move_relative_one = {.x = (direction == LEFT) ? 16384-2 : 16384+2, .mode = RELATIVE};
+            mouse_report_t move_relative_one
+                = {.x = (direction == LEFT) ? 16384 - 2 : 16384 + 2, .mode = RELATIVE};
 
             /* Once doesn't seem reliable enough, do it twice */
             output_mouse_report(&move_relative_one, state);
             output_mouse_report(&move_relative_one, state);
-            
+
             break;
 
         case WINDOWS:
             /* TODO: Switch to relative-only if index > 1, but keep tabs to switch back */
+            state->relative_mouse = (new_index > 1);
             break;
 
         case LINUX:
@@ -156,7 +188,7 @@ void check_screen_switch(const mouse_values_t *values, device_t *state) {
 
     /* We want to jump in the direction of the other computer */
     if (output->pos != direction) {
-        if (output->screen_index == 1) /* We are at the border -> switch outputs */            
+        if (output->screen_index == 1) /* We are at the border -> switch outputs */
             switch_screen(state, output, new_x, state->active_output, 1 - state->active_output, direction);
 
         /* If here, this output has multiple desktops and we are not on the main one */
@@ -192,13 +224,23 @@ void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t 
 }
 
 mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
-    mouse_report_t abs_mouse_report = {.buttons = values->buttons,
-                                           .x       = state->mouse_x,
-                                           .y       = state->mouse_y,
-                                           .wheel   = values->wheel,
-                                           .mode    = ABSOLUTE,
-                                           };
-    return abs_mouse_report;
+    mouse_report_t mouse_report = {
+        .buttons = values->buttons,
+        .x       = state->mouse_x,
+        .y       = state->mouse_y,
+        .wheel   = values->wheel,
+        .mode    = ABSOLUTE,
+    };
+
+    /* Workaround for Windows multiple desktops */
+    if (state->relative_mouse) {
+        mouse_report.x = 16384 + values->move_x;
+        mouse_report.y = 16384 + values->move_y;
+        mouse_report.mode = RELATIVE;
+        mouse_report.buttons = values->buttons;
+        mouse_report.wheel = values->wheel;
+    }
+    return mouse_report;
 }
 
 void process_mouse_report(uint8_t *raw_report, int len, device_t *state) {
@@ -240,8 +282,7 @@ void process_mouse_queue_task(device_t *state) {
         tud_remote_wakeup();
 
     /* ... try sending it to the host, if it's successful */
-    bool succeeded = tud_mouse_report(
-        report.mode, report.buttons, report.x, report.y, report.wheel);
+    bool succeeded = tud_mouse_report(report.mode, report.buttons, report.x, report.y, report.wheel);
 
     /* ... then we can remove it from the queue */
     if (succeeded)
