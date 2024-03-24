@@ -132,17 +132,16 @@ void switch_screen(
 }
 
 void switch_desktop(device_t *state, output_t *output, int new_index, int direction) {
+    /* Fix for MACOS: Send relative mouse movement here, one or two pixels in the 
+       direction of movement, BEFORE absolute report sets X to 0 */
+    mouse_report_t move_relative_one
+        = {.x = (direction == LEFT) ? 16384 - 2 : 16384 + 2, .mode = RELATIVE};
+
     switch (output->os) {
         case MACOS:
-            /* Send relative mouse movement here as well, one or two pixels in the direction of
-               movement, BEFORE absolute report sets X to 0 */
-            mouse_report_t move_relative_one
-                = {.x = (direction == LEFT) ? 16384 - 2 : 16384 + 2, .mode = RELATIVE};
-
             /* Once doesn't seem reliable enough, do it twice */
             output_mouse_report(&move_relative_one, state);
             output_mouse_report(&move_relative_one, state);
-
             break;
 
         case WINDOWS:
