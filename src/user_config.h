@@ -158,3 +158,26 @@
 
 #define OUTPUT_A_OS LINUX
 #define OUTPUT_B_OS LINUX
+
+/** ================================================== *
+ *  ================  DFU Config ===================== *
+ *  ================================================== *
+ *
+ * Support for USB DFU (Device Firmware Update), allowing
+ * the DeskHop firmware and configuration data to be copied
+ * to/from an attached computer without any need to restart
+ * the DeskHop into "USB Boot" mode.
+ *
+ **/
+
+/** ================================================== *
+ *
+ * DFU_ENABLED: [0 or 1] 1 means the DFU functionality is
+ * compiled in to the firmware.
+ *
+ * This is disabled by default, since it adds a possible
+ * exposure channel to existing devices during upgrades.
+ *
+ **/
+
+#define DFU_ENABLED 0
