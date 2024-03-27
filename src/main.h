@@ -24,18 +24,28 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* must be included before other headers so that definitions
+   in it can control compilation in those headers
+*/
+#include "user_config.h"
+
 #include "hid_parser.h"
 #include "pio_usb.h"
 #include "tusb.h"
 #include "usb_descriptors.h"
-#include "user_config.h"
 #include <hardware/flash.h>
 #include <hardware/sync.h>
 #include <hardware/watchdog.h>
+#include <hardware/structs/watchdog.h>
+#include <hardware/timer.h>
 #include <pico/bootrom.h>
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
+
+/********* DFU definitions **********/
+#define DFU_BOOT_MODE 0xEE00EE00
+#define DFU_MAX_WAIT 30000 // milliseconds, unit will reboot if download has not started
 
 /*********  Misc definitions for better readability **********/
 #define PICO_A 0
@@ -167,11 +177,6 @@ enum screen_pos_e {
     MIDDLE = 3,
 };
 
-enum itf_num_e {
-    ITF_NUM_HID       = 0,
-    ITF_NUM_HID_REL_M = 1,
-};
-
 typedef struct {
     int top;    // When jumping from a smaller to a bigger screen, go to THIS top height
     int bottom; // When jumping from a smaller to a bigger screen, go to THIS bottom
@@ -244,6 +249,9 @@ typedef struct TU_ATTR_PACKED {
 typedef enum { IDLE, READING_PACKET, PROCESSING_PACKET } receiver_state_t;
 
 typedef struct {
+    bool dfu_mode;                // Indicates that the code should operate in DFU mode
+    alarm_id_t dfu_timeout_alarm; // Trigger reboot if DFU operation doesn't start on time
+
     uint8_t kbd_dev_addr; // Address of the keyboard device
     uint8_t kbd_instance; // Keyboard instance (d'uh - isn't this a useless comment)
 
@@ -276,7 +284,6 @@ typedef struct {
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
     int32_t blinks_left;     // How many blink transitions are left
     int32_t last_led_change; // Timestamp of the last time led state transitioned
-
 } device_t;
 
 /*********  Setup  **********/

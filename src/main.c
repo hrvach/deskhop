@@ -32,21 +32,25 @@ int main(void) {
     // Initial board setup
     initial_setup(device);
 
-    // Initial state, A is the default output
-    switch_output(device, OUTPUT_A);
+    if (!device->dfu_mode) {
+	    // Initial state, A is the default output
+	    switch_output(device, OUTPUT_A);
+    }
 
     while (true) {
         // USB device task, needs to run as often as possible
         tud_task();
 
-        // Verify core1 is still running and if so, reset watchdog timer
-        kick_watchdog(device);
+	if (!device->dfu_mode) {
+		// Verify core1 is still running and if so, reset watchdog timer
+		kick_watchdog(device);
 
-        // Check if there were any keypresses and send them
-        process_kbd_queue_task(device);
+		// Check if there were any keypresses and send them
+		process_kbd_queue_task(device);
 
-        // Check if there were any mouse movements and send them
-        process_mouse_queue_task(device);
+		// Check if there were any mouse movements and send them
+		process_mouse_queue_task(device);
+	}
     }
 }
 
