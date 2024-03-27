@@ -71,6 +71,8 @@ target_sources(tinyusb_device_base INTERFACE
 		${TOP}/src/device/usbd_control.c
 		${TOP}/src/class/cdc/cdc_device.c
 		${TOP}/src/class/hid/hid_device.c
+		${TOP}/src/class/dfu/dfu_device.c
+		${TOP}/src/class/dfu/dfu_rt_device.c
 		)
 
 #------------------------------------
