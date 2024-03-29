@@ -17,6 +17,10 @@
 
 #include "main.h"
 
+extern const config_t __CONFIG_ORIGIN;
+
+static const config_t *stored_config = &__CONFIG_ORIGIN;
+
 /**================================================== *
  * ==============  Checksum Functions  ============== *
  * ================================================== */
@@ -63,14 +67,13 @@ void wipe_config(void) {
 }
 
 void load_config(device_t *state) {
-    const config_t *config   = ADDR_CONFIG_BASE_ADDR;
     config_t *running_config = &state->config;
 
     /* Load the flash config first, including the checksum */
-    memcpy(running_config, config, sizeof(config_t));
+    memcpy(running_config, stored_config, sizeof(*running_config));
 
     /* Calculate and update checksum, size without checksum */
-    uint8_t checksum = calc_checksum((uint8_t *)running_config, sizeof(config_t) - sizeof(uint32_t));
+    uint8_t checksum = calc_checksum((uint8_t *)running_config, sizeof(*running_config) - sizeof(uint32_t));
 
     /* We expect a certain byte to start the config header */
     bool magic_header_fail = (running_config->magic_header != 0xB00B1E5);
@@ -83,7 +86,7 @@ void load_config(device_t *state) {
 
     /* On any condition failing, we fall back to default config */
     if (magic_header_fail || checksum_fail || version_fail)
-        memcpy(running_config, &default_config, sizeof(config_t));
+        memcpy(running_config, &default_config, sizeof(*running_config));
 }
 
 void save_config(device_t *state) {
@@ -91,7 +94,7 @@ void save_config(device_t *state) {
     uint8_t *raw_config = (uint8_t *)&state->config;
 
     /* Calculate and update checksum, size without checksum */
-    uint8_t checksum       = calc_checksum(raw_config, sizeof(config_t) - sizeof(uint32_t));
+    uint8_t checksum = calc_checksum(raw_config, sizeof(state->config) - sizeof(uint32_t));
     state->config.checksum = checksum;
 
     /* Copy the config to buffer and wipe the old one */

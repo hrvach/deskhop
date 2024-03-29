@@ -21,12 +21,23 @@
     __stack (== StackTop)
 */
 
-__CONFIG_STORAGE_LEN = 4k;
+__FLASH_START = 0x10000000;
+__FLASH_SIZE = 2048k;
+
+__CONFIG_STORAGE_SIZE = 4k;
+__DFU_BUFFER_SIZE = 512k;
+
+__PROGRAM_ORIGIN = __FLASH_START;
+__CONFIG_ORIGIN = __FLASH_START + (__FLASH_SIZE - __CONFIG_STORAGE_SIZE);
+__DFU_BUFFER_ORIGIN = __PROGRAM_ORIGIN + 512k;
+
+__PROGRAM_MAX_SIZE = __DFU_BUFFER_ORIGIN - __PROGRAM_ORIGIN;
 
 MEMORY
 {
-    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 2048k - __CONFIG_STORAGE_LEN
-    FLASH_CONFIG(rw) : ORIGIN = 0x10000000 + (2048k - __CONFIG_STORAGE_LEN), LENGTH = __CONFIG_STORAGE_LEN
+    PROGRAM(rx) : ORIGIN = __PROGRAM_ORIGIN, LENGTH = __PROGRAM_MAX_SIZE
+    CONFIG(r) : ORIGIN = __CONFIG_ORIGIN, LENGTH = __CONFIG_STORAGE_SIZE
+    DFU_BUFFER(r) : ORIGIN = __DFU_BUFFER_ORIGIN, LENGTH = __DFU_BUFFER_SIZE
     RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 256k
     SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k
     SCRATCH_Y(rwx) : ORIGIN = 0x20041000, LENGTH = 4k
@@ -43,13 +54,13 @@ SECTIONS
 
     .flash_begin : {
         __flash_binary_start = .;
-    } > FLASH
+    } > PROGRAM
 
     .boot2 : {
         __boot2_start__ = .;
         KEEP (*(.boot2))
         __boot2_end__ = .;
-    } > FLASH
+    } > PROGRAM
 
     ASSERT(__boot2_end__ - __boot2_start__ == 256,
         "ERROR: Pico second stage bootloader must be 256 bytes in size")
@@ -73,18 +84,18 @@ SECTIONS
         /* segments not marked as .flashdata are instead pulled into .data (in RAM) to avoid accidental flash accesses */
         *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.flashdata*)))
         . = ALIGN(4);
-    } > FLASH
+    } > PROGRAM
 
     .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > FLASH
+    } > PROGRAM
 
     __exidx_start = .;
     .ARM.exidx :
     {
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-    } > FLASH
+    } > PROGRAM
     __exidx_end = .;
 
     /* Machine inspectable binary information */
@@ -94,7 +105,7 @@ SECTIONS
     {
         KEEP(*(.binary_info.keep.*))
         *(.binary_info.*)
-    } > FLASH
+    } > PROGRAM
     __binary_info_end = .;
     . = ALIGN(4);
 
@@ -124,7 +135,7 @@ SECTIONS
         *(.eh_frame*)
         . = ALIGN(4);
         __ram_text_end__ = .;
-    } > RAM AT> FLASH
+    } > RAM AT> PROGRAM
     __ram_text_source__ = LOADADDR(.text);
     . = ALIGN(4);
 
@@ -174,7 +185,7 @@ SECTIONS
         . = ALIGN(4);
         /* All data end */
         __data_end__ = .;
-    } > RAM AT> FLASH
+    } > RAM AT> PROGRAM
     /* __etext is (for backwards compatibility) the name of the .data init source pointer (...) */
     __etext = LOADADDR(.data);
 
@@ -189,7 +200,7 @@ SECTIONS
         *(.scratch_x.*)
         . = ALIGN(4);
         __scratch_x_end__ = .;
-    } > SCRATCH_X AT > FLASH
+    } > SCRATCH_X AT > PROGRAM
     __scratch_x_source__ = LOADADDR(.scratch_x);
 
     .scratch_y : {
@@ -197,7 +208,7 @@ SECTIONS
         *(.scratch_y.*)
         . = ALIGN(4);
         __scratch_y_end__ = .;
-    } > SCRATCH_Y AT > FLASH
+    } > SCRATCH_Y AT > PROGRAM
     __scratch_y_source__ = LOADADDR(.scratch_y);
 
     .bss  : {
@@ -216,12 +227,6 @@ SECTIONS
         KEEP(*(.heap*))
         __HeapLimit = .;
     } > RAM
-
-    /* Configuration flash section (4k in size, end of flash) */
-    
-    .section_config : {
-        "ADDR_CONFIG" = .;  
-    } > FLASH_CONFIG
 
     /* .stack*_dummy section doesn't contains any symbols. It is only
      * used for linker to calculate size of stack sections, and assign
@@ -243,7 +248,8 @@ SECTIONS
 
     .flash_end : {
         __flash_binary_end = .;
-    } > FLASH
+	__PROGRAM_END = .;
+    } > PROGRAM
 
     /* stack limit is poorly named, but historically is maximum heap ptr */
     __StackLimit = ORIGIN(RAM) + LENGTH(RAM);

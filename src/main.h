@@ -213,9 +213,6 @@ typedef struct {
 
 extern const config_t default_config;
 
-extern config_t ADDR_CONFIG[];
-#define ADDR_CONFIG_BASE_ADDR (ADDR_CONFIG)
-
 // -------------------------------------------------------+
 
 typedef void (*action_handler_t)();
