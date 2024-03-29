@@ -56,6 +56,15 @@ void kick_watchdog(device_t *state) {
         watchdog_update();
 }
 
+void reboot_board(uint32_t mode) {
+    watchdog_hw->scratch[0] = mode;
+    watchdog_reboot(0x00000000, 0x00000000, 50);
+
+    /* Wait for the reset */
+    while(true)
+        tight_loop_contents();
+}
+
 /* ================================================== *
  * Flash and config functions
  * ================================================== */

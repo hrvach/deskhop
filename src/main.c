@@ -17,7 +17,7 @@
 
 #include "main.h"
 
-/*********  Global Variable  **********/
+/*********  Global Variables  **********/
 device_t global_state = {0};
 device_t *device      = &global_state;
 

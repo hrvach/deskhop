@@ -318,6 +318,7 @@ bool verify_checksum(const uart_packet_t *);
 
 /*********  Watchdog  **********/
 void kick_watchdog(device_t *);
+void reboot_board(uint32_t mode);
 
 /*********  Configuration  **********/
 void load_config(device_t *);
