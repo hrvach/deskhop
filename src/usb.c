@@ -103,6 +103,9 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
+            if (ENFORCE_PORTS && BOARD_ROLE == PICO_B)
+                return;
+
             /* Keeping this is required for setting leds from device set_report callback */
             global_state.kbd_dev_addr       = dev_addr;
             global_state.kbd_instance       = instance;
@@ -110,6 +113,9 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
+            if (ENFORCE_PORTS && BOARD_ROLE == PICO_A)
+                return;
+
             /* Switch to using protocol report instead of boot report, it's more complicated but
                at least we get all the information we need (looking at you, mouse wheel) */
             if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
@@ -128,7 +134,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
     /* Also signal the other board to flash LED, to enable easy verification if serial works */
     send_value(ENABLE, FLASH_LED_MSG);
 
-    /* Kick off the report querying */
+    /* Kick off the report querying */  
     tuh_hid_receive_report(dev_addr, instance);
 }
 

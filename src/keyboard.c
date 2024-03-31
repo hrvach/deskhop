@@ -55,6 +55,7 @@ hotkey_combo_t hotkeys[] = {
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
      .keys           = {HID_KEY_BACKSPACE},
      .key_count      = 1,
+     .pass_to_os     = true,
      .action_handler = &output_config_hotkey_handler},
 
     /* Erase stored config */
@@ -190,6 +191,12 @@ void process_keyboard_report(uint8_t *raw_report, int length, device_t *state) {
 
     if (length < KBD_REPORT_LENGTH)
         return;
+
+    /* If the report is longer by 1 byte, we can assume the first byte is the report ID
+       and that the keyboard didn't switch to boot mode properly. Use this workaround
+       until full HID report parsing is implemented */
+    if (length == KBD_REPORT_LENGTH + 1)
+        keyboard_report = (hid_keyboard_report_t *)(raw_report + 1);
 
     /* Check if any hotkey was pressed */
     hotkey = check_all_hotkeys(keyboard_report, state);

@@ -158,3 +158,17 @@
 
 #define OUTPUT_A_OS LINUX
 #define OUTPUT_B_OS LINUX
+
+/**================================================== *
+ * =================  Enforce Ports ================= *
+ * ==================================================
+ *
+ * If enabled, fixes some device incompatibilities by
+ * enforcing keyboard has to be in port A and mouse in port B.
+ *
+ * ENFORCE_PORTS: [0, 1] - 1 means keyboard has to plug in A and mouse in B
+ *                         0 means no such layout is enforced
+ *
+ * */
+
+#define ENFORCE_PORTS 0

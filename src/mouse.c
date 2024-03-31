@@ -52,7 +52,7 @@ int32_t accelerate(int32_t offset) {
         return offset;
 
     for (int i = 0; i < 7; i++) {
-        if (offset < acceleration[i].value) {
+        if (abs(offset) < acceleration[i].value) {
             return offset * acceleration[i].factor;
         }
     }
