@@ -135,7 +135,7 @@ void switch_desktop(device_t *state, output_t *output, int new_index, int direct
     /* Fix for MACOS: Send relative mouse movement here, one or two pixels in the 
        direction of movement, BEFORE absolute report sets X to 0 */
     mouse_report_t move_relative_one
-        = {.x = (direction == LEFT) ? 16384 - 2 : 16384 + 2, .mode = RELATIVE};
+        = {.x = (direction == LEFT) ? SCREEN_MIDPOINT - 2 : SCREEN_MIDPOINT + 2, .mode = RELATIVE};
 
     switch (output->os) {
         case MACOS:
@@ -233,8 +233,8 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
 
     /* Workaround for Windows multiple desktops */
     if (state->relative_mouse) {
-        mouse_report.x = 16384 + values->move_x;
-        mouse_report.y = 16384 + values->move_y;
+        mouse_report.x = SCREEN_MIDPOINT + values->move_x;
+        mouse_report.y = SCREEN_MIDPOINT + values->move_y;
         mouse_report.mode = RELATIVE;
         mouse_report.buttons = values->buttons;
         mouse_report.wheel = values->wheel;

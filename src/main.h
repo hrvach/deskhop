@@ -149,6 +149,7 @@ typedef struct {
 /*********  Screen  **********/
 #define MIN_SCREEN_COORD 0
 #define MAX_SCREEN_COORD 32767
+#define SCREEN_MIDPOINT 16384
 
 /*********  Configuration storage definitions  **********/
 
