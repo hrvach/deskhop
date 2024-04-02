@@ -110,7 +110,7 @@ void screenlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
                 lock_report.keycode[0] = HID_KEY_L;
                 break;
             case MACOS:
-                lock_report.modifier   = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_LEFTALT;
+                lock_report.modifier   = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_LEFTGUI;
                 lock_report.keycode[0] = HID_KEY_Q;
                 break;
             default:
