@@ -119,6 +119,12 @@ void tud_dfu_runtime_reboot_to_dfu_cb(void)
 
 uint32_t tud_dfu_get_timeout_cb(uint8_t alt, uint8_t state)
 {
+    /* cancel any pending timeout which would cause a reboot */
+    if (global_state.dfu_timeout_alarm != 0) {
+	cancel_alarm(global_state.dfu_timeout_alarm);
+	global_state.dfu_timeout_alarm = 0;
+    }
+
    if (state == DFU_DNBUSY) {
        /* 100ms for a 'sector erase' plus a 'sector program' */
        return 100;
@@ -252,6 +258,12 @@ uint16_t local_upload_cb(uint8_t* data, uint16_t length)
 
 uint16_t tud_dfu_upload_cb(uint8_t alt, uint16_t block_num, uint8_t* data, uint16_t length)
 {
+    /* cancel any pending timeout which would cause a reboot */
+    if (global_state.dfu_timeout_alarm != 0) {
+	cancel_alarm(global_state.dfu_timeout_alarm);
+	global_state.dfu_timeout_alarm = 0;
+    }
+
     switch (alt) {
     case ALT_BOARD_A_FW:
 	if (BOARD_ROLE == PICO_A) {
@@ -308,6 +320,8 @@ void tud_dfu_abort_cb(uint8_t alt)
 
     /* restart the maximum wait timer for the next
        upload or download */
-    cancel_alarm(global_state.dfu_timeout_alarm);
+    if (global_state.dfu_timeout_alarm != 0) {
+	cancel_alarm(global_state.dfu_timeout_alarm);
+    }
     global_state.dfu_timeout_alarm = add_alarm_in_ms(DFU_MAX_WAIT, dfu_timeout_alarm_cb, NULL, false);
 }
