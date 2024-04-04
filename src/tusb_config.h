@@ -104,10 +104,15 @@ extern int dh_debug_printf(const char *__restrict __format, ...);
 #endif
 
 //------------- CLASS -------------//
-#define CFG_TUD_HID    2
-#define CFG_TUD_MSC    0
-#define CFG_TUD_MIDI   0
-#define CFG_TUD_VENDOR 0
+#define CFG_TUD_HID		2
+#define CFG_TUD_MSC		0
+#define CFG_TUD_MIDI		0
+#define CFG_TUD_VENDOR		0
+#define CFG_TUD_DFU_RUNTIME	1
+#define CFG_TUD_DFU		1
+
+// DFU buffer size (using FLASH_SECTOR_SIZE simplifies download operations)
+#define CFG_TUD_DFU_XFER_BUFSIZE 4096
 
 // HID buffer size Should be sufficient to hold ID (if any) + Data
 #define CFG_TUD_HID_EP_BUFSIZE 32

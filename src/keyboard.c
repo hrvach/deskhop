@@ -91,7 +91,22 @@ hotkey_combo_t hotkeys[] = {
      .keys           = {HID_KEY_F12, HID_KEY_B},
      .key_count      = 2,
      .acknowledge    = true,
-     .action_handler = &fw_upgrade_hotkey_handler_B}};
+     .action_handler = &fw_upgrade_hotkey_handler_B},
+
+    /* Hold down left shift + right shift + F12 + C ==> DFU mode for board A (kbd) */
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
+     .keys           = {HID_KEY_F12, HID_KEY_C},
+     .key_count      = 2,
+     .acknowledge    = true,
+     .action_handler = &dfu_hotkey_handler_A},
+
+    /* Hold down left shift + right shift + F12 + D ==> DFU mode for board B (mouse) */
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
+     .keys           = {HID_KEY_F12, HID_KEY_D},
+     .key_count      = 2,
+     .acknowledge    = true,
+     .action_handler = &dfu_hotkey_handler_B},
+};
 
 /* ============================================================ *
  * Detect if any hotkeys were pressed

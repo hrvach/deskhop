@@ -61,6 +61,16 @@ void fw_upgrade_hotkey_handler_B(device_t *state, hid_keyboard_report_t *report)
     send_value(ENABLE, FIRMWARE_UPGRADE_MSG);
 };
 
+/* This key combo puts board A in DFU mode */
+void dfu_hotkey_handler_A(device_t *state, hid_keyboard_report_t *report) {
+    reboot_board(DFU_BOOT_MODE);
+};
+
+/* This key combo puts board B in DFU mode */
+void dfu_hotkey_handler_B(device_t *state, hid_keyboard_report_t *report) {
+    send_value(ENABLE, DFU_MSG);
+};
+
 /* This key combo prevents mouse from switching outputs */
 void switchlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     state->switch_lock ^= 1;
@@ -179,6 +189,11 @@ void handle_output_select_msg(uart_packet_t *packet, device_t *state) {
 /* On firmware upgrade message, reboot into the BOOTSEL fw upgrade mode */
 void handle_fw_upgrade_msg(uart_packet_t *packet, device_t *state) {
     reset_usb_boot(1 << PICO_DEFAULT_LED_PIN, 0);
+}
+
+/* On DFU message, reboot into the DFU mode */
+void handle_dfu_msg(uart_packet_t *packet, device_t *state) {
+    reboot_board(DFU_BOOT_MODE);
 }
 
 /* Comply with request to turn mouse zoom mode on/off  */

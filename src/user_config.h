@@ -172,3 +172,26 @@
  * */
 
 #define ENFORCE_PORTS 0
+
+/** ================================================== *
+ *  ================  DFU Config ===================== *
+ *  ================================================== *
+ *
+ * Support for USB DFU (Device Firmware Update), allowing
+ * the DeskHop firmware and configuration data to be copied
+ * to/from an attached computer without any need to restart
+ * the DeskHop into "USB Boot" mode.
+ *
+ **/
+
+/** ================================================== *
+ *
+ * DFU_RT_ENABLED: [0 or 1] 1 means the DFU functionality can
+ * be initiated over the USB output ports.
+ *
+ * This is disabled by default, since it adds a possible
+ * exposure channel to existing devices after upgrades.
+ *
+ **/
+
+#define DFU_RT_ENABLED 0

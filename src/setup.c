@@ -74,35 +74,49 @@ void initial_setup(device_t *state) {
     /* PIO USB requires a clock multiple of 12 MHz, setting to 120 MHz */
     set_sys_clock_khz(120000, true);
 
-    /* Search the persistent storage sector in flash for valid config or use defaults */
-    load_config(state);
+    alarm_pool_init_default();
 
-    /* Init and enable the on-board LED GPIO as output */
-    gpio_init(GPIO_LED_PIN);
-    gpio_set_dir(GPIO_LED_PIN, GPIO_OUT);
+    if (watchdog_hw->scratch[0] == DFU_BOOT_MODE) {
+	    state->dfu_mode = true;
 
-    /* Initialize and configure UART */
-    serial_init();
+	    /* Clear the DFU request state */
+	    watchdog_hw->scratch[0] = 0;
 
-    /* Initialize keyboard and mouse queues */
-    queue_init(&state->kbd_queue, sizeof(hid_keyboard_report_t), KBD_QUEUE_LENGTH);
-    queue_init(&state->mouse_queue, sizeof(mouse_report_t), MOUSE_QUEUE_LENGTH);
+	    /* Allow time for DFU to start, reboot if it does not */
+	    state->dfu_timeout_alarm = add_alarm_in_ms(DFU_MAX_WAIT, dfu_timeout_alarm_cb, NULL, false);
+    } else {
+	    /* Search the persistent storage sector in flash for valid config or use defaults */
+	    load_config(state);
 
-    /* Setup RP2040 Core 1 */
-    multicore_reset_core1();
-    multicore_launch_core1(core1_main);
+	    /* Init and enable the on-board LED GPIO as output */
+	    gpio_init(GPIO_LED_PIN);
+	    gpio_set_dir(GPIO_LED_PIN, GPIO_OUT);
+
+	    /* Initialize and configure UART */
+	    serial_init();
+
+	    /* Initialize keyboard and mouse queues */
+	    queue_init(&state->kbd_queue, sizeof(hid_keyboard_report_t), KBD_QUEUE_LENGTH);
+	    queue_init(&state->mouse_queue, sizeof(mouse_report_t), MOUSE_QUEUE_LENGTH);
+
+	    /* Setup RP2040 Core 1 */
+	    multicore_reset_core1();
+	    multicore_launch_core1(core1_main);
+    }
 
     /* Initialize and configure TinyUSB Device */
-    tud_init(BOARD_TUD_RHPORT);    
-    
-    /* Initialize and configure TinyUSB Host */
-    pio_usb_host_config();
+    tud_init(BOARD_TUD_RHPORT);
 
-    /* Update the core1 initial pass timestamp before enabling the watchdog */
-    state->core1_last_loop_pass = time_us_64();
+    if (!state->dfu_mode) {
+	    /* Initialize and configure TinyUSB Host */
+	    pio_usb_host_config();
 
-    /* Setup the watchdog so we reboot and recover from a crash */
-    watchdog_enable(WATCHDOG_TIMEOUT, WATCHDOG_PAUSE_ON_DEBUG);
+	    /* Update the core1 initial pass timestamp before enabling the watchdog */
+	    state->core1_last_loop_pass = time_us_64();
+
+	    /* Setup the watchdog so we reboot and recover from a crash */
+	    watchdog_enable(WATCHDOG_TIMEOUT, WATCHDOG_PAUSE_ON_DEBUG);
+    }
 }
 
 /* ==========  End of Initial Board Setup  ========== */

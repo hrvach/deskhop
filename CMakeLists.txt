@@ -45,6 +45,8 @@ set(COMMON_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/src/led.c
         ${CMAKE_CURRENT_LIST_DIR}/src/uart.c
         ${CMAKE_CURRENT_LIST_DIR}/src/usb.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/hid.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/dfu.c
         ${CMAKE_CURRENT_LIST_DIR}/src/main.c
         ${PICO_TINYUSB_PATH}/src/portable/raspberrypi/pio_usb/dcd_pio_usb.c
         ${PICO_TINYUSB_PATH}/src/portable/raspberrypi/pio_usb/hcd_pio_usb.c
@@ -62,13 +64,14 @@ set(COMMON_LINK_LIBRARIES
   hardware_gpio
   hardware_pio
 
-  tinyusb_device 
+  tinyusb_device
   tinyusb_host
   pico_multicore
   Pico-PIO-USB
+  pico_unique_id
 )
 
-# Pico A - Keyboard (board_role = 0) 
+# Pico A - Keyboard (board_role = 0)
 #      B - Mouse    (board_role = 1)
 
 set(binaries board_A board_B)
