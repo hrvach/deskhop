@@ -117,7 +117,7 @@ void screenlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
                 break;
         }
 
-        if (global_state.active_output == out) {
+        if (BOARD_ROLE == out) {
             queue_kbd_report(&lock_report, state);
             release_all_keys(state);
         } else {
