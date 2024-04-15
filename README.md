@@ -338,6 +338,17 @@ Mouse polling should now work at 1000 Hz (the dips in the graph is my arm hurtin
 
 ![Mouse polling rate](img/polling_rate.png)
 
+## Sponsor / donate
+
+I'm NOT doing this for profit or any other reason except to try and help people by creating a better working environment for everyone.
+I have, however, decided to accept donations for a single purpose only - to buy some keyboards/mice with media keys, buttons, nkro and other weird stuff people reported issues with in order to fix bugs, improve the state of the project and provide a better user experience overall.
+
+Having said that, if you want to support the project, you can use this link:
+
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=4RDC7JY5FNC78)
+
+Thank you!
+
 ## Disclaimer
 
 I kindly request that anyone attempting to build this project understands and acknowledges that I am not liable for any injuries, damages, or other consequences. Your safety is important, and I encourage you to approach this project carefully, taking necessary precautions and assuming personal responsibility for your well-being throughout the process. Please don't get electrocuted, burned, stressed or angry. Have fun and enjoy! 
