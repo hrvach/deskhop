@@ -29,7 +29,8 @@ enum
 {
   REPORT_ID_KEYBOARD = 1,
   REPORT_ID_MOUSE,
-  REPORT_ID_COUNT
+  REPORT_ID_COUNT,
+  REPORT_ID_CONSUMER
 };
 
 enum
@@ -85,5 +86,21 @@ HID_COLLECTION ( HID_COLLECTION_APPLICATION  )                   ,\
       HID_INPUT       ( HID_CONSTANT                           ), \
   HID_COLLECTION_END                                            , \
 HID_COLLECTION_END \
+
+// Consumer Control Report Descriptor Template
+#define TUD_HID_REPORT_DESC_CONSUMER_CTRL(...) \
+  HID_USAGE_PAGE ( HID_USAGE_PAGE_CONSUMER    )              ,\
+  HID_USAGE      ( HID_USAGE_CONSUMER_CONTROL )              ,\
+  HID_COLLECTION ( HID_COLLECTION_APPLICATION )              ,\
+    /* Report ID if any */\
+    __VA_ARGS__ \
+    HID_LOGICAL_MIN  ( 0x01                                ) ,\
+    HID_LOGICAL_MAX_N( 0x0FFF, 2                           ) ,\
+    HID_USAGE_MIN    ( 0x01                                ) ,\
+    HID_USAGE_MAX_N  ( 0x0FFF, 2                           ) ,\
+    HID_REPORT_SIZE  ( 16                                  ) ,\
+    HID_REPORT_COUNT ( 2                                   ) ,\
+    HID_INPUT        ( HID_DATA | HID_ARRAY | HID_ABSOLUTE ) ,\
+  HID_COLLECTION_END \
 
 #endif /* USB_DESCRIPTORS_H_ */

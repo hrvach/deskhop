@@ -139,9 +139,9 @@ void switch_desktop(device_t *state, output_t *output, int new_index, int direct
 
     switch (output->os) {
         case MACOS:
-            /* Once doesn't seem reliable enough, do it twice */
-            output_mouse_report(&move_relative_one, state);
-            output_mouse_report(&move_relative_one, state);
+            /* Once isn't reliable enough, but repeating it does the trick */
+            for (int move_cnt=0; move_cnt<5; move_cnt++)
+                output_mouse_report(&move_relative_one, state);
             break;
 
         case WINDOWS:

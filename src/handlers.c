@@ -231,6 +231,11 @@ void handle_output_config_msg(uart_packet_t *packet, device_t *state) {
     save_config(state);
 }
 
+/* Process consumer control keyboard message. Send immediately, w/o queing */
+void handle_consumer_control_msg(uart_packet_t *packet, device_t *state) {
+    tud_hid_n_report(0, REPORT_ID_CONSUMER, &packet->data[0], CONSUMER_CONTROL_LENGTH);
+}
+
 /**==================================================== *
  * ==============  Output Switch Routines  ============ *
  * ==================================================== */

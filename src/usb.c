@@ -87,6 +87,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
             global_state.keyboard_connected = false;
+            memset(&global_state.kbd_dev, 0, sizeof(global_state.kbd_dev));
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
@@ -99,7 +100,9 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
 }
 
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len) {
-    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    uint8_t const itf_protocol                          = tuh_hid_interface_protocol(dev_addr, instance);
+    tuh_hid_report_info_t report_info[MAX_REPORT_ITEMS] = {0};
+    tuh_hid_report_info_t *info;
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
@@ -120,12 +123,24 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
                at least we get all the information we need (looking at you, mouse wheel) */
             if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
                 tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
-            } 
+            }
 
             global_state.mouse_dev.protocol = tuh_hid_get_protocol(dev_addr, instance);
             parse_report_descriptor(&global_state.mouse_dev, MAX_REPORTS, desc_report, desc_len);
 
             global_state.mouse_connected = true;
+            break;
+
+        case HID_ITF_PROTOCOL_NONE:
+            uint8_t num_parsed
+                = tuh_hid_parse_report_descriptor(&report_info[0], MAX_REPORT_ITEMS, desc_report, desc_len);
+
+            for (int report_num = 0; report_num < num_parsed; report_num++) {
+                info = &report_info[report_num];
+
+                if (info->usage == HID_USAGE_CONSUMER_CONTROL && info->usage_page == HID_USAGE_PAGE_CONSUMER)
+                    global_state.kbd_dev.consumer_report_id = info->report_id;
+            }
             break;
     }
     /* Flash local led to indicate a device was connected */
@@ -134,7 +149,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
     /* Also signal the other board to flash LED, to enable easy verification if serial works */
     send_value(ENABLE, FLASH_LED_MSG);
 
-    /* Kick off the report querying */  
+    /* Kick off the report querying */
     tuh_hid_receive_report(dev_addr, instance);
 }
 
@@ -149,6 +164,10 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 
         case HID_ITF_PROTOCOL_MOUSE:
             process_mouse_report((uint8_t *)report, len, &global_state);
+            break;
+
+        case HID_ITF_PROTOCOL_NONE:
+            process_consumer_report((uint8_t *)report, len, &global_state);            
             break;
     }
 

@@ -181,6 +181,16 @@ void send_key(hid_keyboard_report_t *report, device_t *state) {
     }
 }
 
+/* Decide if consumer control reports go local or to the other board */
+void send_consumer_control(uint8_t *raw_report, device_t *state) {
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+        tud_hid_n_report(0, REPORT_ID_CONSUMER, raw_report, CONSUMER_CONTROL_LENGTH);
+        state->last_activity[BOARD_ROLE] = time_us_64();
+    } else {
+        send_packet((uint8_t *)raw_report, CONSUMER_CONTROL_MSG, CONSUMER_CONTROL_LENGTH);
+    }
+}
+
 /* ==================================================== *
  * Parse and interpret the keys pressed on the keyboard
  * ==================================================== */
@@ -217,4 +227,21 @@ void process_keyboard_report(uint8_t *raw_report, int length, device_t *state) {
 
     /* This method will decide if the key gets queued locally or sent through UART */
     send_key(keyboard_report, state);
+}
+
+void process_consumer_report(uint8_t *raw_report, int length, device_t *state) {
+    uint8_t new_report[CONSUMER_CONTROL_LENGTH] = {0};
+
+    /* We expect length not to be zero or bail out */
+    if (!length)
+        return;
+
+    /* Consumer control report ID rewrite and forward */
+    if (raw_report[0] && raw_report[0] == global_state.kbd_dev.consumer_report_id) {
+        for (int i = 0; i < length - 1 || i < CONSUMER_CONTROL_LENGTH; i++) {
+            new_report[i] = raw_report[i + 1];
+        }
+
+        send_consumer_control(new_report, &global_state);
+    }
 }

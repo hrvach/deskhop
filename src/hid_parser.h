@@ -74,6 +74,14 @@ typedef struct {
     bool uses_report_id;
 } mouse_t;
 
+/* Defines information about HID report format for the keyboard. */
+typedef struct {
+    uint8_t keyboard_report_id;
+    uint8_t consumer_report_id;
+    uint8_t system_report_id;
+    uint8_t protocol;
+} keyboard_t;
+
 /* For each element type we're interested in there is an entry
 in an array of these, defining its usage and in case matched, where to
 store the data. */

@@ -109,6 +109,7 @@ enum packet_type_e {
     SWAP_OUTPUTS_MSG     = 12,
     HEARTBEAT_MSG        = 13,
     OUTPUT_CONFIG_MSG    = 14,
+    CONSUMER_CONTROL_MSG = 15,
 };
 
 /*
@@ -142,9 +143,10 @@ typedef struct {
 #define KBD_QUEUE_LENGTH   128
 #define MOUSE_QUEUE_LENGTH 2048
 
-#define KEYS_IN_USB_REPORT  6
-#define KBD_REPORT_LENGTH   8
-#define MOUSE_REPORT_LENGTH 7
+#define KEYS_IN_USB_REPORT      6
+#define KBD_REPORT_LENGTH       8
+#define MOUSE_REPORT_LENGTH     7
+#define CONSUMER_CONTROL_LENGTH 4
 
 /*********  Screen  **********/
 #define MIN_SCREEN_COORD 0
@@ -260,6 +262,7 @@ typedef struct {
 
     config_t config;     // Device configuration, loaded from flash or defaults used
     mouse_t mouse_dev;   // Mouse device specifics, e.g. stores locations for keys in report
+    keyboard_t kbd_dev;  // Keyboard device specifics, like report IDs
     queue_t kbd_queue;   // Queue that stores keyboard reports
     queue_t mouse_queue; // Queue that stores mouse reports
 
@@ -288,11 +291,13 @@ void core1_main(void);
 /*********  Keyboard  **********/
 bool check_specific_hotkey(hotkey_combo_t, const hid_keyboard_report_t *);
 void process_keyboard_report(uint8_t *, int, device_t *);
+void process_consumer_report(uint8_t *, int, device_t *);
 void release_all_keys(device_t *);
 void queue_kbd_report(hid_keyboard_report_t *, device_t *);
 void process_kbd_queue_task(device_t *);
 void send_key(hid_keyboard_report_t *, device_t *);
 bool key_in_report(uint8_t, const hid_keyboard_report_t *);
+void send_consumer_control(uint8_t *, device_t *);
 
 /*********  Mouse  **********/
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel);
@@ -355,6 +360,7 @@ void handle_flash_led_msg(uart_packet_t *, device_t *);
 void handle_fw_upgrade_msg(uart_packet_t *, device_t *);
 void handle_wipe_config_msg(uart_packet_t *, device_t *);
 void handle_screensaver_msg(uart_packet_t *, device_t *);
+void handle_consumer_control_msg(uart_packet_t *, device_t *);
 
 void switch_output(device_t *, uint8_t);
 
