@@ -123,7 +123,10 @@ int16_t scale_y_coordinate(int screen_from, int screen_to, device_t *state) {
 
 void switch_screen(
     device_t *state, output_t *output, int new_x, int output_from, int output_to, int direction) {
-    mouse_report_t hidden_pointer = {.y = MIN_SCREEN_COORD, .x = MAX_SCREEN_COORD};
+    unsigned mouse_y = (MOUSE_PARKING_POSITION == 0) ? MIN_SCREEN_COORD : /*TOP*/
+                       (MOUSE_PARKING_POSITION == 1) ? MAX_SCREEN_COORD : /*BOTTOM*/
+                                                       state->mouse_y;    /*PREVIOUS*/
+    mouse_report_t hidden_pointer = {.y = mouse_y, .x = MAX_SCREEN_COORD};
 
     output_mouse_report(&hidden_pointer, state);
     switch_output(state, output_to);

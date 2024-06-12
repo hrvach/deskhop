@@ -66,6 +66,20 @@
 /* Mouse acceleration */
 #define ENABLE_ACCELERATION 1
 
+
+/**================================================== *
+ * ===========  Mouse General Settings  ============= *
+ * ================================================== *
+ *
+ * MOUSE_PARKING_POSITION: [0, 1, 2 ] 0 means park mouse on TOP
+ *                                    1 means park mouse on BOTTOM
+ *                                    2 means park mouse on PREVIOUS position
+ * 
+ * */
+
+#define MOUSE_PARKING_POSITION 0
+
+
 /**================================================== *
  * ==============  Screensaver Config  ============== *
  * ================================================== *
