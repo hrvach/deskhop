@@ -277,7 +277,7 @@ This still doesn't guarantee anything, but I believe it makes a reasonable set o
 
 *I'm not selling anything, this is just a personal, non-commercial hobby project.*
 
-*[update] There is a manufacturing/assembly company in China that might offer PCBs in qty of 1, assembled boards and boards + case, so stay tuned.*
+[UPDATE] It seems you can order it in QTY of 1 (for either PCB, assembled PCB or a fully assembled device) from [Elecrow if you follow this link](https://www.elecrow.com/deskhop-fast-desktop-switching.html)
 
 *I **don't want to take any commission** on this - the only goal is to provide an alternative for people who don't feel confident enough to assemble the boards themselves.*
 
