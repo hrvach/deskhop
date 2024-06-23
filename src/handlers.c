@@ -31,12 +31,12 @@ void output_toggle_hotkey_handler(device_t *state, hid_keyboard_report_t *report
     switch_output(state, state->active_output);
 };
 
-void get_border_position(device_t *state, border_size_t *border) {
+void _get_border_position(device_t *state, border_size_t *border) {
     /* To avoid having 2 different keys, if we're above half, it's the top coord */
-    if (state->mouse_y > (MAX_SCREEN_COORD / 2))
-        border->bottom = state->mouse_y;
+    if (state->pointer_y > (MAX_SCREEN_COORD / 2))
+        border->bottom = state->pointer_y;
     else
-        border->top = state->mouse_y;
+        border->top = state->pointer_y;
 }
 
 
@@ -44,11 +44,11 @@ void get_border_position(device_t *state, border_size_t *border) {
 void screen_border_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     border_size_t *border = &state->config.output[state->active_output].border;
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
-        get_border_position(state, border);
+        _get_border_position(state, border);
         save_config(state);
     }
 
-    send_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
+    queue_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
 };
 
 /* This key combo puts board A in firmware upgrade mode */
@@ -67,37 +67,6 @@ void switchlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     send_value(state->switch_lock, SWITCH_LOCK_MSG);
 }
 
-/* This key combo configures multiple output parameters */
-void output_config_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    output_t *current = &state->config.output[state->active_output];
-
-    /* Pressing 1 or 2 with this hotkey sets the screen count */
-    if(key_in_report(HID_KEY_1, report))
-        current->screen_count = 1; 
-    else if (key_in_report(HID_KEY_2, report))
-        current->screen_count = 2; 
-    
-    /* Pressing 7, 8 or 9 with this hotkey sets the OS to LINUX, WIN or MAC */
-    else if (key_in_report(HID_KEY_7, report))
-        current->os = LINUX;
-    else if (key_in_report(HID_KEY_8, report))
-        current->os = WINDOWS;
-    else if (key_in_report(HID_KEY_9, report))
-        current->os = MACOS;
-    
-    /* If nothing matches, don't send or save anything but bail out. */
-    else 
-        return;
-
-    /* Save config and acknowledge */
-    save_config(state);
-    blink_led(state);
-
-    /* 4 bits are more than enough to transfer this */
-    uint8_t value = current->screen_count | (current->os << 4);
-    send_value(value, OUTPUT_CONFIG_MSG);
-}
-
 /* This key combo locks both outputs simultaneously */
 void screenlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     hid_keyboard_report_t lock_report = {0}, release_keys = {0};
@@ -110,19 +79,19 @@ void screenlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
                 lock_report.keycode[0] = HID_KEY_L;
                 break;
             case MACOS:
-                lock_report.modifier   = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_LEFTGUI;
+                lock_report.modifier   = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_LEFTALT;
                 lock_report.keycode[0] = HID_KEY_Q;
                 break;
             default:
                 break;
         }
 
-        if (BOARD_ROLE == out) {
+        if (global_state.active_output == out) {
             queue_kbd_report(&lock_report, state);
             release_all_keys(state);
         } else {
-            send_packet((uint8_t *)&lock_report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
-            send_packet((uint8_t *)&release_keys, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
+            queue_packet((uint8_t *)&lock_report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
+            queue_packet((uint8_t *)&release_keys, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
         }
     }
 }
@@ -134,16 +103,24 @@ void wipe_config_hotkey_handler(device_t *state, hid_keyboard_report_t *report) 
     send_value(ENABLE, WIPE_CONFIG_MSG);
 }
 
-void screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    state->config.output[BOARD_ROLE].screensaver.enabled ^= 1;
-    send_value(state->config.output[BOARD_ROLE].screensaver.enabled, SCREENSAVER_MSG);
-}
-
 /* When pressed, toggles the current mouse zoom mode state */
 void mouse_zoom_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     state->mouse_zoom ^= 1;
     send_value(state->mouse_zoom, MOUSE_ZOOM_MSG);
 };
+
+
+/* Put the device into a special configuration mode */
+void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {  
+    /* If config mode is already active, skip this and reboot to return to normal mode */
+    if (!state->config_mode_active) {
+        watchdog_hw->scratch[5] = MAGIC_WORD_1;
+        watchdog_hw->scratch[6] = MAGIC_WORD_2;
+    }
+        
+    reboot();
+};
+
 
 /**==================================================== *
  * ==========  UART Message Handling Routines  ======== *
@@ -160,9 +137,9 @@ void handle_mouse_abs_uart_msg(uart_packet_t *packet, device_t *state) {
     mouse_report_t *mouse_report = (mouse_report_t *)packet->data;
     queue_mouse_report(mouse_report, state);
 
-    state->mouse_x       = mouse_report->x;
-    state->mouse_y       = mouse_report->y;
-    state->mouse_buttons = mouse_report->buttons;
+    state->pointer_x       = mouse_report->x;
+    state->pointer_y       = mouse_report->y;
+    state->mouse_buttons   = mouse_report->buttons;
 
     state->last_activity[BOARD_ROLE] = time_us_64();
 }
@@ -202,8 +179,8 @@ void handle_sync_borders_msg(uart_packet_t *packet, device_t *state) {
     border_size_t *border = &state->config.output[state->active_output].border;
 
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
-        get_border_position(state, border);
-        send_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
+        _get_border_position(state, border);
+        queue_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
     } else
         memcpy(border, packet->data, sizeof(border_size_t));
 
@@ -221,20 +198,119 @@ void handle_wipe_config_msg(uart_packet_t *packet, device_t *state) {
     load_config(state);
 }
 
-void handle_screensaver_msg(uart_packet_t *packet, device_t *state) {
-    state->config.output[BOARD_ROLE].screensaver.enabled = packet->data[0];
-}
-
-void handle_output_config_msg(uart_packet_t *packet, device_t *state) {
-    state->config.output[state->active_output].os = packet->data[0] >> 4;
-    state->config.output[state->active_output].screen_count = packet->data[0] & 0x0F;
-    save_config(state);
-}
-
-/* Process consumer control keyboard message. Send immediately, w/o queing */
+/* Process consumer control message, TODO: use queue instead of sending directly */
 void handle_consumer_control_msg(uart_packet_t *packet, device_t *state) {
     tud_hid_n_report(0, REPORT_ID_CONSUMER, &packet->data[0], CONSUMER_CONTROL_LENGTH);
 }
+
+/* Process request to store config to flash */
+void handle_save_config_msg(uart_packet_t *packet, device_t *state) {
+    save_config(state);
+}
+
+/* Process request to reboot the board */
+void handle_reboot_msg(uart_packet_t *packet, device_t *state) {
+    reboot();
+}
+
+/* Decapsulate and send to the other box */
+void handle_proxy_msg(uart_packet_t *packet, device_t *state) {
+    queue_packet(&packet->data[1], (enum packet_type_e)packet->data[0], PACKET_DATA_LENGTH - 1);
+}
+
+/* Process api communication messages */
+void handle_api_msgs(uart_packet_t *packet, device_t *state) {
+    uint8_t value_idx = packet->data[0];
+    const field_map_t *map = get_field_map_entry(value_idx);
+
+    /* If we don't have a valid map entry, return immediately */
+    if (map == NULL)
+        return;    
+
+    /* Create a pointer to the offset into the structure we need to access */    
+    uint8_t *ptr = (((uint8_t *)&global_state) + map->offset);
+
+    if (packet->type == SET_VAL_MSG) {
+        /* Not allowing writes to objects defined as read-only */
+        if (map->readonly)
+            return;
+
+        memcpy(ptr, &packet->data[1], map->len);
+    }        
+    else if (packet->type == GET_VAL_MSG) {
+        uart_packet_t response = {.type=GET_VAL_MSG, .data={0}};
+        memcpy(response.data, ptr, map->len);
+        queue_try_add(&state->cfg_queue_out, &response);
+    }
+
+    /* With each GET/SET message, we reset the configuration mode timeout */
+    reset_config_timer(state);
+}
+
+
+/* Process request packet and create a response */
+void handle_request_byte_msg(uart_packet_t *packet, device_t *state) {
+    uint32_t address = packet->data32[0];
+    
+    if (address > STAGING_IMAGE_SIZE)
+        return;
+
+    /* Add requested data to bytes 4-7 in the packet and return it with a different type */    
+    uint32_t data = *(uint32_t *)&ADDR_FW_RUNNING[address];
+    packet->data32[1] = data;
+    
+    queue_packet(packet->data, RESPONSE_BYTE_MSG, PACKET_DATA_LENGTH);
+}
+
+/* Process response message following a request we sent to read a byte */
+/* state->page_offset and state->page_number are kept locally and compared to returned values */
+void handle_response_byte_msg(uart_packet_t *packet, device_t *state) {
+    uint16_t offset = packet->data[0];
+    uint32_t address = packet->data32[0];
+
+    if (address != state->fw.address) {
+        state->fw.upgrade_in_progress = false;
+        state->fw.address = 0;
+        return;
+    }
+    else {
+        /* Provide visual feedback of the ongoing copy by toggling LED for every sector */
+        if((address & 0xfff) == 0x000)
+            toggle_led();
+    }
+   
+    /* Update checksum as we receive each byte */
+    if (address < STAGING_IMAGE_SIZE - FLASH_SECTOR_SIZE)
+        for (int i=0; i<4; i++)
+            state->fw.checksum = crc32_iter(state->fw.checksum, packet->data[4 + i]);
+
+    memcpy(state->page_buffer + offset, &packet->data32[1], sizeof(uint32_t));    
+    
+    /* Neeeeeeext byte, please! */
+    state->fw.address += sizeof(uint32_t);    
+    state->fw.byte_done = true;
+}
+
+/* Process a request to read a firmware package from flash */
+void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {    
+    uint16_t other_running_version = packet->data16[0];
+    
+    if (state->fw.upgrade_in_progress)
+        return;
+
+    /* If the other board isn't running a newer version, we are done */    
+    if (other_running_version <= state->_running_fw.version)
+        return;
+
+    /* It is? Ok, kick off the firmware upgrade */
+    state->fw = (fw_upgrade_state_t) {
+        .upgrade_in_progress = true,
+        .byte_done = true,
+        .address = 0,
+        .checksum = 0xffffffff,
+    };   
+}
+
 
 /**==================================================== *
  * ==============  Output Switch Routines  ============ *

@@ -35,7 +35,11 @@
  extern "C" {
 #endif
 
-#define TU_LOG_USBH(...)   TU_LOG(CFG_TUH_LOG_LEVEL, __VA_ARGS__)
+#define TU_LOG_USBH(...)      TU_LOG(CFG_TUH_LOG_LEVEL, __VA_ARGS__)
+#define TU_LOG_MEM_USBH(...)  TU_LOG_MEM(CFG_TUH_LOG_LEVEL, __VA_ARGS__)
+#define TU_LOG_BUF_USBH(...)  TU_LOG_BUF(CFG_TUH_LOG_LEVEL, __VA_ARGS__)
+#define TU_LOG_INT_USBH(...)  TU_LOG_INT(CFG_TUH_LOG_LEVEL, __VA_ARGS__)
+#define TU_LOG_HEX_USBH(...)  TU_LOG_HEX(CFG_TUH_LOG_LEVEL, __VA_ARGS__)
 
 enum {
   USBH_EPSIZE_BULK_MAX = (TUH_OPT_HIGH_SPEED ? TUSB_EPSIZE_BULK_HS : TUSB_EPSIZE_BULK_FS)
@@ -46,11 +50,9 @@ enum {
 //--------------------------------------------------------------------+
 
 typedef struct {
-  #if CFG_TUSB_DEBUG >= CFG_TUH_LOG_LEVEL
   char const* name;
-  #endif
-
-  void (* const init       )(void);
+  bool (* const init       )(void);
+  bool (* const deinit     )(void);
   bool (* const open       )(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const * itf_desc, uint16_t max_len);
   bool (* const set_config )(uint8_t dev_addr, uint8_t itf_num);
   bool (* const xfer_cb    )(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes);

@@ -61,14 +61,7 @@ if (NOT PICO_BARE_METAL)
     pico_add_subdirectory(pico_stdio_usb)
     pico_add_subdirectory(pico_i2c_slave)
 
-    # networking libraries - note dependency order is important
     pico_add_subdirectory(pico_async_context)
-    pico_add_subdirectory(pico_btstack)
-    pico_add_subdirectory(pico_cyw43_driver)
-    pico_add_subdirectory(pico_lwip)
-    pico_add_subdirectory(pico_cyw43_arch)
-    pico_add_subdirectory(pico_mbedtls)
-
     pico_add_subdirectory(pico_stdlib)
 
     pico_add_subdirectory(pico_cxx_options)

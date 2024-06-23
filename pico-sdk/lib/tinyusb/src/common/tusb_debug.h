@@ -60,6 +60,7 @@ void tu_print_mem(void const *buf, uint32_t count, uint8_t indent);
 
 static inline void tu_print_buf(uint8_t const* buf, uint32_t bufsize) {
   for(uint32_t i=0; i<bufsize; i++) tu_printf("%02X ", buf[i]);
+  tu_printf("\r\n");
 }
 
 // Log with Level
@@ -76,7 +77,7 @@ static inline void tu_print_buf(uint8_t const* buf, uint32_t bufsize) {
 #define TU_LOG1_MEM           tu_print_mem
 #define TU_LOG1_BUF(_x, _n)   tu_print_buf((uint8_t const*)(_x), _n)
 #define TU_LOG1_INT(_x)       tu_printf(#_x " = %ld\r\n", (unsigned long) (_x) )
-#define TU_LOG1_HEX(_x)       tu_printf(#_x " = %lX\r\n", (unsigned long) (_x) )
+#define TU_LOG1_HEX(_x)       tu_printf(#_x " = 0x%lX\r\n", (unsigned long) (_x) )
 
 // Log Level 2: Warn
 #if CFG_TUSB_DEBUG >= 2

@@ -43,10 +43,7 @@
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF
 //--------------------------------------------------------------------+
-enum
-{
-  BULK_PACKET_SIZE = (TUD_OPT_HIGH_SPEED ? 512 : 64)
-};
+#define BULK_PACKET_SIZE (TUD_OPT_HIGH_SPEED ? 512 : 64)
 
 typedef struct
 {
@@ -176,9 +173,11 @@ uint32_t tud_cdc_n_write(uint8_t itf, void const* buffer, uint32_t bufsize)
   uint16_t ret = tu_fifo_write_n(&p_cdc->tx_ff, buffer, (uint16_t) TU_MIN(bufsize, UINT16_MAX));
 
   // flush if queue more than packet size
-  // may need to suppress -Wunreachable-code since most of the time CFG_TUD_CDC_TX_BUFSIZE < BULK_PACKET_SIZE
-  if ( (tu_fifo_count(&p_cdc->tx_ff) >= BULK_PACKET_SIZE) || ((CFG_TUD_CDC_TX_BUFSIZE < BULK_PACKET_SIZE) && tu_fifo_full(&p_cdc->tx_ff)) )
-  {
+  if ( tu_fifo_count(&p_cdc->tx_ff) >= BULK_PACKET_SIZE
+       #if CFG_TUD_CDC_TX_BUFSIZE < BULK_PACKET_SIZE
+       || tu_fifo_full(&p_cdc->tx_ff) // check full if fifo size is less than packet size
+       #endif
+      ) {
     tud_cdc_n_write_flush(itf);
   }
 
@@ -253,9 +252,37 @@ void cdcd_init(void)
     // In this way, the most current data is prioritized.
     tu_fifo_config(&p_cdc->tx_ff, p_cdc->tx_ff_buf, TU_ARRAY_SIZE(p_cdc->tx_ff_buf), 1, true);
 
-    tu_fifo_config_mutex(&p_cdc->rx_ff, NULL, osal_mutex_create(&p_cdc->rx_ff_mutex));
-    tu_fifo_config_mutex(&p_cdc->tx_ff, osal_mutex_create(&p_cdc->tx_ff_mutex), NULL);
+    #if OSAL_MUTEX_REQUIRED
+    osal_mutex_t mutex_rd = osal_mutex_create(&p_cdc->rx_ff_mutex);
+    osal_mutex_t mutex_wr = osal_mutex_create(&p_cdc->tx_ff_mutex);
+    TU_ASSERT(mutex_rd != NULL && mutex_wr != NULL, );
+
+    tu_fifo_config_mutex(&p_cdc->rx_ff, NULL, mutex_rd);
+    tu_fifo_config_mutex(&p_cdc->tx_ff, mutex_wr, NULL);
+    #endif
   }
+}
+
+bool cdcd_deinit(void) {
+  #if OSAL_MUTEX_REQUIRED
+  for(uint8_t i=0; i<CFG_TUD_CDC; i++) {
+    cdcd_interface_t* p_cdc = &_cdcd_itf[i];
+    osal_mutex_t mutex_rd = p_cdc->rx_ff.mutex_rd;
+    osal_mutex_t mutex_wr = p_cdc->tx_ff.mutex_wr;
+
+    if (mutex_rd) {
+      osal_mutex_delete(mutex_rd);
+      tu_fifo_config_mutex(&p_cdc->rx_ff, NULL, NULL);
+    }
+
+    if (mutex_wr) {
+      osal_mutex_delete(mutex_wr);
+      tu_fifo_config_mutex(&p_cdc->tx_ff, NULL, NULL);
+    }
+  }
+  #endif
+
+  return true;
 }
 
 void cdcd_reset(uint8_t rhport)
@@ -268,7 +295,9 @@ void cdcd_reset(uint8_t rhport)
 
     tu_memclr(p_cdc, ITF_MEM_RESET_SIZE);
     tu_fifo_clear(&p_cdc->rx_ff);
+    #if !CFG_TUD_CDC_PERSISTENT_TX_BUFF
     tu_fifo_clear(&p_cdc->tx_ff);
+    #endif
     tu_fifo_set_overwritable(&p_cdc->tx_ff, true);
   }
 }

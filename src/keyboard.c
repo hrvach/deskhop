@@ -53,24 +53,10 @@ hotkey_combo_t hotkeys[] = {
 
     /* Erase stored config */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys           = {HID_KEY_BACKSPACE},
-     .key_count      = 1,
-     .pass_to_os     = true,
-     .action_handler = &output_config_hotkey_handler},
-
-    /* Erase stored config */
-    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
      .keys           = {HID_KEY_F12, HID_KEY_D},
      .key_count      = 2,
      .acknowledge    = true,
      .action_handler = &wipe_config_hotkey_handler},
-
-    /* Toggle screensaver function */
-    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys           = {HID_KEY_F12, HID_KEY_S},
-     .key_count      = 2,
-     .acknowledge    = true,
-     .action_handler = &screensaver_hotkey_handler},
 
     /* Record switch y coordinate  */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
@@ -79,17 +65,24 @@ hotkey_combo_t hotkeys[] = {
      .acknowledge    = true,
      .action_handler = &screen_border_hotkey_handler},
 
+    /* Switch to configuration mode  */
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
+     .keys           = {HID_KEY_C, HID_KEY_O},
+     .key_count      = 2,
+     .acknowledge    = true,
+     .action_handler = &config_enable_hotkey_handler},
+
     /* Hold down left shift + right shift + F12 + A ==> firmware upgrade mode for board A (kbd) */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
-     .keys           = {HID_KEY_F12, HID_KEY_A},
-     .key_count      = 2,
+     .keys           = {HID_KEY_A},
+     .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &fw_upgrade_hotkey_handler_A},
 
     /* Hold down left shift + right shift + F12 + B ==> firmware upgrade mode for board B (mouse) */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
-     .keys           = {HID_KEY_F12, HID_KEY_B},
-     .key_count      = 2,
+     .keys           = {HID_KEY_B},
+     .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &fw_upgrade_hotkey_handler_B}};
 
@@ -150,13 +143,16 @@ void process_kbd_queue_task(device_t *state) {
     if (!queue_try_peek(&state->kbd_queue, &report))
         return;
 
-    bool succeeded = false;
-
+    /* If we are suspended, let's wake the host up */
     if (tud_suspended())
-        succeeded = tud_remote_wakeup();
-    else
-        /* ... try sending it to the host, if it's successful */
-        succeeded = tud_hid_keyboard_report(REPORT_ID_KEYBOARD, report.modifier, report.keycode);
+        tud_remote_wakeup();
+
+    /* If it's not ok to send yet, we'll try on the next pass */
+    if (!tud_hid_n_ready(ITF_NUM_HID))
+        return;
+
+    /* ... try sending it to the host, if it's successful */
+    bool succeeded = tud_hid_keyboard_report(REPORT_ID_KEYBOARD, report.modifier, report.keycode);
 
     /* ... then we can remove it from the queue. Race conditions shouldn't happen [tm] */
     if (succeeded)
@@ -182,7 +178,7 @@ void send_key(hid_keyboard_report_t *report, device_t *state) {
         queue_kbd_report(report, state);
         state->last_activity[BOARD_ROLE] = time_us_64();
     } else {
-        send_packet((uint8_t *)report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
+        queue_packet((uint8_t *)report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
     }
 }
 
@@ -192,7 +188,17 @@ void send_consumer_control(uint8_t *raw_report, device_t *state) {
         tud_hid_n_report(0, REPORT_ID_CONSUMER, raw_report, CONSUMER_CONTROL_LENGTH);
         state->last_activity[BOARD_ROLE] = time_us_64();
     } else {
-        send_packet((uint8_t *)raw_report, CONSUMER_CONTROL_MSG, CONSUMER_CONTROL_LENGTH);
+        queue_packet((uint8_t *)raw_report, CONSUMER_CONTROL_MSG, CONSUMER_CONTROL_LENGTH);
+    }
+}
+
+/* Decide if consumer control reports go local or to the other board */
+void send_system_control(uint8_t *raw_report, device_t *state) {
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+        tud_hid_n_report(0, REPORT_ID_SYSTEM, raw_report, SYSTEM_CONTROL_LENGTH);
+        state->last_activity[BOARD_ROLE] = time_us_64();
+    } else {
+        queue_packet((uint8_t *)raw_report, SYSTEM_CONTROL_MSG, SYSTEM_CONTROL_LENGTH);
     }
 }
 
@@ -200,21 +206,18 @@ void send_consumer_control(uint8_t *raw_report, device_t *state) {
  * Parse and interpret the keys pressed on the keyboard
  * ==================================================== */
 
-void process_keyboard_report(uint8_t *raw_report, int length, device_t *state) {
-    hid_keyboard_report_t *keyboard_report = (hid_keyboard_report_t *)raw_report;
-    hotkey_combo_t *hotkey                 = NULL;
+void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
+    hid_keyboard_report_t new_report = {0};
+    device_t *state                  = &global_state;
+    hotkey_combo_t *hotkey           = NULL;
 
     if (length < KBD_REPORT_LENGTH)
         return;
 
-    /* If the report is longer by 1 byte, we can assume the first byte is the report ID
-       and that the keyboard didn't switch to boot mode properly. Use this workaround
-       until full HID report parsing is implemented */
-    if (length == KBD_REPORT_LENGTH + 1)
-        keyboard_report = (hid_keyboard_report_t *)(raw_report + 1);
+    extract_kbd_data(raw_report, length, itf, iface, &new_report);
 
     /* Check if any hotkey was pressed */
-    hotkey = check_all_hotkeys(keyboard_report, state);
+    hotkey = check_all_hotkeys(&new_report, state);
 
     /* ... and take appropriate action */
     if (hotkey != NULL) {
@@ -223,7 +226,7 @@ void process_keyboard_report(uint8_t *raw_report, int length, device_t *state) {
             blink_led(state);
 
         /* Execute the corresponding handler */
-        hotkey->action_handler(state, keyboard_report);
+        hotkey->action_handler(state, &new_report);
 
         /* And pass the key to the output PC if configured to do so. */
         if (!hotkey->pass_to_os)
@@ -231,22 +234,35 @@ void process_keyboard_report(uint8_t *raw_report, int length, device_t *state) {
     }
 
     /* This method will decide if the key gets queued locally or sent through UART */
-    send_key(keyboard_report, state);
+    send_key(&new_report, state);
 }
 
-void process_consumer_report(uint8_t *raw_report, int length, device_t *state) {
+void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
     uint8_t new_report[CONSUMER_CONTROL_LENGTH] = {0};
+    uint16_t *report_ptr = (uint16_t *)new_report;
+      
+    /* If consumer control is variable, read the values from cc_array and send as array. */
+    if (iface->consumer.is_variable) {
+        for (int i = 0; i < MAX_CC_BUTTONS && i < 8 * (length - 1); i++) {
+            int bit_idx = i % 8;
+            int byte_idx = i >> 3;
 
-    /* We expect length not to be zero or bail out */
-    if (!length)
-        return;
-
-    /* Consumer control report ID rewrite and forward */
-    if (raw_report[0] && raw_report[0] == global_state.kbd_dev.consumer_report_id) {
-        for (int i = 0; i < length - 1 || i < CONSUMER_CONTROL_LENGTH; i++) {
-            new_report[i] = raw_report[i + 1];
+            if ((raw_report[byte_idx + 1] >> bit_idx) & 1) {
+                report_ptr[0] = iface->keyboard.cc_array[i];                
+            }
         }
-
-        send_consumer_control(new_report, &global_state);
     }
+    else {
+        for (int i = 0; i < length - 1 && i < CONSUMER_CONTROL_LENGTH; i++)
+            new_report[i] = raw_report[i + 1];
+    }
+
+    send_consumer_control(new_report, &global_state);
+}
+
+void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
+    uint16_t new_report = raw_report[1];
+    uint8_t *report_ptr = (uint8_t *)&new_report;
+      
+    send_system_control(report_ptr, &global_state);
 }

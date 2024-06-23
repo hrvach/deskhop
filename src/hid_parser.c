@@ -20,9 +20,10 @@
 
 #include "main.h"
 
-#define IS_BLOCK_END (collection.start == collection.end)
+#define IS_BLOCK_END (parser->collection.start == parser->collection.end)
 
 enum { SIZE_0_BIT = 0, SIZE_8_BIT = 1, SIZE_16_BIT = 2, SIZE_32_BIT = 3 };
+const uint8_t SIZE_LOOKUP[4] = {0, 1, 2, 4};
 
 /* Size is 0, 1, 2, or 3, describing cases of no data, 8-bit, 16-bit,
   or 32-bit data. */
@@ -39,132 +40,106 @@ uint32_t get_descriptor_value(uint8_t const *report, int size) {
     }
 }
 
-/* We store all globals as unsigned to avoid countless switch/cases.
-In case of e.g. min/max, we need to treat some data as signed retroactively. */
-int32_t to_signed(globals_t *data) {
-    switch (data->hdr.size) {
-        case SIZE_8_BIT:
-            return (int8_t)data->val;
-        case SIZE_16_BIT:
-            return (int16_t)data->val;
-        default:
-            return data->val;
-    }
-}
-
-/* Given a value struct with size and offset in bits,
-   find and return a value from the HID report */
-
-int32_t get_report_value(uint8_t *report, report_val_t *val) {
-    /* Calculate the bit offset within the byte */
-    uint8_t offset_in_bits = val->offset % 8;
-
-    /* Calculate the remaining bits in the first byte */
-    uint8_t remaining_bits = 8 - offset_in_bits;
-
-    /* Calculate the byte offset in the array */
-    uint8_t byte_offset = val->offset >> 3;
-
-    /* Create a mask for the specified number of bits */
-    uint32_t mask = (1u << val->size) - 1;
-
-    /* Initialize the result value with the bits from the first byte */
-    int32_t result = report[byte_offset] >> offset_in_bits;
-
-    /* Move to the next byte and continue fetching bits until the desired length is reached */
-    while (val->size > remaining_bits) {
-        result |= report[++byte_offset] << remaining_bits;
-        remaining_bits += 8;
-    }
-
-    /* Apply the mask to retain only the desired number of bits */
-    result = result & mask;
-
-    /* Special case if result is negative.
-       Check if the most significant bit of 'val' is set */
-    if (result & ((mask >> 1) + 1)) {
-        /* If it is set, sign-extend 'val' by filling the higher bits with 1s */
-        result |= (0xFFFFFFFFU << val->size);
-    }
-
-    return result;
-}
-
 void update_usage(parser_state_t *parser, int i) {
     /* If we don't have as many usages as elements, the usage for the previous element applies */
-    if (i && i >= parser->usage_count) {
-        *(parser->p_usage + i) = *(parser->p_usage + parser->usage_count - 1);
-    }
+    if (i > 0 && i >= parser->usage_count && i < HID_MAX_USAGES)
+        *(parser->p_usage + i) = *(parser->p_usage + i - 1);
 }
 
-void find_and_store_element(parser_state_t *parser, int map_len, int i) {
-    usage_map_t *map = &parser->map[0];
+void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t data, uint16_t size) {   
+    *val = (report_val_t){
+        .offset     = parser->offset_in_bits,
+        .offset_idx = parser->offset_in_bits >> 3,
+        .size       = size,
 
-    for (int j = 0; j < map_len; j++, map++) {
-        /* Filter based on usage criteria */
-        if (map->report_usage == parser->global_usage
-            && map->usage_page == parser->globals[RI_GLOBAL_USAGE_PAGE].val
-            && map->usage == *(parser->p_usage + i)) {
+        .usage_max = parser->locals[RI_LOCAL_USAGE_MAX].val,
+        .usage_min = parser->locals[RI_LOCAL_USAGE_MIN].val,
 
-            /* Buttons are the ones that appear multiple times, aggregate for now */
-            if (map->element->size) {
-                map->element->size++;
-                continue;
-            }
+        .item_type   = (data & 0x01) ? CONSTANT : DATA,
+        .data_type   = (data & 0x02) ? VARIABLE : ARRAY,
 
-            /* Store the found element's attributes */
-            map->element->offset = parser->offset_in_bits;
-            map->element->size   = parser->globals[RI_GLOBAL_REPORT_SIZE].val;
-            map->element->min    = to_signed(&parser->globals[RI_GLOBAL_LOGICAL_MIN]);
-            map->element->max    = to_signed(&parser->globals[RI_GLOBAL_LOGICAL_MAX]);
-        }
-    }
+        .usage        = *(parser->p_usage + i),
+        .usage_page   = parser->globals[RI_GLOBAL_USAGE_PAGE].val,
+        .global_usage = parser->global_usage,
+        .report_id    = parser->report_id
+    };
 }
 
-void handle_global_item(parser_state_t *parser, header_t *header, uint32_t data, mouse_t *mouse) {
+void handle_global_item(parser_state_t *parser, item_t *item) {
+    if (item->hdr.tag == RI_GLOBAL_REPORT_ID) 
+        parser->report_id = item->val;        
+    
+    parser->globals[item->hdr.tag] = *item;
+}
+
+void handle_local_item(parser_state_t *parser, item_t *item) {
     /* There are just 16 possible tags, store any one that comes along to an array
         instead of doing switch and 16 cases */
-    parser->globals[header->tag].val = data;
-    parser->globals[header->tag].hdr = *header;
+    parser->locals[item->hdr.tag] = *item;
 
-    if (header->tag == RI_GLOBAL_REPORT_ID) {
-        /* Important to track, if report IDs are used reports are preceded/offset by a 1-byte ID value */
-        if (parser->global_usage == HID_USAGE_DESKTOP_MOUSE)
-            mouse->report_id = data;
+    if (item->hdr.tag == RI_LOCAL_USAGE) {
+        if(IS_BLOCK_END) 
+            parser->global_usage = item->val;
 
-        mouse->uses_report_id = true;
+        else if (parser->usage_count < HID_MAX_USAGES - 1)
+            *(parser->p_usage + parser->usage_count++) = item->val;
     }
 }
 
-void handle_local_item(parser_state_t *parser, header_t *header, uint32_t data) {
-    if (header->tag == RI_LOCAL_USAGE) {
-        /* If we are not within a collection, the usage tag applies to the entire section */
-        if (parser->collection.start == parser->collection.end) {
-            parser->global_usage = data;
-        } else {
-            *(parser->p_usage + parser->usage_count++) = data;
-        }
+void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *iface) {
+    uint32_t size  = parser->globals[RI_GLOBAL_REPORT_SIZE].val;
+    uint32_t count = parser->globals[RI_GLOBAL_REPORT_COUNT].val;
+    report_val_t val = {0};
+
+    /* Swap count and size for 1-bit variables, it makes sense to process e.g. NKRO with
+       size = 1 and count = 240 in one go instead of doing 240 iterations 
+       Don't do this if there are usages in the queue, though.
+       */           
+    if (size == 1 && parser->usage_count <= 1) {
+        size  = count;
+        count = 1;        
     }
+
+    for (int i = 0; i < count; i++) {
+        update_usage(parser, i);
+        store_element(parser, &val, i, item->val, size);
+        
+        /* Use the parsed data to populate internal device structures */
+        extract_data(iface, &val);    
+
+        /* Iterate <count> times and increase offset by <size> amount, moving by <count> x <size> bits */
+        parser->offset_in_bits += size;
+    }
+
+    /* Advance the usage array pointer by global report count and reset the count variable */
+    parser->p_usage += parser->usage_count;
+
+    /* Carry the last usage to the new location */
+    *parser->p_usage = *(parser->p_usage - parser->usage_count);
 }
 
-void handle_main_item(parser_state_t *parser, header_t *header, int map_len) {
-    /* Update Collection */
-    parser->collection.start += (header->tag == RI_MAIN_COLLECTION);
-    parser->collection.end += (header->tag == RI_MAIN_COLLECTION_END);
+void handle_main_item(parser_state_t *parser, item_t *item, hid_interface_t *iface) {
+    if (IS_BLOCK_END)
+        parser->offset_in_bits = 0;
 
-    if (header->tag == RI_MAIN_INPUT) {
-        for (int i = 0; i < parser->globals[RI_GLOBAL_REPORT_COUNT].val; i++) {
-            update_usage(parser, i);
-            find_and_store_element(parser, map_len, i);
+    switch (item->hdr.tag) {
+        case RI_MAIN_COLLECTION:
+            parser->collection.start++;
+            break;
 
-            /* Iterate <count> times and increase offset by <size> amount, moving by <count> x <size> bits */
-            parser->offset_in_bits += parser->globals[RI_GLOBAL_REPORT_SIZE].val;
-        }
+        case RI_MAIN_COLLECTION_END:
+            parser->collection.end++;
+            break;
 
-        /* Advance the usage array pointer by global report count and reset the count variable */
-        parser->p_usage += parser->globals[RI_GLOBAL_REPORT_COUNT].val;
-        parser->usage_count = 0;
+        case RI_MAIN_INPUT:
+            handle_main_input(parser, item, iface);
+            break;
     }
+
+    parser->usage_count = 0;
+
+    /* Local items do not carry over to the next Main item (HID spec v1.11, section 6.2.2.8) */
+    memset(parser->locals, 0, sizeof(parser->locals));
 }
 
 
@@ -172,53 +147,37 @@ void handle_main_item(parser_state_t *parser, header_t *header, int map_len) {
  * hopefully work well enough to find the basic values we care about to move the mouse around.
  * Your descriptor for a mouse with 2 wheels and 264 buttons might not parse correctly.
  **/
-uint8_t parse_report_descriptor(mouse_t *mouse, uint8_t arr_count, uint8_t const *report, uint16_t desc_len) {
-    usage_map_t usage_map[] = {
-        {.report_usage = HID_USAGE_DESKTOP_MOUSE,
-         .usage_page   = HID_USAGE_PAGE_BUTTON,
-         .usage        = HID_USAGE_DESKTOP_POINTER,
-         .element      = &mouse->buttons},
+parser_state_t parser_state = {0};  // Avoid placing it on the stack, it's large
 
-        {.report_usage = HID_USAGE_DESKTOP_MOUSE,
-         .usage_page   = HID_USAGE_PAGE_DESKTOP,
-         .usage        = HID_USAGE_DESKTOP_X,
-         .element      = &mouse->move_x},
+void parse_report_descriptor(hid_interface_t *iface,
+                            uint8_t const *report,                            
+                            int desc_len
+                            ) {
+    item_t item = {0};
 
-        {.report_usage = HID_USAGE_DESKTOP_MOUSE,
-         .usage_page   = HID_USAGE_PAGE_DESKTOP,
-         .usage        = HID_USAGE_DESKTOP_Y,
-         .element      = &mouse->move_y},
-
-        {.report_usage = HID_USAGE_DESKTOP_MOUSE,
-         .usage_page   = HID_USAGE_PAGE_DESKTOP,
-         .usage        = HID_USAGE_DESKTOP_WHEEL,
-         .element      = &mouse->wheel},
-    };
-
-    parser_state_t parser = {0};
-    parser.p_usage        = parser.usages;
-    parser.map            = usage_map;
+    /* Wipe parser_state clean */
+    memset(&parser_state, 0, sizeof(parser_state_t));
+    parser_state.p_usage = parser_state.usages;
 
     while (desc_len > 0) {
-        header_t header = *(header_t *)report++;
-        uint32_t data   = get_descriptor_value(report, header.size);
+        item.hdr = *(header_t *)report++;
+        item.val = get_descriptor_value(report, item.hdr.size);
 
-        switch (header.type) {
+        switch (item.hdr.type) {
             case RI_TYPE_MAIN:
-                handle_main_item(&parser, &header, ARRAY_SIZE(usage_map));
+                handle_main_item(&parser_state, &item, iface);
                 break;
 
             case RI_TYPE_GLOBAL:
-                handle_global_item(&parser, &header, data, mouse);
+                handle_global_item(&parser_state, &item);
                 break;
 
             case RI_TYPE_LOCAL:
-                handle_local_item(&parser, &header, data);
+                handle_local_item(&parser_state, &item);
                 break;
         }
         /* Move to the next position and decrement size by header length + data length */
-        report += header.size;
-        desc_len -= header.size + 1;
-    }
-    return 0;
+        report += SIZE_LOOKUP[item.hdr.size];
+        desc_len -= (SIZE_LOOKUP[item.hdr.size] + 1);
+    }    
 }
