@@ -162,7 +162,7 @@ void process_kbd_queue_task(device_t *state) {
 void queue_kbd_report(hid_keyboard_report_t *report, device_t *state) {
     /* It wouldn't be fun to queue up a bunch of messages and then dump them all on host */
     if (!state->tud_connected)
-        return;
+        return;    
 
     queue_try_add(&state->kbd_queue, report);
 }
@@ -214,6 +214,10 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
     if (length < KBD_REPORT_LENGTH)
         return;
 
+    /* No more keys accepted if we're about to reboot */
+    if (global_state.reboot_requested)
+        return;
+
     extract_kbd_data(raw_report, length, itf, iface, &new_report);
 
     /* Check if any hotkey was pressed */
@@ -240,7 +244,7 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
     uint8_t new_report[CONSUMER_CONTROL_LENGTH] = {0};
     uint16_t *report_ptr = (uint16_t *)new_report;
-      
+
     /* If consumer control is variable, read the values from cc_array and send as array. */
     if (iface->consumer.is_variable) {
         for (int i = 0; i < MAX_CC_BUTTONS && i < 8 * (length - 1); i++) {

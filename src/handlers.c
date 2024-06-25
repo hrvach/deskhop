@@ -117,8 +117,9 @@ void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report
         watchdog_hw->scratch[5] = MAGIC_WORD_1;
         watchdog_hw->scratch[6] = MAGIC_WORD_2;
     }
-        
-    reboot();
+
+    release_all_keys(state);        
+    state->reboot_requested = true;
 };
 
 

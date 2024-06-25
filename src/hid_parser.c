@@ -46,7 +46,7 @@ void update_usage(parser_state_t *parser, int i) {
         *(parser->p_usage + i) = *(parser->p_usage + i - 1);
 }
 
-void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t data, uint16_t size) {   
+void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t data, uint16_t size, hid_interface_t *iface) {   
     *val = (report_val_t){
         .offset     = parser->offset_in_bits,
         .offset_idx = parser->offset_in_bits >> 3,
@@ -63,6 +63,8 @@ void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t da
         .global_usage = parser->global_usage,
         .report_id    = parser->report_id
     };
+
+    iface->uses_report_id |= (parser->report_id != 0);
 }
 
 void handle_global_item(parser_state_t *parser, item_t *item) {
@@ -102,7 +104,7 @@ void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *if
 
     for (int i = 0; i < count; i++) {
         update_usage(parser, i);
-        store_element(parser, &val, i, item->val, size);
+        store_element(parser, &val, i, item->val, size, iface);
         
         /* Use the parsed data to populate internal device structures */
         extract_data(iface, &val);    

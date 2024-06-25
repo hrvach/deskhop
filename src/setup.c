@@ -55,7 +55,10 @@ void pio_usb_host_config(device_t *state) {
     static pio_usb_configuration_t config = PIO_USB_DEFAULT_CONFIG;
     config.pin_dp                         = PIO_USB_DP_PIN_DEFAULT;
 
-    tuh_hid_set_default_protocol(HID_PROTOCOL_REPORT);
+    /* Board B is always report mode, board A is default-boot if configured */
+    if (state->board_role == OUTPUT_B || ENFORCE_KEYBOARD_BOOT_PROTOCOL == 0)
+        tuh_hid_set_default_protocol(HID_PROTOCOL_REPORT);
+
     tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &config);
 
     /* Initialize and configure TinyUSB Host */

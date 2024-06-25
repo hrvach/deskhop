@@ -138,6 +138,7 @@ struct hid_interface_t {
     report_t system;
     process_report_f report_handler[MAX_REPORTS];
     uint8_t protocol;
+    bool uses_report_id;
 };
 
 typedef struct {

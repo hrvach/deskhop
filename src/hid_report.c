@@ -55,7 +55,7 @@ int32_t get_report_value(uint8_t *report, report_val_t *val) {
 }
 
 /* After processing the descriptor, assign the values so we can later use them to interpret reports */
-void handle_consumer_control_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
+void handle_consumer_control_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {  
     if (src->offset > MAX_CC_BUTTONS) {
         return;
     }
@@ -89,10 +89,6 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
     /* Constants are normally used for padding, so skip'em */
     if (src->item_type == CONSTANT)
         return;
-
-    /* Make note if we're using a report ID or not */
-    if (src->report_id > 0)
-        iface->keyboard.uses_report_id = true;
 
     /* Detect and handle modifier keys. <= if modifier is less + constant padding? */
     if (src->size <= MODIFIER_BIT_LENGTH && src->data_type == VARIABLE) {
@@ -236,10 +232,11 @@ int32_t _extract_kbd_boot(uint8_t *raw_report, int len, hid_keyboard_report_t *r
     return KBD_REPORT_LENGTH;
 }
 
-int32_t _extract_kbd_other(uint8_t *raw_report, int len, keyboard_t *kb, hid_keyboard_report_t *report) {
+int32_t _extract_kbd_other(uint8_t *raw_report, int len, hid_interface_t *iface, hid_keyboard_report_t *report) {
     uint8_t *src = raw_report;
+    keyboard_t *kb = &iface->keyboard;
 
-    if (kb->uses_report_id) 
+    if (iface->uses_report_id) 
         src++;
 
     report->modifier = src[kb->modifier.offset_idx];
@@ -251,11 +248,12 @@ int32_t _extract_kbd_other(uint8_t *raw_report, int len, keyboard_t *kb, hid_key
     return KBD_REPORT_LENGTH;
 }
 
-int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, keyboard_t *kb, hid_keyboard_report_t *report) {
+int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, hid_keyboard_report_t *report) {
     uint8_t *ptr = raw_report;
+    keyboard_t *kb = &iface->keyboard;
 
     /* Skip report ID */
-    if (kb->uses_report_id)
+    if (iface->uses_report_id)
         ptr++;
 
     /* We expect array of bits mapping 1:1 from usage_min to usage_max, otherwise panic */
@@ -282,19 +280,20 @@ int32_t extract_kbd_data(
     /* Clear the report to start fresh */
     memset(report, 0, KBD_REPORT_LENGTH);
 
-    /* NKRO is a special case */
-    if (report_id == iface->keyboard.nkro.report_id 
-        && iface->keyboard.is_nkro
-        && itf == HID_ITF_PROTOCOL_NONE)
-        return _extract_kbd_nkro(raw_report, len, &iface->keyboard, report);
-
+    /* If we're in boot protocol mode, then it's easy to decide. */
     if (iface->protocol == HID_PROTOCOL_BOOT)
         return _extract_kbd_boot(raw_report, len, report);
+
+    /* NKRO is a special case */
+    if (report_id > 0
+        && report_id == iface->keyboard.nkro.report_id 
+        && iface->keyboard.is_nkro)
+        return _extract_kbd_nkro(raw_report, len, iface, report);
 
     /* If we're getting 8 bytes of report, it's safe to assume standard modifier + reserved + keys */
     if (len == KBD_REPORT_LENGTH || len == KBD_REPORT_LENGTH + 1)
         return _extract_kbd_boot(raw_report, len, report);
 
     /* This is something completely different, look at the report  */
-    return _extract_kbd_other(raw_report, len, &iface->keyboard, report);
+    return _extract_kbd_other(raw_report, len, iface, report);
 }

@@ -141,7 +141,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
         return;
 
     /* Parse the report descriptor into our internal structure. */
-    parse_report_descriptor(iface, desc_report, desc_len);
+    parse_report_descriptor(iface, desc_report, desc_len);    
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
@@ -150,9 +150,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
             
             if (global_state.config.force_kbd_boot_protocol)
                 tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_BOOT);
-            
-            iface->keyboard.uses_report_id = iface->keyboard.report_id > 0;
-            
+                       
             /* Keeping this is required for setting leds from device set_report callback */
             global_state.kbd_dev_addr       = dev_addr;
             global_state.kbd_instance       = instance;
@@ -168,8 +166,6 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
             if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
                 tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
             }
-
-            iface->mouse.uses_report_id = iface->mouse.report_id > 0;           
             break;
         
         case HID_ITF_PROTOCOL_NONE:            
@@ -198,26 +194,21 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     if (instance >= MAX_INTERFACES)
         return;
 
-    switch (itf_protocol) {
-        case HID_ITF_PROTOCOL_KEYBOARD:
-            process_keyboard_report((uint8_t *)report, len, itf_protocol, iface);
-            break;
+    if (iface->uses_report_id) {
+        uint8_t report_id = report[0];
 
-        case HID_ITF_PROTOCOL_MOUSE:
-            process_mouse_report((uint8_t *)report, len, itf_protocol, iface);
-            break;
+        if (report_id < MAX_REPORTS) {
+            process_report_f receiver = iface->report_handler[report_id];
 
-        /* This can be NKRO keyboard, consumer control, system, mouse, anything. */
-        case HID_ITF_PROTOCOL_NONE:
-            uint8_t report_id = report[0];
-
-            if (report_id < MAX_REPORTS) {
-                process_report_f receiver = iface->report_handler[report_id];
-
-                if (receiver != NULL)
-                    receiver((uint8_t *)report, len, itf_protocol, iface);
-            }                      
-            break;
+            if (receiver != NULL)
+                receiver((uint8_t *)report, len, itf_protocol, iface);
+        }                      
+    }
+    else if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD) {
+        process_keyboard_report((uint8_t *)report, len, itf_protocol, iface);
+    }
+    else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE) {
+        process_mouse_report((uint8_t *)report, len, itf_protocol, iface);
     }
 
     /* Continue requesting reports */
