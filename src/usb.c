@@ -103,6 +103,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
     uint8_t const itf_protocol                          = tuh_hid_interface_protocol(dev_addr, instance);
     tuh_hid_report_info_t report_info[MAX_REPORT_ITEMS] = {0};
     tuh_hid_report_info_t *info;
+    uint8_t num_parsed;
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
@@ -132,8 +133,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
             break;
 
         case HID_ITF_PROTOCOL_NONE:
-            uint8_t num_parsed
-                = tuh_hid_parse_report_descriptor(&report_info[0], MAX_REPORT_ITEMS, desc_report, desc_len);
+            num_parsed = tuh_hid_parse_report_descriptor(&report_info[0], MAX_REPORT_ITEMS, desc_report, desc_len);
 
             for (int report_num = 0; report_num < num_parsed; report_num++) {
                 info = &report_info[report_num];
