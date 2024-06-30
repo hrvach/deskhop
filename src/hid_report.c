@@ -273,6 +273,34 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
         kb->nkro.usage_min, kb->nkro.usage_max, ptr, KEYS_IN_USB_REPORT, report->keycode);
 }
 
+/* Mouse is the same as NKRO, just don't move the offset back (?) */
+int32_t _extract_kbd_mouse(uint8_t *raw_report, int len, hid_interface_t *iface, hid_keyboard_report_t *report) {
+    uint8_t *ptr = raw_report;
+    keyboard_t *kb = &iface->keyboard;
+
+    /* Skip report ID */
+    if (iface->uses_report_id)
+        ptr++;
+
+    /* We expect array of bits mapping 1:1 from usage_min to usage_max, otherwise panic */
+    if ((kb->nkro.usage_max - kb->nkro.usage_min + 1) != kb->nkro.size)
+        return -1;
+
+    /* We expect modifier to be 8 bits long, otherwise we'll fallback to boot mode */
+    if (kb->modifier.size == MODIFIER_BIT_LENGTH) {
+        report->modifier = ptr[kb->modifier.offset_idx];
+    } else
+        return -1;
+
+    /* For the mouse endpoint's report the offset seems to be 1 byte earlier, need to move it */
+    /* Move the pointer to the nkro offset's byte index */
+    ptr = &ptr[kb->nkro.offset_idx + 1];
+
+    return extract_bit_variable(
+        kb->nkro.usage_min, kb->nkro.usage_max, ptr, KEYS_IN_USB_REPORT, report->keycode);
+}
+
+
 int32_t extract_kbd_data(
     uint8_t *raw_report, int len, uint8_t itf, hid_interface_t *iface, hid_keyboard_report_t *report) {
     int report_id = raw_report[0];
@@ -283,6 +311,12 @@ int32_t extract_kbd_data(
     /* If we're in boot protocol mode, then it's easy to decide. */
     if (iface->protocol == HID_PROTOCOL_BOOT)
         return _extract_kbd_boot(raw_report, len, report);
+
+    /* Mouse keys from the keyboard is a special case */
+    if (report_id == 2
+        && report_id == iface->keyboard.nkro.report_id 
+        )
+        return _extract_kbd_mouse(raw_report, len, iface, report);
 
     /* NKRO is a special case */
     if (report_id > 0
