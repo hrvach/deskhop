@@ -29,10 +29,10 @@
  * a key that is unlikely to ever appear on a keyboard that you will use.
  * HID_KEY_F24 is probably a good choice as keyboards with 24 function keys
  * are rare.
- * 
+ *
  * */
 
-#define HOTKEY_TOGGLE HID_KEY_CAPS_LOCK
+#define HOTKEY_TOGGLE HID_KEY_F24
 
 /**================================================== *
  * ==============  Mouse Speed Factor  ============== *
@@ -50,7 +50,7 @@
  * This is now configurable per-screen.
  *
  * ENABLE_ACCELERATION: [0-1], disables or enables mouse acceleration.
- * 
+ *
  * */
 
 /* Output A values */
@@ -58,8 +58,8 @@
 #define MOUSE_SPEED_A_FACTOR_Y 16
 
 /* Output B values  */
-#define MOUSE_SPEED_B_FACTOR_X 16
-#define MOUSE_SPEED_B_FACTOR_Y 16
+#define MOUSE_SPEED_B_FACTOR_X 8
+#define MOUSE_SPEED_B_FACTOR_Y 24
 
 #define JUMP_THRESHOLD 0
 
@@ -74,7 +74,7 @@
  * MOUSE_PARKING_POSITION: [0, 1, 2 ] 0 means park mouse on TOP
  *                                    1 means park mouse on BOTTOM
  *                                    2 means park mouse on PREVIOUS position
- * 
+ *
  * */
 
 #define MOUSE_PARKING_POSITION 0
