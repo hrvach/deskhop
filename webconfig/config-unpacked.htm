@@ -995,16 +995,20 @@ img {
 
 
   
-  <div class="clearfix">
     
-<label class="label-inline"> Enabled</label>
-    
-    
-<input class="api" type="checkbox" name="name19" data-type="uint8" data-key="19" 
-  onchange="valueChangedHandler(this)"
-  />
+<label class=""> Mode</label>
 
-  </div>
+    <select class="api" data-type="uint8" data-key="19" required>                 
+    <option disabled selected value></option>
+
+        
+    <option value="0">Disabled</option>
+        
+    <option value="1">Pong</option>
+        
+    <option value="2">Jitter</option>
+    
+    </select><br />
 
   
              
@@ -1339,16 +1343,20 @@ img {
 
 
   
-  <div class="clearfix">
     
-<label class="label-inline"> Enabled</label>
-    
-    
-<input class="api" type="checkbox" name="name49" data-type="uint8" data-key="49" 
-  onchange="valueChangedHandler(this)"
-  />
+<label class=""> Mode</label>
 
-  </div>
+    <select class="api" data-type="uint8" data-key="49" required>                 
+    <option disabled selected value></option>
+
+        
+    <option value="0">Disabled</option>
+        
+    <option value="1">Pong</option>
+        
+    <option value="2">Jitter</option>
+    
+    </select><br />
 
   
                            
@@ -1711,9 +1719,7 @@ async function sendReport(type, payload = [], sendBoth = false) {
     }
     
     var report = makeReport(type, payload, false);
-    await device.sendReport(mgmtReportId, report);
-    
-    console.log(`Sent ${type} report ${report}`);
+    await device.sendReport(mgmtReportId, report);   
 }
 
 function makeReport(type, payload, proxy=false) {
@@ -1847,7 +1853,6 @@ async function readHandler() {
     let incomingReport = await new Promise((resolve, reject) => {
       const handleInputReport = (event) => {
         updateElement(element, event, dataType);
-        console.log(new Uint8Array(event.data.buffer));
 
         device.removeEventListener('inputreport', handleInputReport);
         resolve();
