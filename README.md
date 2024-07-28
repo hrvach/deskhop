@@ -54,12 +54,27 @@ It also remembers the LED state for each computer, so you can pick up exactly ho
 
 To avoid version mismatch and reported path issues when building, the project now bundles minimal pico sdk and tinyusb.
 
-You should be able to build by running:
+1. Install CMake (at least version 3.6), and GCC cross compiler:
 
-```
-cmake -S . -B build
-cmake --build build
-```
+   ```
+   sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib g++
+   ```
+
+2. Generate project files:
+
+   ```
+   cmake -S . -B build
+   ```
+
+3. Compile code:
+
+   ```
+   cmake --build build
+   ```
+
+#### Windows compilation
+
+It is recommended to use the Windows Subsystem for Linux (WSL): https://learn.microsoft.com/en-us/windows/wsl/install. Once installed you can use the same steps above.
 
 ## Using pre-built images
 
