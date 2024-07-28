@@ -6,12 +6,33 @@ include(CMakePrintHelpers)
 set(TOP "${CMAKE_CURRENT_LIST_DIR}/../..")
 get_filename_component(TOP ${TOP} ABSOLUTE)
 
-# Default to gcc
+#-------------------------------------------------------------
+# Toolchain
+# Can be changed via -DTOOLCHAIN=gcc|iar or -DCMAKE_C_COMPILER=
+#-------------------------------------------------------------
+# Detect toolchain based on CMAKE_C_COMPILER
+if (DEFINED CMAKE_C_COMPILER)
+  string(FIND ${CMAKE_C_COMPILER} "iccarm" IS_IAR)
+  string(FIND ${CMAKE_C_COMPILER} "clang" IS_CLANG)
+  string(FIND ${CMAKE_C_COMPILER} "gcc" IS_GCC)
+
+  if (NOT IS_IAR EQUAL -1)
+    set(TOOLCHAIN iar)
+  elseif (NOT IS_CLANG EQUAL -1)
+    set(TOOLCHAIN clang)
+  elseif (NOT IS_GCC EQUAL -1)
+    set(TOOLCHAIN gcc)
+  endif ()
+endif ()
+
+# default to gcc
 if (NOT DEFINED TOOLCHAIN)
   set(TOOLCHAIN gcc)
 endif ()
 
-# FAMILY not defined, try to detect it from BOARD
+#-------------------------------------------------------------
+# FAMILY and BOARD
+#-------------------------------------------------------------
 if (NOT DEFINED FAMILY)
   if (NOT DEFINED BOARD)
     message(FATAL_ERROR "You must set a FAMILY variable for the build (e.g. rp2040, espressif).
@@ -74,22 +95,35 @@ set(WARNING_FLAGS_GNU
 
 set(WARNING_FLAGS_IAR "")
 
+#-------------------------------------------------------------
+# Functions
+#-------------------------------------------------------------
 
 # Filter example based on only.txt and skip.txt
 function(family_filter RESULT DIR)
   get_filename_component(DIR ${DIR} ABSOLUTE BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-  if (EXISTS "${DIR}/only.txt")
-    file(READ "${DIR}/only.txt" ONLYS)
-    # Replace newlines with semicolon so that it is treated as a list by CMake
-    string(REPLACE "\n" ";" ONLYS_LINES ${ONLYS})
+  if (EXISTS "${DIR}/skip.txt")
+    file(STRINGS "${DIR}/skip.txt" SKIPS_LINES)
+    foreach(MCU IN LISTS FAMILY_MCUS)
+      # For each line in only.txt
+      foreach(_line ${SKIPS_LINES})
+        # If mcu:xxx exists for this mcu then skip
+        if (${_line} STREQUAL "mcu:${MCU}" OR ${_line} STREQUAL "board:${BOARD}" OR ${_line} STREQUAL "family:${FAMILY}")
+          set(${RESULT} 0 PARENT_SCOPE)
+          return()
+        endif()
+      endforeach()
+    endforeach()
+  endif ()
 
-    # For each mcu
+  if (EXISTS "${DIR}/only.txt")
+    file(STRINGS "${DIR}/only.txt" ONLYS_LINES)
     foreach(MCU IN LISTS FAMILY_MCUS)
       # For each line in only.txt
       foreach(_line ${ONLYS_LINES})
         # If mcu:xxx exists for this mcu or board:xxx then include
-        if (${_line} STREQUAL "mcu:${MCU}" OR ${_line} STREQUAL "board:${BOARD}")
+        if (${_line} STREQUAL "mcu:${MCU}" OR ${_line} STREQUAL "board:${BOARD}" OR ${_line} STREQUAL "family:${FAMILY}")
           set(${RESULT} 1 PARENT_SCOPE)
           return()
         endif()
@@ -98,29 +132,8 @@ function(family_filter RESULT DIR)
 
     # Didn't find it in only file so don't build
     set(${RESULT} 0 PARENT_SCOPE)
-
-  elseif (EXISTS "${DIR}/skip.txt")
-    file(READ "${DIR}/skip.txt" SKIPS)
-    # Replace newlines with semicolon so that it is treated as a list by CMake
-    string(REPLACE "\n" ";" SKIPS_LINES ${SKIPS})
-
-    # For each mcu
-    foreach(MCU IN LISTS FAMILY_MCUS)
-      # For each line in only.txt
-      foreach(_line ${SKIPS_LINES})
-        # If mcu:xxx exists for this mcu then skip
-        if (${_line} STREQUAL "mcu:${MCU}")
-          set(${RESULT} 0 PARENT_SCOPE)
-          return()
-        endif()
-      endforeach()
-    endforeach()
-
-    # Didn't find in skip file so build
-    set(${RESULT} 1 PARENT_SCOPE)
   else()
-
-    # Didn't find skip or only file so build
+    # only.txt not exist so build
     set(${RESULT} 1 PARENT_SCOPE)
   endif()
 endfunction()
@@ -206,11 +219,11 @@ function(family_configure_common TARGET RTOS)
     if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
       target_link_options(${TARGET} PUBLIC "LINKER:--no-warn-rwx-segments")
     endif ()
-  endif()
-  if (CMAKE_C_COMPILER_ID STREQUAL "IAR")
+ elseif (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    target_link_options(${TARGET} PUBLIC "LINKER:-Map=$<TARGET_FILE:${TARGET}>.map")
+  elseif (CMAKE_C_COMPILER_ID STREQUAL "IAR")
     target_link_options(${TARGET} PUBLIC "LINKER:--map=$<TARGET_FILE:${TARGET}>.map")
   endif()
-
 
   # ETM Trace option
   if (TRACE_ETM STREQUAL "1")
@@ -226,7 +239,7 @@ function(family_configure_common TARGET RTOS)
       if (NOT TARGET segger_rtt)
         add_library(segger_rtt STATIC ${TOP}/lib/SEGGER_RTT/RTT/SEGGER_RTT.c)
         target_include_directories(segger_rtt PUBLIC ${TOP}/lib/SEGGER_RTT/RTT)
-        #target_compile_definitions(segger_rtt PUBLIC SEGGER_RTT_MODE_DEFAULT=SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL)
+#        target_compile_definitions(segger_rtt PUBLIC SEGGER_RTT_MODE_DEFAULT=SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL)
       endif()
       target_link_libraries(${TARGET} PUBLIC segger_rtt)
     endif ()
@@ -372,6 +385,10 @@ function(family_flash_jlink TARGET)
     set(JLINKEXE JLinkExe)
   endif ()
 
+  if (NOT DEFINED JLINK_IF)
+    set(JLINK_IF swd)
+  endif ()
+
   file(GENERATE
     OUTPUT $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.jlink
     CONTENT "halt
@@ -383,7 +400,7 @@ exit"
 
   add_custom_target(${TARGET}-jlink
     DEPENDS ${TARGET}
-    COMMAND ${JLINKEXE} -device ${JLINK_DEVICE} -if swd -JTAGConf -1,-1 -speed auto -CommandFile $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.jlink
+    COMMAND ${JLINKEXE} -device ${JLINK_DEVICE} -if ${JLINK_IF} -JTAGConf -1,-1 -speed auto -CommandFile $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.jlink
     )
 endfunction()
 
@@ -402,19 +419,34 @@ endfunction()
 
 
 # Add flash openocd target
-function(family_flash_openocd TARGET CLI_OPTIONS)
+function(family_flash_openocd TARGET)
   if (NOT DEFINED OPENOCD)
     set(OPENOCD openocd)
   endif ()
 
-  separate_arguments(CLI_OPTIONS_LIST UNIX_COMMAND ${CLI_OPTIONS})
+  if (NOT DEFINED OPENOCD_OPTION2)
+    set(OPENOCD_OPTION2 "")
+  endif ()
+
+  separate_arguments(OPTION_LIST UNIX_COMMAND ${OPENOCD_OPTION})
+  separate_arguments(OPTION_LIST2 UNIX_COMMAND ${OPENOCD_OPTION2})
 
   # note skip verify since it has issue with rp2040
   add_custom_target(${TARGET}-openocd
     DEPENDS ${TARGET}
-    COMMAND ${OPENOCD} ${CLI_OPTIONS_LIST} -c "program $<TARGET_FILE:${TARGET}> reset exit"
+    COMMAND ${OPENOCD} ${OPTION_LIST} -c "program $<TARGET_FILE:${TARGET}> reset" ${OPTION_LIST2} -c exit
     VERBATIM
     )
+endfunction()
+
+# Add flash openocd-wch target
+# compiled from https://github.com/hathach/riscv-openocd-wch or https://github.com/dragonlock2/miscboards/blob/main/wch/SDK/riscv-openocd.tar.xz
+function(family_flash_openocd_wch TARGET)
+  if (NOT DEFINED OPENOCD)
+    set(OPENOCD $ENV{HOME}/app/riscv-openocd-wch/src/openocd)
+  endif ()
+
+  family_flash_openocd(${TARGET})
 endfunction()
 
 # Add flash pycod target
@@ -429,6 +461,18 @@ function(family_flash_pyocd TARGET)
     )
 endfunction()
 
+
+# Add flash teensy_cli target
+function(family_flash_teensy TARGET)
+  if (NOT DEFINED TEENSY_CLI)
+    set(TEENSY_CLI teensy_loader_cli)
+  endif ()
+
+  add_custom_target(${TARGET}-teensy
+    DEPENDS ${TARGET}
+    COMMAND ${TEENSY_CLI} --mcu=${TEENSY_MCU} -w -s $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.hex
+    )
+endfunction()
 
 # Add flash using NXP's LinkServer (redserver)
 # https://www.nxp.com/design/software/development-software/mcuxpresso-software-and-tools-/linkserver-for-microcontrollers:LINKERSERVER
@@ -457,6 +501,21 @@ function(family_flash_dfu_util TARGET OPTION)
     DEPENDS ${TARGET}
     COMMAND ${DFU_UTIL} -R -d ${DFU_UTIL_VID_PID} -a 0 -D $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.bin
     VERBATIM
+    )
+endfunction()
+
+function(family_flash_msp430flasher TARGET)
+  if (NOT DEFINED MSP430Flasher)
+    set(MSP430FLASHER MSP430Flasher)
+  endif ()
+
+  # set LD_LIBRARY_PATH to find libmsp430.so (directory containing MSP430Flasher)
+  find_program(MSP430FLASHER_PATH MSP430Flasher)
+  get_filename_component(MSP430FLASHER_PARENT_DIR "${MSP430FLASHER_PATH}" DIRECTORY)
+  add_custom_target(${TARGET}-msp430flasher
+    DEPENDS ${TARGET}
+    COMMAND ${CMAKE_COMMAND} -E env LD_LIBRARY_PATH=${MSP430FLASHER_PARENT_DIR}
+            ${MSP430FLASHER} -w $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.hex -z [VCC]
     )
 endfunction()
 

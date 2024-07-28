@@ -32,9 +32,29 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "tusb.h"
+
+#if CFG_TUSB_OS == OPT_OS_FREERTOS
+#if TUP_MCU_ESPRESSIF
+  // ESP-IDF need "freertos/" prefix in include path.
+  // CFG_TUSB_OS_INC_PATH should be defined accordingly.
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/semphr.h"
+  #include "freertos/queue.h"
+  #include "freertos/task.h"
+  #include "freertos/timers.h"
+#else
+  #include "FreeRTOS.h"
+  #include "semphr.h"
+  #include "queue.h"
+  #include "task.h"
+  #include "timers.h"
+#endif
+#endif
 
 // Define the default baudrate
 #ifndef CFG_BOARD_UART_BAUDRATE
@@ -99,6 +119,7 @@ static inline uint32_t board_millis(void) {
 
 #elif CFG_TUSB_OS == OPT_OS_CUSTOM
 // Implement your own board_millis() in any of .c file
+uint32_t board_millis(void);
 
 #else
   #error "board_millis() is not implemented for this OS"
@@ -121,6 +142,7 @@ static inline size_t board_usb_get_serial(uint16_t desc_str1[], size_t max_chars
   uint8_t uid[16] TU_ATTR_ALIGNED(4);
   size_t uid_len;
 
+  // TODO work with make, but not working with esp32s3 cmake
   if ( board_get_unique_id ) {
     uid_len = board_get_unique_id(uid, sizeof(uid));
   }else {

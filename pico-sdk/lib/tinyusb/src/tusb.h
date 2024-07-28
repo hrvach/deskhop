@@ -38,8 +38,6 @@
 #include "osal/osal.h"
 #include "common/tusb_fifo.h"
 
-#include "class/hid/hid.h"
-
 //------------- TypeC -------------//
 #if CFG_TUC_ENABLED
   #include "typec/usbc.h"
@@ -61,9 +59,6 @@
     #include "class/cdc/cdc_host.h"
   #endif
 
-  #if CFG_TUH_VENDOR
-    #include "class/vendor/vendor_host.h"
-  #endif
 #else
   #ifndef tuh_int_handler
   #define tuh_int_handler(...)

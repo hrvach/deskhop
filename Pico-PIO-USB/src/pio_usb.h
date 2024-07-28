@@ -32,6 +32,8 @@ int pio_usb_set_out_data(endpoint_t *ep, const uint8_t *buffer, uint8_t len);
 // Misc functions
 int pio_usb_kbd_set_leds(usb_device_t *device, uint8_t port, uint8_t value); 
 
+extern int dh_debug_printf(const char *format, ...);
+
 #ifdef __cplusplus
  }
 #endif

@@ -414,7 +414,7 @@ bool pio_usb_host_send_setup(uint8_t root_idx, uint8_t device_address,
                              uint8_t const setup_packet[8]) {
   endpoint_t *ep = _find_ep(root_idx, device_address, 0);
   if (!ep) {
-    printf("cannot find ep 0x00\r\n");
+    dh_debug_printf("cannot find ep 0x00\r\n");
     return false;
   }
 
@@ -430,7 +430,7 @@ bool pio_usb_host_endpoint_transfer(uint8_t root_idx, uint8_t device_address,
                                     uint16_t buflen) {
   endpoint_t *ep = _find_ep(root_idx, device_address, ep_address);
   if (!ep) {
-    printf("no endpoint 0x%02X\r\n", ep_address);
+    dh_debug_printf("no endpoint 0x%02X\r\n", ep_address);
     return false;
   }
 
@@ -449,7 +449,7 @@ bool pio_usb_host_endpoint_abort_transfer(uint8_t root_idx, uint8_t device_addre
                                           uint8_t ep_address) {
   endpoint_t *ep = _find_ep(root_idx, device_address, ep_address);
   if (!ep) {
-    printf("no endpoint 0x%02X\r\n", ep_address);
+    dh_debug_printf("no endpoint 0x%02X\r\n", ep_address);
     return false;
   }
 
@@ -679,13 +679,13 @@ static int __no_inline_not_in_flash_func(control_out_protocol)(
   }
 
   if (time_us_64() - start_time >= timeout) {
-    printf("control out[timeout]\n");
+    dh_debug_printf("control out[timeout]\n");
     res = -2;
   } else if (pipe->operation == CONTROL_ERROR) {
-    printf("control out[error]\n");
+    dh_debug_printf("control out[error]\n");
     res = -1;
   } else if (pipe->operation == CONTROL_COMPLETE) {
-    printf("control out[complete]\n");
+    dh_debug_printf("control out[complete]\n");
     res = 0;
   }
   pipe->operation = CONTROL_NONE;
@@ -723,13 +723,13 @@ static int __no_inline_not_in_flash_func(control_in_protocol)(
   }
 
   if (time_us_64() - start_time >= timeout) {
-    printf("control in[timeout]\n");
+    dh_debug_printf("control in[timeout]\n");
     res = -2;
   } else if (pipe->operation == CONTROL_ERROR) {
-    printf("control in[error]\n");
+    dh_debug_printf("control in[error]\n");
     res = -1;
   } else if (pipe->operation == CONTROL_COMPLETE) {
-    printf("control in[complete]\n");
+    dh_debug_printf("control in[complete]\n");
     res = 0;
   }
   pipe->operation = CONTROL_NONE;
@@ -763,18 +763,18 @@ static int get_hub_port_status(usb_device_t *device, uint8_t port,
 static int initialize_hub(usb_device_t *device) {
   uint8_t rx_buffer[16];
   int res = 0;
-  printf("USB Hub detected\n");
+  dh_debug_printf("USB Hub detected\n");
   usb_setup_packet_t get_hub_desc_request = GET_HUB_DESCRPTOR_REQUEST;
   control_in_protocol(device, (uint8_t *)&get_hub_desc_request,
                       sizeof(get_hub_desc_request), rx_buffer, 8);
   const hub_descriptor_t *desc = (hub_descriptor_t *)rx_buffer;
   uint8_t port_num = desc->port_num;
 
-  printf("\tTurn on port powers\n");
+  dh_debug_printf("\tTurn on port powers\n");
   for (int idx = 0; idx < port_num; idx++) {
     res = set_hub_feature(device, idx, HUB_SET_PORT_POWER);
     if (res != 0) {
-      printf("\tFailed to turn on ports\n");
+      dh_debug_printf("\tFailed to turn on ports\n");
       break;
     }
   }
@@ -837,7 +837,7 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
   uint8_t idx_product = desc->product;
   uint8_t idx_serial = desc->serial;
 
-  printf("Enumerating %04x:%04x, class:%d, address:%d\n", device->vid,
+  dh_debug_printf("Enumerating %04x:%04x, class:%d, address:%d\n", device->vid,
          device->pid, device->device_class, address);
 
   usb_setup_packet_t set_address_request = SET_ADDRESS_REQ_DEFAULT;
@@ -862,9 +862,9 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
   if (idx_manufacture != 0) {
     res = get_string_descriptor(device, idx_manufacture, rx_buffer, str);
     if (res == 0) {
-      printf("Manufacture:%s\n", str);
+      dh_debug_printf("Manufacture:%s\n", str);
     } else {
-      printf("Failed to get string descriptor (Manufacture)\n");
+      dh_debug_printf("Failed to get string descriptor (Manufacture)\n");
     }
     stdio_flush();
   }
@@ -872,9 +872,9 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
   if (idx_product != 0) {
     res = get_string_descriptor(device, idx_product, rx_buffer, str);
     if (res == 0) {
-      printf("Product:%s\n", str);
+      dh_debug_printf("Product:%s\n", str);
     } else {
-      printf("Failed to get string descriptor (Product)\n");
+      dh_debug_printf("Failed to get string descriptor (Product)\n");
     }
     stdio_flush();
   }
@@ -882,9 +882,9 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
   if (idx_serial != 0) {
     res = get_string_descriptor(device, idx_serial, rx_buffer, str);
     if (res == 0) {
-      printf("Serial:%s\n", str);
+      dh_debug_printf("Serial:%s\n", str);
     } else {
-      printf("Failed to get string descriptor (Serial)\n");
+      dh_debug_printf("Failed to get string descriptor (Serial)\n");
     }
     stdio_flush();
   }
@@ -943,7 +943,7 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
       case DESC_TYPE_INTERFACE: {
         const interface_descriptor_t *d =
             (const interface_descriptor_t *)descriptor;
-        printf(
+        dh_debug_printf(
             "inum:%d, altsetting:%d, numep:%d, iclass:%d, isubclass:%d, "
             "iprotcol:%d, iface:%d\n",
             d->inum, d->altsetting, d->numep, d->iclass, d->isubclass,
@@ -954,7 +954,7 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
       case DESC_TYPE_ENDPOINT: {
         const endpoint_descriptor_t *d =
             (const endpoint_descriptor_t *)descriptor;
-        printf("\t\t\tepaddr:0x%02x, attr:%d, size:%d, interval:%d\n",
+        dh_debug_printf("\t\t\tepaddr:0x%02x, attr:%d, size:%d, interval:%d\n",
                d->epaddr, d->attr, d->max_size[0] | (d->max_size[1] << 8),
                d->interval);
 
@@ -983,13 +983,13 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
             ep->need_pre = !device->is_root && !device->is_fullspeed;
             ep->is_tx = (d->epaddr & 0x80) ? false : true;
           } else {
-            printf("No empty EP\n");
+            dh_debug_printf("No empty EP\n");
           }
         }
       } break;
       case DESC_TYPE_HID: {
         const hid_descriptor_t *d = (const hid_descriptor_t *)descriptor;
-        printf(
+        dh_debug_printf(
             "\tbcdHID:%x.%x, country:%d, desc num:%d, desc_type:%d, "
             "desc_size:%d\n",
             d->bcd_hid[1], d->bcd_hid[0], d->contry_code, d->num_desc,
@@ -1011,11 +1011,11 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
         control_in_protocol(
             device, (uint8_t *)&get_hid_report_descrpitor_request,
             sizeof(get_hid_report_descrpitor_request), rx_buffer, desc_len);
-        printf("\t\tReport descriptor:");
+        dh_debug_printf("\t\tReport descriptor:");
         for (int i = 0; i < desc_len; i++) {
-          printf("%02x ", device->control_pipe.rx_buffer[i]);
+          dh_debug_printf("%02x ", device->control_pipe.rx_buffer[i]);
         }
-        printf("\n");
+        dh_debug_printf("\n");
         stdio_flush();
 
       } break;
@@ -1044,7 +1044,7 @@ static int enumerate_device(usb_device_t *device, uint8_t address) {
 }
 
 static void device_disconnect(usb_device_t *device) {
-  printf("Disconnect device %d\n", device->address);
+  dh_debug_printf("Disconnect device %d\n", device->address);
   for (int port = 0; port < PIO_USB_HUB_PORT_CNT; port++) {
     if (device->child_devices[port] != 0) {
       device_disconnect(&pio_usb_device[device->child_devices[port]]);
@@ -1086,7 +1086,7 @@ static int assign_new_device_to_port(usb_device_t *hub_device, uint8_t port, boo
     pio_usb_device[idx].connected = true;
     pio_usb_device[idx].is_fullspeed = !is_ls;
     pio_usb_device[idx].event = EVENT_CONNECT;
-    printf("Assign device %d to %d-%d\n", idx, hub_device->address, port);
+    dh_debug_printf("Assign device %d to %d-%d\n", idx, hub_device->address, port);
 
     endpoint_descriptor_t ep0_desc = {
       sizeof(endpoint_descriptor_t), DESC_TYPE_ENDPOINT, 0x00, 0x00, { 0x08, 0x00 }, 0x00
@@ -1097,7 +1097,7 @@ static int assign_new_device_to_port(usb_device_t *hub_device, uint8_t port, boo
     return 0;
   }
 
-  printf("Failed to assign device\n");
+  dh_debug_printf("Failed to assign device\n");
 
   return -1;
 }
@@ -1114,22 +1114,22 @@ static void __no_inline_not_in_flash_func(process_hub_event)(
     hub_port_status_t status;
     int res = get_hub_port_status(device, port, &status);
     if (res != 0) {
-      printf("Failed to get port%d-%d status\n", device->address, port);
+      dh_debug_printf("Failed to get port%d-%d status\n", device->address, port);
       continue;
     }
-    printf("port%d-%d status:%d %d\n", device->address, port,
+    dh_debug_printf("port%d-%d status:%d %d\n", device->address, port,
            status.port_change, status.port_status);
 
     if (status.port_change & HUB_CHANGE_PORT_CONNECTION) {
       if (status.port_status & HUB_STAT_PORT_CONNECTION) {
-        printf("new device on port %d, reset port\n", port);
+        dh_debug_printf("new device on port %d, reset port\n", port);
         if (device->child_devices[port] != 0) {
-          printf("device is already assigned. disconnect previous\n");
+          dh_debug_printf("device is already assigned. disconnect previous\n");
           device_disconnect(&pio_usb_device[device->child_devices[port]]);
         }
 
         if (device->root->addr0_exists) {
-          printf("Address 0 already exists\n");
+          dh_debug_printf("Address 0 already exists\n");
           continue;
         }
 
@@ -1137,17 +1137,17 @@ static void __no_inline_not_in_flash_func(process_hub_event)(
           set_hub_feature(device, port, HUB_SET_PORT_RESET);
           device->root->addr0_exists = true;
         } else {
-          printf("No vacant in device pool\n");
+          dh_debug_printf("No vacant in device pool\n");
         }
       } else {
-        printf("device removed from port %d\n", port);
+        dh_debug_printf("device removed from port %d\n", port);
         if (device->child_devices[port] != 0) {
           device_disconnect(&pio_usb_device[device->child_devices[port]]);
         }
       }
       clear_hub_feature(device, port, HUB_CLR_PORT_CONNECTION);
     } else if (status.port_change & HUB_CHANGE_PORT_RESET) {
-      printf("reset port %d complete\n", port);
+      dh_debug_printf("reset port %d complete\n", port);
       res = clear_hub_feature(device, port, HUB_CLR_PORT_RESET);
       if (res == 0) {
         assign_new_device_to_port(device, port,
@@ -1164,7 +1164,7 @@ static void __no_inline_not_in_flash_func(process_hub_event)(
 void __no_inline_not_in_flash_func(pio_usb_host_task)(void) {
   for (int root_idx = 0; root_idx < PIO_USB_ROOT_PORT_CNT; root_idx++) {
     if (pio_usb_root_port[root_idx].event == EVENT_CONNECT) {
-      printf("Root %d connected\n", root_idx);
+      dh_debug_printf("Root %d connected\n", root_idx);
       int dev_idx = device_pool_vacant();
       if (dev_idx >= 0) {
         on_device_connect(&pio_port[0], &pio_usb_root_port[root_idx], dev_idx);
@@ -1172,7 +1172,7 @@ void __no_inline_not_in_flash_func(pio_usb_host_task)(void) {
       }
       pio_usb_root_port[root_idx].event = EVENT_NONE;
     } else if (pio_usb_root_port[root_idx].event == EVENT_DISCONNECT) {
-      printf("Root %d disconnected\n", root_idx);
+      dh_debug_printf("Root %d disconnected\n", root_idx);
       pio_usb_host_close_device(
           root_idx, pio_usb_root_port[root_idx].root_device->address);
       pio_usb_root_port[root_idx].root_device->connected = false;
@@ -1187,7 +1187,7 @@ void __no_inline_not_in_flash_func(pio_usb_host_task)(void) {
 
     if (device->event == EVENT_CONNECT) {
       device->event = EVENT_NONE;
-      printf("Device %d Connected\n", idx);
+      dh_debug_printf("Device %d Connected\n", idx);
       int res = enumerate_device(device, idx + 1);
       if (res == 0) {
         device->enumerated = true;
@@ -1198,7 +1198,7 @@ void __no_inline_not_in_flash_func(pio_usb_host_task)(void) {
       }
 
       if (res != 0) {
-        printf("Enumeration failed(%d)\n", res);
+        dh_debug_printf("Enumeration failed(%d)\n", res);
         // retry
         if (device->is_root) {
           device->root->event = EVENT_DISCONNECT;
@@ -1210,7 +1210,7 @@ void __no_inline_not_in_flash_func(pio_usb_host_task)(void) {
       }
     } else if (device->event == EVENT_DISCONNECT) {
       device->event = EVENT_NONE;
-      printf("Disconnect\n");
+      dh_debug_printf("Disconnect\n");
       device_disconnect(device);
     } else if (device->event == EVENT_HUB_PORT_CHANGE) {
       process_hub_event(device);
