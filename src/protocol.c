@@ -17,7 +17,11 @@ const field_map_t api_field_map[] = {
     { 16, false, UINT8,  1, offsetof(device_t, config.output[0].os) },
     { 17, false, UINT8,  1, offsetof(device_t, config.output[0].pos) },
     { 18, false, UINT8,  1, offsetof(device_t, config.output[0].mouse_park_pos) },
+<<<<<<< HEAD
     { 19, false, UINT8,  1, offsetof(device_t, config.output[0].screensaver.enabled) },
+=======
+    { 19, false, UINT8,  1, offsetof(device_t, config.output[0].screensaver.mode) },
+>>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
     { 20, false, UINT8,  1, offsetof(device_t, config.output[0].screensaver.only_if_inactive) },
 
     /* Until we increase the payload size from 8 bytes, clamp to avoid exceeding the field size */
@@ -34,7 +38,11 @@ const field_map_t api_field_map[] = {
     { 46, false, UINT8,  1, offsetof(device_t, config.output[1].os) },
     { 47, false, UINT8,  1, offsetof(device_t, config.output[1].pos) },
     { 48, false, UINT8,  1, offsetof(device_t, config.output[1].mouse_park_pos) },
+<<<<<<< HEAD
     { 49, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.enabled) },
+=======
+    { 49, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.mode) },
+>>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
     { 50, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.only_if_inactive) },
     { 51, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.idle_time_us) },
     { 52, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.max_time_us) },

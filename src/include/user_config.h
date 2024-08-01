@@ -109,8 +109,8 @@
  *
  **/
 
-#define SCREENSAVER_A_ENABLED 0
-#define SCREENSAVER_B_ENABLED 0
+#define SCREENSAVER_A_MODE DISABLED
+#define SCREENSAVER_B_MODE DISABLED
 
 /**================================================== *
  *

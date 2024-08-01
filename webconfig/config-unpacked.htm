@@ -995,6 +995,7 @@ img {
 
 
   
+<<<<<<< HEAD
   <div class="clearfix">
     
 <label class="label-inline"> Enabled</label>
@@ -1005,6 +1006,22 @@ img {
   />
 
   </div>
+=======
+    
+<label class=""> Mode</label>
+
+    <select class="api" data-type="uint8" data-key="19" required>                 
+    <option disabled selected value></option>
+
+        
+    <option value="0">Disabled</option>
+        
+    <option value="1">Pong</option>
+        
+    <option value="2">Jitter</option>
+    
+    </select><br />
+>>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
 
   
              
@@ -1339,6 +1356,7 @@ img {
 
 
   
+<<<<<<< HEAD
   <div class="clearfix">
     
 <label class="label-inline"> Enabled</label>
@@ -1349,6 +1367,22 @@ img {
   />
 
   </div>
+=======
+    
+<label class=""> Mode</label>
+
+    <select class="api" data-type="uint8" data-key="49" required>                 
+    <option disabled selected value></option>
+
+        
+    <option value="0">Disabled</option>
+        
+    <option value="1">Pong</option>
+        
+    <option value="2">Jitter</option>
+    
+    </select><br />
+>>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
 
   
                            
@@ -1711,9 +1745,13 @@ async function sendReport(type, payload = [], sendBoth = false) {
     }
     
     var report = makeReport(type, payload, false);
+<<<<<<< HEAD
     await device.sendReport(mgmtReportId, report);
     
     console.log(`Sent ${type} report ${report}`);
+=======
+    await device.sendReport(mgmtReportId, report);   
+>>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
 }
 
 function makeReport(type, payload, proxy=false) {
@@ -1847,7 +1885,10 @@ async function readHandler() {
     let incomingReport = await new Promise((resolve, reject) => {
       const handleInputReport = (event) => {
         updateElement(element, event, dataType);
+<<<<<<< HEAD
         console.log(new Uint8Array(event.data.buffer));
+=======
+>>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
 
         device.removeEventListener('inputreport', handleInputReport);
         resolve();

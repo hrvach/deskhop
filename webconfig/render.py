@@ -23,7 +23,11 @@ def render(filename, *args, **kwargs):
 
 
 def write_file(payload, filename=OUTPUT_FILENAME):
+<<<<<<< HEAD
     with open(filename, 'w') as file:
+=======
+    with open(filename, 'w', encoding='utf-8') as file:
+>>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
         file.write(payload)
 
 
