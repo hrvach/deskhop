@@ -50,12 +50,12 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
         return -1;
 
     /* We lie about the image size - actually it's 64 kB, not 512 kB, so if we're out of bounds, return zeros */
-    else if (lba >= ACTUAL_NUMBER_OF_BLOCKS) 
+    else if (lba >= ACTUAL_NUMBER_OF_BLOCKS)
         memset(buffer, 0x00, bufsize);
 
-    else 
+    else
         memcpy(buffer, addr, bufsize);
-    
+
     return (int32_t)bufsize;
 }
 
@@ -67,31 +67,31 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
 /* Simple firmware write routine, we get 512-byte uf2 blocks with 256 byte payload */
 int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
     uf2_t *uf2 = (uf2_t *)&buffer[0];
-    bool is_final_block = uf2->blockNo == (STAGING_IMAGE_SIZE / FLASH_PAGE_SIZE) - 1;    
-    uint32_t flash_addr = (uint32_t)ADDR_FW_RUNNING + uf2->blockNo * FLASH_PAGE_SIZE - XIP_BASE;   
-    
+    bool is_final_block = uf2->blockNo == (STAGING_IMAGE_SIZE / FLASH_PAGE_SIZE) - 1;
+    uint32_t flash_addr = (uint32_t)ADDR_FW_RUNNING + uf2->blockNo * FLASH_PAGE_SIZE - XIP_BASE;
+
     if (lba >= NUMBER_OF_BLOCKS)
         return -1;
 
     /* If we're not detecting UF2 magic constants, we have nothing to do... */
     if (uf2->magicStart0 != UF2_MAGIC_START0 || uf2->magicStart1 != UF2_MAGIC_START1 || uf2->magicEnd != UF2_MAGIC_END)
         return (int32_t)bufsize;
-        
+
     if (uf2->blockNo == 0) {
         global_state.fw.checksum = 0xffffffff;
-    
+
         /* Make sure nobody else touches the flash during this operation, otherwise we get empty pages */
         global_state.fw.upgrade_in_progress = true;
-    }    
+    }
 
     /* Update checksum continuously as blocks are being received */
     const uint32_t last_block_with_checksum = (STAGING_IMAGE_SIZE - FLASH_SECTOR_SIZE) / FLASH_PAGE_SIZE;
     for (int i=0; i<FLASH_PAGE_SIZE && uf2->blockNo < last_block_with_checksum; i++)
-        global_state.fw.checksum = crc32_iter(global_state.fw.checksum, buffer[32 + i]);    
+        global_state.fw.checksum = crc32_iter(global_state.fw.checksum, buffer[32 + i]);
 
     write_flash_page(flash_addr, &buffer[32]);
-    
-    if (is_final_block) {        
+
+    if (is_final_block) {
         global_state.fw.checksum = ~global_state.fw.checksum;
 
         /* If checksums don't match, overwrite first sector and rely on ROM bootloader for recovery */
@@ -102,18 +102,17 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
         else {
             global_state.reboot_requested = true;
         }
-    }    
+    }
 
     /* Provide some visual indication that fw is being uploaded */
-    toggle_led();    
+    toggle_led();
     watchdog_update();
 
     return (int32_t)bufsize;
 }
 
 /* This is a super-dumb, rudimentary disk, any other scsi command is simply rejected */
-int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize) {   
+int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize) {
     tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
     return -1;
 }
- 

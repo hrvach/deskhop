@@ -31,7 +31,7 @@ typedef struct {
     int usage_page;
     int usage;
     uint8_t *id;
-    report_val_t *dst;    
+    report_val_t *dst;
     value_handler_f handler;
     process_report_f receiver;
 } usage_map_t;

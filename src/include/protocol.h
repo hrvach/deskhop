@@ -17,7 +17,7 @@ typedef enum {
 typedef struct {
     uint32_t idx;
     bool readonly;
-    type_e type;                         
+    type_e type;
     uint32_t len;
     size_t offset;
 } field_map_t;

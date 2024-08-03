@@ -1,6 +1,6 @@
 #include "main.h"
 
-const field_map_t api_field_map[] = {    
+const field_map_t api_field_map[] = {
 /* Index, Rdonly, Type, Len, Offset in struct */
     { 0,  true,  UINT8,  1, offsetof(device_t, active_output) },
     { 1,  true,  INT16,  2, offsetof(device_t, pointer_x) },
@@ -22,7 +22,7 @@ const field_map_t api_field_map[] = {
 
     /* Until we increase the payload size from 8 bytes, clamp to avoid exceeding the field size */
     { 21, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.idle_time_us) },
-    { 22, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.max_time_us) },    
+    { 22, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.max_time_us) },
 
     /* Output B */
     { 40, false, UINT32, 4, offsetof(device_t, config.output[1].number) },
@@ -58,7 +58,7 @@ const field_map_t api_field_map[] = {
     { 82, true,  UINT8,  1, offsetof(device_t, relative_mouse) },
 };
 
-const field_map_t* get_field_map_entry(uint32_t index) {    
+const field_map_t* get_field_map_entry(uint32_t index) {
     for (unsigned int i = 0; i < ARRAY_SIZE(api_field_map); i++) {
         if (api_field_map[i].idx == index) {
             return &api_field_map[i];

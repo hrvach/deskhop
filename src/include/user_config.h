@@ -29,7 +29,7 @@
  * a key that is unlikely to ever appear on a keyboard that you will use.
  * HID_KEY_F24 is probably a good choice as keyboards with 24 function keys
  * are rare.
- * 
+ *
  * */
 
 #define HOTKEY_TOGGLE HID_KEY_F24
@@ -50,7 +50,7 @@
  * This is now configurable per-screen.
  *
  * ENABLE_ACCELERATION: [0-1], disables or enables mouse acceleration.
- * 
+ *
  * */
 
 /* Output A values */
@@ -180,10 +180,10 @@
  * ==================================================
  *
  * If enabled, fixes some device incompatibilities by
- * enforcing the boot protocol (which is simpler to parse 
+ * enforcing the boot protocol (which is simpler to parse
  * and with less variation)
  *
- * ENFORCE_KEYBOARD_BOOT_PROTOCOL: [0, 1] - 1 means keyboard will forcefully use 
+ * ENFORCE_KEYBOARD_BOOT_PROTOCOL: [0, 1] - 1 means keyboard will forcefully use
  *                                          the boot protocol
  *                                        - 0 means no such thing is enforced
  *

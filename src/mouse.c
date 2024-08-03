@@ -87,7 +87,7 @@ void output_mouse_report(mouse_report_t *report, device_t *state) {
         state->last_activity[BOARD_ROLE] = time_us_64();
     } else {
         queue_packet((uint8_t *)report, MOUSE_REPORT_MSG, MOUSE_REPORT_LENGTH);
-    }    
+    }
 }
 
 /* Calculate and return Y coordinate when moving from screen out_from to screen out_to */
@@ -124,12 +124,12 @@ int16_t scale_y_coordinate(int screen_from, int screen_to, device_t *state) {
 void switch_screen(
     device_t *state, output_t *output, int new_x, int output_from, int output_to, int direction) {
     uint8_t *mouse_park_pos = &state->config.output[state->active_output].mouse_park_pos;
-    
+
     int16_t mouse_y = (*mouse_park_pos == 0) ? MIN_SCREEN_COORD : /* Top */
                       (*mouse_park_pos == 1) ? MAX_SCREEN_COORD : /* Bottom */
                                                state->pointer_y;  /* Previous */
 
-    mouse_report_t hidden_pointer = {.y = mouse_y, .x = MAX_SCREEN_COORD};   
+    mouse_report_t hidden_pointer = {.y = mouse_y, .x = MAX_SCREEN_COORD};
 
     output_mouse_report(&hidden_pointer, state);
     switch_output(state, output_to);
@@ -138,7 +138,7 @@ void switch_screen(
 }
 
 void switch_desktop(device_t *state, output_t *output, int new_index, int direction) {
-    /* Fix for MACOS: Send relative mouse movement here, one or two pixels in the 
+    /* Fix for MACOS: Send relative mouse movement here, one or two pixels in the
        direction of movement, BEFORE absolute report sets X to 0 */
     mouse_report_t move_relative_one
         = {.x = (direction == LEFT) ? SCREEN_MIDPOINT - 2 : SCREEN_MIDPOINT + 2, .mode = RELATIVE};
@@ -207,7 +207,7 @@ void check_screen_switch(const mouse_values_t *values, device_t *state) {
         switch_desktop(state, output, output->screen_index + 1, direction);
 }
 
-void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t *values, hid_interface_t *iface) {   
+void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t *values, hid_interface_t *iface) {
     /* Interpret values depending on the current protocol used. */
     if (iface->protocol == HID_PROTOCOL_BOOT) {
         hid_mouse_report_t *mouse_report = (hid_mouse_report_t *)raw_report;
@@ -267,7 +267,7 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     output_mouse_report(&report, state);
 
     /* We use the mouse to switch outputs, the logic is in check_screen_switch() */
-    check_screen_switch(&values, state);   
+    check_screen_switch(&values, state);
 }
 
 /* ==================================================== *

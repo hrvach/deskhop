@@ -52,7 +52,7 @@ int main(void) {
     while (true) {
         for (int i = 0; i < NUM_TASKS; i++)
             task_scheduler(device, &tasks_core0[i]);
-    }      
+    }
 }
 
 void core1_main() {
@@ -64,14 +64,14 @@ void core1_main() {
         [4] = {.exec = &firmware_upgrade_task,   .frequency = _HZ(4000)},    // | Send firmware to the other board if needed
         [5] = {.exec = &heartbeat_output_task,   .frequency = _HZ(1)},       // | Output periodic heartbeats
     };                                                                       // `----- then go back and repeat forever
-    const int NUM_TASKS = ARRAY_SIZE(tasks_core1); 
+    const int NUM_TASKS = ARRAY_SIZE(tasks_core1);
 
     while (true) {
         // Update the timestamp, so core0 can figure out if we're dead
         device->core1_last_loop_pass = time_us_64();
 
         for (int i = 0; i < NUM_TASKS; i++)
-            task_scheduler(device, &tasks_core1[i]);                
+            task_scheduler(device, &tasks_core1[i]);
     }
 }
 /* =======  End of Main Program Loops  ======= */

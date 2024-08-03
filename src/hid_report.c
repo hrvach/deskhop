@@ -55,17 +55,17 @@ int32_t get_report_value(uint8_t *report, report_val_t *val) {
 }
 
 /* After processing the descriptor, assign the values so we can later use them to interpret reports */
-void handle_consumer_control_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {  
+void handle_consumer_control_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
     if (src->offset > MAX_CC_BUTTONS) {
         return;
     }
-    
+
     if (src->data_type == VARIABLE) {
         iface->keyboard.cc_array[src->offset] = src->usage;
         iface->consumer.is_variable = true;
     }
-    
-    iface->consumer.is_array |= (src->data_type == ARRAY);    
+
+    iface->consumer.is_array |= (src->data_type == ARRAY);
 }
 
 /* After processing the descriptor, assign the values so we can later use them to interpret reports */
@@ -73,13 +73,13 @@ void handle_system_control_values(report_val_t *src, report_val_t *dst, hid_inte
     if (src->offset > MAX_SYS_BUTTONS) {
         return;
     }
-    
+
     if (src->data_type == VARIABLE) {
         iface->keyboard.sys_array[src->offset] = src->usage;
         iface->system.is_variable = true;
     }
-    
-    iface->system.is_array |= (src->data_type == ARRAY);    
+
+    iface->system.is_array |= (src->data_type == ARRAY);
 }
 
 /* After processing the descriptor, assign the values so we can later use them to interpret reports */
@@ -143,54 +143,54 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
          .id           = &iface->mouse.report_id},
 
         {.usage_page   = HID_USAGE_PAGE_DESKTOP,
-         .global_usage = HID_USAGE_DESKTOP_MOUSE,        
+         .global_usage = HID_USAGE_DESKTOP_MOUSE,
          .usage        = HID_USAGE_DESKTOP_X,
          .handler      = _store,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.move_x,
          .id           = &iface->mouse.report_id},
-  
+
         {.usage_page   = HID_USAGE_PAGE_DESKTOP,
-         .global_usage = HID_USAGE_DESKTOP_MOUSE,        
+         .global_usage = HID_USAGE_DESKTOP_MOUSE,
          .usage        = HID_USAGE_DESKTOP_Y,
          .handler      = _store,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.move_y,
          .id           = &iface->mouse.report_id},
-  
+
         {.usage_page   = HID_USAGE_PAGE_DESKTOP,
-         .global_usage = HID_USAGE_DESKTOP_MOUSE,        
+         .global_usage = HID_USAGE_DESKTOP_MOUSE,
          .usage        = HID_USAGE_DESKTOP_WHEEL,
          .handler      = _store,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.wheel,
          .id           = &iface->mouse.report_id},
-  
+
         {.usage_page   = HID_USAGE_PAGE_KEYBOARD,
-         .global_usage = HID_USAGE_DESKTOP_KEYBOARD,        
+         .global_usage = HID_USAGE_DESKTOP_KEYBOARD,
          .handler      = handle_keyboard_descriptor_values,
          .receiver     = process_keyboard_report,
          .id           = &iface->keyboard.report_id},
-  
+
         {.usage_page   = HID_USAGE_PAGE_CONSUMER,
          .global_usage = HID_USAGE_CONSUMER_CONTROL,
          .handler      = handle_consumer_control_values,
          .receiver     = process_consumer_report,
          .dst          = &iface->consumer.val,
          .id           = &iface->consumer.report_id},
-  
+
         {.usage_page   = HID_USAGE_PAGE_DESKTOP,
          .global_usage = HID_USAGE_DESKTOP_SYSTEM_CONTROL,
          .handler      = _store,
          .receiver     = process_system_report,
          .dst          = &iface->system.val,
          .id           = &iface->system.report_id},
-    };  
+    };
 
     /* We extracted all we could find in the descriptor to report_values, now go through them and
        match them up with the values in the table above, then store those values for later reference */
 
-    for (const usage_map_t *hay = map; hay != &map[ARRAY_SIZE(map)]; hay++) {        
+    for (const usage_map_t *hay = map; hay != &map[ARRAY_SIZE(map)]; hay++) {
         /* ---> If any condition is not defined, we consider it as matched <--- */
         bool global_usages_match = (val->global_usage == hay->global_usage) || (hay->global_usage == 0);
         bool usages_match        = (val->usage == hay->usage) || (hay->usage == 0);
@@ -236,7 +236,7 @@ int32_t _extract_kbd_other(uint8_t *raw_report, int len, hid_interface_t *iface,
     uint8_t *src = raw_report;
     keyboard_t *kb = &iface->keyboard;
 
-    if (iface->uses_report_id) 
+    if (iface->uses_report_id)
         src++;
 
     report->modifier = src[kb->modifier.offset_idx];
@@ -286,7 +286,7 @@ int32_t extract_kbd_data(
 
     /* NKRO is a special case */
     if (report_id > 0
-        && report_id == iface->keyboard.nkro.report_id 
+        && report_id == iface->keyboard.nkro.report_id
         && iface->keyboard.is_nkro)
         return _extract_kbd_nkro(raw_report, len, iface, report);
 

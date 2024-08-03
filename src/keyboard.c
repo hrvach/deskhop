@@ -39,13 +39,13 @@ hotkey_combo_t hotkeys[] = {
 
     /* Switch lock */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTCTRL,
-     .keys           = {HID_KEY_L},
+     .keys           = {HID_KEY_K},
      .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &switchlock_hotkey_handler},
 
     /* Screen lock */
-    {.modifier       = KEYBOARD_MODIFIER_RIGHTALT | KEYBOARD_MODIFIER_RIGHTSHIFT,
+    {.modifier       = KEYBOARD_MODIFIER_RIGHTCTRL,
      .keys           = {HID_KEY_L},
      .key_count      = 1,
      .acknowledge    = true,
@@ -162,7 +162,7 @@ void process_kbd_queue_task(device_t *state) {
 void queue_kbd_report(hid_keyboard_report_t *report, device_t *state) {
     /* It wouldn't be fun to queue up a bunch of messages and then dump them all on host */
     if (!state->tud_connected)
-        return;    
+        return;
 
     queue_try_add(&state->kbd_queue, report);
 }
@@ -252,7 +252,7 @@ void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
             int byte_idx = i >> 3;
 
             if ((raw_report[byte_idx + 1] >> bit_idx) & 1) {
-                report_ptr[0] = iface->keyboard.cc_array[i];                
+                report_ptr[0] = iface->keyboard.cc_array[i];
             }
         }
     }
@@ -267,6 +267,6 @@ void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
     uint16_t new_report = raw_report[1];
     uint8_t *report_ptr = (uint8_t *)&new_report;
-      
+
     send_system_control(report_ptr, &global_state);
 }

@@ -75,7 +75,7 @@ void pio_usb_host_config(device_t *state) {
       and it will drive it either high or low at any given time
     - Before uart setup, enable it as an input
     - Go through a probing sequence of 8 values and pull either up or down
-      to that value 
+      to that value
     - Read out the value on the RX pin
     - If the entire sequence of values match, we are definitely floating
       so IC is not connected on BOARD_A_RX, and we're BOARD B
@@ -84,22 +84,22 @@ int board_autoprobe(void) {
     const bool probing_sequence[] = {true, false, false, true, true, false, true, false};
     const int seq_len = ARRAY_SIZE(probing_sequence);
 
-    /* Set the pin as INPUT and initialize it */    
+    /* Set the pin as INPUT and initialize it */
     gpio_init(BOARD_A_RX);
     gpio_set_dir(BOARD_A_RX, GPIO_IN);
 
-    for (int i=0; i<seq_len; i++) {                
+    for (int i=0; i<seq_len; i++) {
         if (probing_sequence[i])
             gpio_pull_up(BOARD_A_RX);
         else
             gpio_pull_down(BOARD_A_RX);
-    
+
         /* Wait for value to settle */
         sleep_ms(3);
 
         /* Read the value */
         bool value = gpio_get(BOARD_A_RX);
-        gpio_disable_pulls(BOARD_A_RX);       
+        gpio_disable_pulls(BOARD_A_RX);
 
         /* If values mismatch at any point, means IC is connected and we're board A */
         if (probing_sequence[i] != value)
@@ -122,7 +122,7 @@ bool is_config_mode_active(device_t *state) {
 
     /* Remove, so next reboot it's no longer active */
     if (is_active)
-        watchdog_hw->scratch[5] = 0;    
+        watchdog_hw->scratch[5] = 0;
 
     reset_config_timer(state);
 
@@ -131,23 +131,23 @@ bool is_config_mode_active(device_t *state) {
 
 
 /* ================================================== *
- * Configure DMA for reliable UART transfers 
+ * Configure DMA for reliable UART transfers
  * ================================================== */
-const uint8_t* uart_buffer_pointers[1] = {uart_rxbuf}; 
+const uint8_t* uart_buffer_pointers[1] = {uart_rxbuf};
 uint8_t uart_rxbuf[DMA_RX_BUFFER_SIZE] __attribute__((aligned(DMA_RX_BUFFER_SIZE))) ;
 uint8_t uart_txbuf[DMA_TX_BUFFER_SIZE] __attribute__((aligned(DMA_TX_BUFFER_SIZE))) ;
 
 static void configure_tx_dma(device_t *state) {
     state->dma_tx_channel = dma_claim_unused_channel(true);
 
-    dma_channel_config tx_config = dma_channel_get_default_config(state->dma_tx_channel);    
+    dma_channel_config tx_config = dma_channel_get_default_config(state->dma_tx_channel);
     channel_config_set_transfer_data_size(&tx_config, DMA_SIZE_8);
 
     /* Writing uart (always write the same address, but source addr changes as we read) */
     channel_config_set_read_increment(&tx_config, true);
     channel_config_set_write_increment(&tx_config, false);
 
-    // channel_config_set_ring(&tx_config, false, 4);  
+    // channel_config_set_ring(&tx_config, false, 4);
     channel_config_set_dreq(&tx_config, DREQ_UART0_TX);
 
     /* Configure, but don't start immediately. We'll do this each time the outgoing
@@ -167,7 +167,7 @@ static void configure_rx_dma(device_t *state) {
     state->dma_rx_channel = dma_claim_unused_channel(true);
     state->dma_control_channel = dma_claim_unused_channel(true);
 
-    dma_channel_config config = dma_channel_get_default_config(state->dma_rx_channel); 
+    dma_channel_config config = dma_channel_get_default_config(state->dma_rx_channel);
     dma_channel_config control_config = dma_channel_get_default_config(state->dma_control_channel);
 
     channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
@@ -185,16 +185,16 @@ static void configure_rx_dma(device_t *state) {
 
     // The UART signals when data is avaliable
     channel_config_set_dreq(&config, DREQ_UART0_RX);
-    
+
     channel_config_set_chain_to(&config, state->dma_control_channel);
-    
+
     dma_channel_configure(
         state->dma_rx_channel,
         &config,
         uart_rxbuf,
         &uart0_hw->dr,
         DMA_RX_BUFFER_SIZE,
-        false);    
+        false);
 
     dma_channel_configure(
         state->dma_control_channel,
@@ -204,14 +204,14 @@ static void configure_rx_dma(device_t *state) {
         1,
         false);
 
-    dma_channel_start(state->dma_control_channel);    
+    dma_channel_start(state->dma_control_channel);
 }
 
 
 /* ================================================== *
  * Perform initial board/usb setup
  * ================================================== */
-int board; 
+int board;
 
 void initial_setup(device_t *state) {
     /* PIO USB requires a clock multiple of 12 MHz, setting to 120 MHz */
@@ -248,12 +248,12 @@ void initial_setup(device_t *state) {
     multicore_launch_core1(core1_main);
 
     /* Initialize and configure TinyUSB Device */
-    tud_init(BOARD_TUD_RHPORT);    
-    
+    tud_init(BOARD_TUD_RHPORT);
+
     /* Initialize and configure TinyUSB Host */
     pio_usb_host_config(state);
 
-    /* Initialize and configure DMA */    
+    /* Initialize and configure DMA */
     configure_tx_dma(state);
     configure_rx_dma(state);
 
@@ -262,7 +262,7 @@ void initial_setup(device_t *state) {
 
     /* Update the core1 initial pass timestamp before enabling the watchdog */
     state->core1_last_loop_pass = time_us_64();
-   
+
     /* Setup the watchdog so we reboot and recover from a crash */
     watchdog_enable(WATCHDOG_TIMEOUT, WATCHDOG_PAUSE_ON_DEBUG);
 }

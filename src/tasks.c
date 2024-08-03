@@ -19,7 +19,7 @@
 
 void task_scheduler(device_t *state, task_t *task) {
     uint64_t current_time = time_us_64();
-    
+
     if (current_time < task->next_run)
         return;
 
@@ -36,7 +36,7 @@ void kick_watchdog_task(device_t *state) {
        so it doesn't get updated in the meantime. */
     uint64_t core1_last_loop_pass = state->core1_last_loop_pass;
     uint64_t current_time         = time_us_64();
-    
+
     /* If a reboot is requested, we'll stop updating watchdog */
     if (state->reboot_requested)
         return;
@@ -64,7 +64,7 @@ void screensaver_task(device_t *state) {
     const int mouse_move_delay = 5000;
     screensaver_t *screensaver = &state->config.output[BOARD_ROLE].screensaver;
     uint64_t inactivity_period = time_us_64() - state->last_activity[BOARD_ROLE];
-    
+
     static mouse_report_t report = {0};
     static int last_pointer_move = 0;
     static int dx = 20, dy = 25, jitter = 1;
@@ -119,11 +119,11 @@ void screensaver_task(device_t *state) {
 }
 
 /* Periodically emit heartbeat packets */
-void heartbeat_output_task(device_t *state) {    
+void heartbeat_output_task(device_t *state) {
     /* If firmware upgrade is in progress, don't touch flash_cs */
     if (state->fw.upgrade_in_progress)
         return;
-   
+
     if (state->config_mode_active) {
         /* Leave config mode if timeout expired and user didn't click exit */
         if (time_us_64() > state->config_mode_timer)
@@ -140,12 +140,12 @@ void heartbeat_output_task(device_t *state) {
     uart_packet_t packet = {
         .type = HEARTBEAT_MSG,
         .data16 = {
-            [0] = state->_running_fw.version,            
+            [0] = state->_running_fw.version,
             [2] = state->active_output,
         },
     };
 
-    queue_try_add(&global_state.uart_tx_queue, &packet);        
+    queue_try_add(&global_state.uart_tx_queue, &packet);
 }
 
 /* Process outgoing config report messages. */
@@ -194,14 +194,14 @@ void firmware_upgrade_task(device_t *state) {
         }
     }
 
-    /* If we're on the last element of the current page, page is done - write it. */    
-    if (TU_U32_BYTE0(state->fw.address) == 0x00) {        
+    /* If we're on the last element of the current page, page is done - write it. */
+    if (TU_U32_BYTE0(state->fw.address) == 0x00) {
 
         uint32_t page_start_addr = (state->fw.address - 1) & 0xFFFFFF00;
-        write_flash_page((uint32_t)ADDR_FW_RUNNING + page_start_addr - XIP_BASE, state->page_buffer);        
+        write_flash_page((uint32_t)ADDR_FW_RUNNING + page_start_addr - XIP_BASE, state->page_buffer);
     }
-    
-    request_byte(state, state->fw.address);   
+
+    request_byte(state, state->fw.address);
 }
 
 void packet_receiver_task(device_t *state) {
@@ -210,7 +210,7 @@ void packet_receiver_task(device_t *state) {
     uint32_t delta = get_ptr_delta(current_pointer, state);
 
     /* If we don't have enough characters for a packet, skip loop and return immediately */
-    while (delta >= RAW_PACKET_LENGTH) {        
+    while (delta >= RAW_PACKET_LENGTH) {
         if (is_start_of_packet(state)) {
             fetch_packet(state);
             process_packet(&state->in_packet, state);
