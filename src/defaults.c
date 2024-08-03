@@ -21,9 +21,9 @@ const config_t default_config = {
                 .mode = SCREENSAVER_A_MODE,
                 .only_if_inactive = SCREENSAVER_A_ONLY_IF_INACTIVE,
                 .idle_time_us = SCREENSAVER_A_IDLE_TIME_SEC * 1000000,
-                .max_time_us = SCREENSAVER_A_MAX_TIME_SEC * 1000000,                
+                .max_time_us = SCREENSAVER_A_MAX_TIME_SEC * 1000000,
             }
-        },        
+        },
     .output[OUTPUT_B] =
         {
             .number = OUTPUT_B,
@@ -41,7 +41,7 @@ const config_t default_config = {
                 .mode = SCREENSAVER_B_MODE,
                 .only_if_inactive = SCREENSAVER_B_ONLY_IF_INACTIVE,
                 .idle_time_us = SCREENSAVER_B_IDLE_TIME_SEC * 1000000,
-                .max_time_us = SCREENSAVER_B_MAX_TIME_SEC * 1000000,                
+                .max_time_us = SCREENSAVER_B_MAX_TIME_SEC * 1000000,
             }
         },
     .enforce_ports = ENFORCE_PORTS,

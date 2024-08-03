@@ -28,7 +28,7 @@ uint16_t tud_hid_get_report_cb(uint8_t instance,
                                uint8_t report_id,
                                hid_report_type_t report_type,
                                uint8_t *buffer,
-                               uint16_t request_len) {                                
+                               uint16_t request_len) {
     return 0;
 }
 
@@ -46,15 +46,15 @@ void tud_hid_set_report_cb(uint8_t instance,
                            uint16_t bufsize) {
 
     /* We received a report on the config report ID */
-    if (instance == ITF_NUM_HID_VENDOR && report_id == REPORT_ID_VENDOR) {    
+    if (instance == ITF_NUM_HID_VENDOR && report_id == REPORT_ID_VENDOR) {
         /* Security - only if config mode is enabled are we allowed to do anything. While the report_id
-           isn't even advertised when not in config mode, security must always be explicit and never assume */           
+           isn't even advertised when not in config mode, security must always be explicit and never assume */
         if (!global_state.config_mode_active)
             return;
 
         /* We insist on a fixed size packet. No overflows. */
         if (bufsize != RAW_PACKET_LENGTH)
-            return;    
+            return;
 
         uart_packet_t *packet = (uart_packet_t *) (buffer + START_LENGTH);
 
@@ -62,8 +62,8 @@ void tud_hid_set_report_cb(uint8_t instance,
         if (!validate_packet(packet))
             return;
 
-        process_packet(packet, &global_state);        
-    }        
+        process_packet(packet, &global_state);
+    }
 
     /* Only other set report we care about is LED state change, and that's exactly 1 byte long */
     if (report_id != REPORT_ID_KEYBOARD || bufsize != 1 || report_type != HID_REPORT_TYPE_OUTPUT)
@@ -125,36 +125,36 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     memset(iface, 0, sizeof(hid_interface_t));
 }
 
-void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len) {    
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len) {
     uint8_t itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
 
     if (dev_addr >= MAX_DEVICES || instance > MAX_INTERFACES)
         return;
-      
+
     /* Get interface information */
     hid_interface_t *iface = &global_state.iface[dev_addr-1][instance];
 
     iface->protocol = tuh_hid_get_protocol(dev_addr, instance);
-   
+
     /* Safeguard against memory corruption in case the number of instances exceeds our maximum */
     if (instance >= MAX_INTERFACES)
         return;
 
     /* Parse the report descriptor into our internal structure. */
-    parse_report_descriptor(iface, desc_report, desc_len);    
+    parse_report_descriptor(iface, desc_report, desc_len);
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
             if (global_state.config.enforce_ports && BOARD_ROLE == OUTPUT_B)
                 return;
-            
+
             if (global_state.config.force_kbd_boot_protocol)
                 tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_BOOT);
-                       
+
             /* Keeping this is required for setting leds from device set_report callback */
             global_state.kbd_dev_addr       = dev_addr;
             global_state.kbd_instance       = instance;
-            global_state.keyboard_connected = true;            
+            global_state.keyboard_connected = true;
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
@@ -167,8 +167,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
                 tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
             }
             break;
-        
-        case HID_ITF_PROTOCOL_NONE:            
+
+        case HID_ITF_PROTOCOL_NONE:
             break;
     }
     /* Flash local led to indicate a device was connected */
@@ -177,7 +177,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
     /* Also signal the other board to flash LED, to enable easy verification if serial works */
     send_value(ENABLE, FLASH_LED_MSG);
 
-    /* Kick off the report querying */  
+    /* Kick off the report querying */
     tuh_hid_receive_report(dev_addr, instance);
 }
 
@@ -202,7 +202,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 
             if (receiver != NULL)
                 receiver((uint8_t *)report, len, itf_protocol, iface);
-        }                      
+        }
     }
     else if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD) {
         process_keyboard_report((uint8_t *)report, len, itf_protocol, iface);
@@ -216,7 +216,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 }
 
 /* Set protocol in a callback. This is tied to an interface, not a specific report ID */
-void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol) {   
+void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol) {
     if (dev_addr >= MAX_DEVICES || idx > MAX_INTERFACES)
         return;
 

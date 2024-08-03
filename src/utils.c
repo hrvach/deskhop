@@ -37,7 +37,7 @@ bool verify_checksum(const uart_packet_t *packet) {
 }
 
 uint32_t crc32_iter(uint32_t crc, const uint8_t byte) {
-    return crc32_lookup_table[(byte ^ crc) & 0xff] ^ (crc >> 8); 
+    return crc32_lookup_table[(byte ^ crc) & 0xff] ^ (crc >> 8);
 }
 
 /* TODO - use DMA sniffer's built-in CRC32 */
@@ -69,12 +69,12 @@ void write_flash_page(uint32_t target_addr, uint8_t *buffer) {
     /* Start of sector == first 256-byte page in a 4096 byte block */
     bool is_sector_start = (target_addr & 0xf00) == 0;
 
-    uint32_t ints = save_and_disable_interrupts();            
+    uint32_t ints = save_and_disable_interrupts();
     if (is_sector_start)
         flash_range_erase(target_addr, FLASH_SECTOR_SIZE);
 
-    flash_range_program(target_addr, buffer, FLASH_PAGE_SIZE);        
-    restore_interrupts(ints);    
+    flash_range_program(target_addr, buffer, FLASH_PAGE_SIZE);
+    restore_interrupts(ints);
 }
 
 void load_config(device_t *state) {
@@ -82,8 +82,8 @@ void load_config(device_t *state) {
     config_t *running_config = &state->config;
 
     /* Load the flash config first, including the checksum */
-    memcpy(running_config, config, sizeof(config_t));    
-    
+    memcpy(running_config, config, sizeof(config_t));
+
     /* Calculate and update checksum, size without checksum */
     uint8_t checksum = calc_crc32((uint8_t *)running_config, sizeof(config_t) - sizeof(uint32_t));
 
@@ -110,9 +110,9 @@ void save_config(device_t *state) {
 
     /* Copy the config to buffer and pad the rest with zeros */
     memcpy(state->page_buffer, raw_config, sizeof(config_t));
-    memset(state->page_buffer + sizeof(config_t), 0, FLASH_PAGE_SIZE - sizeof(config_t));    
+    memset(state->page_buffer + sizeof(config_t), 0, FLASH_PAGE_SIZE - sizeof(config_t));
 
-    /* Write the new config to flash */    
+    /* Write the new config to flash */
     write_flash_page((uint32_t)ADDR_CONFIG - XIP_BASE, state->page_buffer);
 }
 
@@ -120,10 +120,10 @@ void reset_config_timer(device_t *state) {
     /* Once this is reached, we leave the config mode */
     state->config_mode_timer = time_us_64() + CONFIG_MODE_TIMEOUT;
 }
- 
+
 void _configure_flash_cs(enum gpio_override gpo, uint pin_index) {
-  hw_write_masked(&ioqspi_hw->io[pin_index].ctrl, 
-                  gpo << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB, 
+  hw_write_masked(&ioqspi_hw->io[pin_index].ctrl,
+                  gpo << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB,
                   IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
 }
 
@@ -152,11 +152,11 @@ void request_byte(device_t *state, uint32_t address) {
     };
     state->fw.byte_done = false;
 
-    queue_try_add(&global_state.uart_tx_queue, &packet);        
+    queue_try_add(&global_state.uart_tx_queue, &packet);
 }
 
 void reboot(void) {
-    *((volatile uint32_t*)(PPB_BASE + 0x0ED0C)) = 0x5FA0004;    
+    *((volatile uint32_t*)(PPB_BASE + 0x0ED0C)) = 0x5FA0004;
 }
 
 bool is_start_of_packet(device_t *state) {
@@ -204,8 +204,8 @@ bool validate_packet(uart_packet_t *packet) {
     uint8_t packet_type = packet->type;
 
     /* Proxied packets are encapsulated in the data field, but same rules apply */
-    if (packet->type == PROXY_PACKET_MSG) 
-        packet_type = packet->data[0];                
+    if (packet->type == PROXY_PACKET_MSG)
+        packet_type = packet->data[0];
 
     for (int i = 0; i < ARRAY_SIZE(ALLOWED_PACKETS); i++) {
         if (ALLOWED_PACKETS[i] == packet_type)

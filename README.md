@@ -93,8 +93,13 @@ Ever tried to move that YT video slider to a specific position but your mouse mo
 
 ### Switch Lock
 
-If you want to lock yourself to one screen, use ```RIGHT CTRL + L```.
+If you want to lock yourself to one screen, use ```RIGHT CTRL + K```.
 This will make sure you won't accidentally leave your current screen. To turn off, press the same key combo again.
+
+### Lock Both Screens
+
+You can lock both computers at once by using ```RIGHT CTRL + L```. 
+To make use of this feature, first set up the OS for each output in config (since the shortcuts are different).
 
 ### Screensaver
 
@@ -209,8 +214,8 @@ _Config_
 
 _Usage_
 - ```Right CTRL + Right ALT``` - Toggle slower mouse mode
-- ```Right CTRL + L``` - Lock/Unlock mouse desktop switching
-- ```Right ALT + Right Shift + L``` - Lock both outputs at once (set output OS before, see shortcuts below)
+- ```Right CTRL + K``` - Lock/Unlock mouse desktop switching
+- ```Right CTRL + L``` - Lock both outputs at once (set output OS before, see shortcuts below)
 - ```Caps Lock``` - Switch between outputs
 
 ### Switch cursor height calibration

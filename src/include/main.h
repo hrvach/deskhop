@@ -255,7 +255,7 @@ typedef struct {
     uint8_t enforce_ports;
     uint16_t jump_treshold;
 
-    output_t output[NUM_SCREENS];   
+    output_t output[NUM_SCREENS];
     uint32_t _reserved;
 
     // Keep checksum at the end of the struct
@@ -402,7 +402,7 @@ typedef struct {
     bool onboard_led_state;  // True when LED is ON
     bool relative_mouse;     // True when relative mouse mode is used
     bool config_mode_active; // True when config mode is active
-    
+
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
     int32_t blinks_left;     // How many blink transitions are left
     int32_t last_led_change; // Timestamp of the last time led state transitioned
@@ -411,7 +411,7 @@ typedef struct {
 typedef struct {
     void (*exec)(device_t *state);
     uint64_t frequency;
-    uint64_t next_run;    
+    uint64_t next_run;
     bool *enabled;
 } task_t;
 

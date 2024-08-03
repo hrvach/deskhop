@@ -46,7 +46,7 @@ void update_usage(parser_state_t *parser, int i) {
         *(parser->p_usage + i) = *(parser->p_usage + i - 1);
 }
 
-void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t data, uint16_t size, hid_interface_t *iface) {   
+void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t data, uint16_t size, hid_interface_t *iface) {
     *val = (report_val_t){
         .offset     = parser->offset_in_bits,
         .offset_idx = parser->offset_in_bits >> 3,
@@ -68,9 +68,9 @@ void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t da
 }
 
 void handle_global_item(parser_state_t *parser, item_t *item) {
-    if (item->hdr.tag == RI_GLOBAL_REPORT_ID) 
-        parser->report_id = item->val;        
-    
+    if (item->hdr.tag == RI_GLOBAL_REPORT_ID)
+        parser->report_id = item->val;
+
     parser->globals[item->hdr.tag] = *item;
 }
 
@@ -80,7 +80,7 @@ void handle_local_item(parser_state_t *parser, item_t *item) {
     parser->locals[item->hdr.tag] = *item;
 
     if (item->hdr.tag == RI_LOCAL_USAGE) {
-        if(IS_BLOCK_END) 
+        if(IS_BLOCK_END)
             parser->global_usage = item->val;
 
         else if (parser->usage_count < HID_MAX_USAGES - 1)
@@ -94,20 +94,20 @@ void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *if
     report_val_t val = {0};
 
     /* Swap count and size for 1-bit variables, it makes sense to process e.g. NKRO with
-       size = 1 and count = 240 in one go instead of doing 240 iterations 
+       size = 1 and count = 240 in one go instead of doing 240 iterations
        Don't do this if there are usages in the queue, though.
-       */           
+       */
     if (size == 1 && parser->usage_count <= 1) {
         size  = count;
-        count = 1;        
+        count = 1;
     }
 
     for (int i = 0; i < count; i++) {
         update_usage(parser, i);
         store_element(parser, &val, i, item->val, size, iface);
-        
+
         /* Use the parsed data to populate internal device structures */
-        extract_data(iface, &val);    
+        extract_data(iface, &val);
 
         /* Iterate <count> times and increase offset by <size> amount, moving by <count> x <size> bits */
         parser->offset_in_bits += size;
@@ -152,7 +152,7 @@ void handle_main_item(parser_state_t *parser, item_t *item, hid_interface_t *ifa
 parser_state_t parser_state = {0};  // Avoid placing it on the stack, it's large
 
 void parse_report_descriptor(hid_interface_t *iface,
-                            uint8_t const *report,                            
+                            uint8_t const *report,
                             int desc_len
                             ) {
     item_t item = {0};
@@ -181,5 +181,5 @@ void parse_report_descriptor(hid_interface_t *iface,
         /* Move to the next position and decrement size by header length + data length */
         report += SIZE_LOOKUP[item.hdr.size];
         desc_len -= (SIZE_LOOKUP[item.hdr.size] + 1);
-    }    
+    }
 }

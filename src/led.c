@@ -63,7 +63,7 @@ void blink_led(device_t *state) {
 void led_blinking_task(device_t *state) {
     const int blink_interval_us = 80000; /* 80 ms off, 80 ms on */
     static uint8_t leds;
-    
+
     /* If there is no more blinking to be done, exit immediately */
     if (state->blinks_left == 0)
         return;

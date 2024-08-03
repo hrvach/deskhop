@@ -33,14 +33,14 @@
 
                                         // https://github.com/raspberrypi/usb-pid
 tusb_desc_device_t const desc_device = DEVICE_DESCRIPTOR(0x2e8a, 0x107c);
-                                       
+
                                         // https://pid.codes/1209/C000/
 tusb_desc_device_t const desc_device_config = DEVICE_DESCRIPTOR(0x1209, 0xc000);
 
 // Invoked when received GET DEVICE DESCRIPTOR
 // Application return pointer to descriptor
 uint8_t const *tud_descriptor_device_cb(void) {
-    if (global_state.config_mode_active) 
+    if (global_state.config_mode_active)
         return (uint8_t const *)&desc_device_config;
     else
         return (uint8_t const *)&desc_device;
@@ -75,10 +75,10 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
         case ITF_NUM_HID:
             return desc_hid_report;
         case ITF_NUM_HID_REL_M:
-            return desc_hid_report_relmouse;        
+            return desc_hid_report_relmouse;
         default:
             return desc_hid_report;
-    }    
+    }
 }
 
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel) {
@@ -253,14 +253,14 @@ uint8_t const desc_configuration_config[] = {
     // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
     TUD_CDC_DESCRIPTOR(
         ITF_NUM_CDC, STRID_DEBUG, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, CFG_TUD_CDC_EP_BUFSIZE),
-#endif                       
+#endif
 };
 
 uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
     (void)index; // for multiple configurations
-    
-    if (global_state.config_mode_active) 
-        return desc_configuration_config;    
+
+    if (global_state.config_mode_active)
+        return desc_configuration_config;
     else
         return desc_configuration;
 }

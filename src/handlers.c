@@ -79,14 +79,14 @@ void screenlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
                 lock_report.keycode[0] = HID_KEY_L;
                 break;
             case MACOS:
-                lock_report.modifier   = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_LEFTALT;
+                lock_report.modifier   = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_LEFTGUI;
                 lock_report.keycode[0] = HID_KEY_Q;
                 break;
             default:
                 break;
         }
 
-        if (global_state.active_output == out) {
+        if (BOARD_ROLE == out) {
             queue_kbd_report(&lock_report, state);
             release_all_keys(state);
         } else {
@@ -111,14 +111,14 @@ void mouse_zoom_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
 
 
 /* Put the device into a special configuration mode */
-void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {  
+void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     /* If config mode is already active, skip this and reboot to return to normal mode */
     if (!state->config_mode_active) {
         watchdog_hw->scratch[5] = MAGIC_WORD_1;
         watchdog_hw->scratch[6] = MAGIC_WORD_2;
     }
 
-    release_all_keys(state);        
+    release_all_keys(state);
     state->reboot_requested = true;
 };
 
@@ -226,9 +226,9 @@ void handle_api_msgs(uart_packet_t *packet, device_t *state) {
 
     /* If we don't have a valid map entry, return immediately */
     if (map == NULL)
-        return;    
+        return;
 
-    /* Create a pointer to the offset into the structure we need to access */    
+    /* Create a pointer to the offset into the structure we need to access */
     uint8_t *ptr = (((uint8_t *)&global_state) + map->offset);
 
     if (packet->type == SET_VAL_MSG) {
@@ -237,7 +237,7 @@ void handle_api_msgs(uart_packet_t *packet, device_t *state) {
             return;
 
         memcpy(ptr, &packet->data[1], map->len);
-    }        
+    }
     else if (packet->type == GET_VAL_MSG) {
         uart_packet_t response = {.type=GET_VAL_MSG, .data={0}};
         memcpy(response.data, ptr, map->len);
@@ -252,14 +252,14 @@ void handle_api_msgs(uart_packet_t *packet, device_t *state) {
 /* Process request packet and create a response */
 void handle_request_byte_msg(uart_packet_t *packet, device_t *state) {
     uint32_t address = packet->data32[0];
-    
+
     if (address > STAGING_IMAGE_SIZE)
         return;
 
-    /* Add requested data to bytes 4-7 in the packet and return it with a different type */    
+    /* Add requested data to bytes 4-7 in the packet and return it with a different type */
     uint32_t data = *(uint32_t *)&ADDR_FW_RUNNING[address];
     packet->data32[1] = data;
-    
+
     queue_packet(packet->data, RESPONSE_BYTE_MSG, PACKET_DATA_LENGTH);
 }
 
@@ -279,27 +279,27 @@ void handle_response_byte_msg(uart_packet_t *packet, device_t *state) {
         if((address & 0xfff) == 0x000)
             toggle_led();
     }
-   
+
     /* Update checksum as we receive each byte */
     if (address < STAGING_IMAGE_SIZE - FLASH_SECTOR_SIZE)
         for (int i=0; i<4; i++)
             state->fw.checksum = crc32_iter(state->fw.checksum, packet->data[4 + i]);
 
-    memcpy(state->page_buffer + offset, &packet->data32[1], sizeof(uint32_t));    
-    
+    memcpy(state->page_buffer + offset, &packet->data32[1], sizeof(uint32_t));
+
     /* Neeeeeeext byte, please! */
-    state->fw.address += sizeof(uint32_t);    
+    state->fw.address += sizeof(uint32_t);
     state->fw.byte_done = true;
 }
 
 /* Process a request to read a firmware package from flash */
-void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {    
+void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
     uint16_t other_running_version = packet->data16[0];
-    
+
     if (state->fw.upgrade_in_progress)
         return;
 
-    /* If the other board isn't running a newer version, we are done */    
+    /* If the other board isn't running a newer version, we are done */
     if (other_running_version <= state->_running_fw.version)
         return;
 
@@ -309,7 +309,7 @@ void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
         .byte_done = true,
         .address = 0,
         .checksum = 0xffffffff,
-    };   
+    };
 }
 
 
