@@ -185,11 +185,7 @@ typedef struct {
 
 /*********  Configuration storage definitions  **********/
 
-<<<<<<< HEAD
-#define CURRENT_CONFIG_VERSION 7
-=======
 #define CURRENT_CONFIG_VERSION 8
->>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
 
 enum os_type_e {
     LINUX   = 1,
@@ -205,18 +201,11 @@ enum screen_pos_e {
     MIDDLE = 3,
 };
 
-<<<<<<< HEAD
-#define ITF_NUM_HID        0
-#define ITF_NUM_HID_REL_M  1
-#define ITF_NUM_HID_VENDOR 1
-#define ITF_NUM_MSC        2
-=======
 enum screensaver_mode_e {
     DISABLED = 0,
     PONG     = 1,
     JITTER   = 2,
 };
->>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
 
 #define ITF_NUM_HID        0
 #define ITF_NUM_HID_REL_M  1

@@ -273,7 +273,6 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
         kb->nkro.usage_min, kb->nkro.usage_max, ptr, KEYS_IN_USB_REPORT, report->keycode);
 }
 
-<<<<<<< HEAD
 /* Mouse is the same as NKRO, just don't move the offset back (?) */
 int32_t _extract_kbd_mouse(uint8_t *raw_report, int len, hid_interface_t *iface, hid_keyboard_report_t *report) {
     uint8_t *ptr = raw_report;
@@ -302,8 +301,6 @@ int32_t _extract_kbd_mouse(uint8_t *raw_report, int len, hid_interface_t *iface,
 }
 
 
-=======
->>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
 int32_t extract_kbd_data(
     uint8_t *raw_report, int len, uint8_t itf, hid_interface_t *iface, hid_keyboard_report_t *report) {
     int report_id = raw_report[0];
@@ -315,15 +312,12 @@ int32_t extract_kbd_data(
     if (iface->protocol == HID_PROTOCOL_BOOT)
         return _extract_kbd_boot(raw_report, len, report);
 
-<<<<<<< HEAD
     /* Mouse keys from the keyboard is a special case */
     if (report_id == 2
         && report_id == iface->keyboard.nkro.report_id 
         )
         return _extract_kbd_mouse(raw_report, len, iface, report);
 
-=======
->>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
     /* NKRO is a special case */
     if (report_id > 0
         && report_id == iface->keyboard.nkro.report_id 

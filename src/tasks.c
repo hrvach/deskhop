@@ -67,17 +67,10 @@ void screensaver_task(device_t *state) {
     
     static mouse_report_t report = {0};
     static int last_pointer_move = 0;
-<<<<<<< HEAD
-    static int dx = 20, dy = 25;
-
-    /* If we're not enabled, nothing to do here. */
-    if (!screensaver->enabled)
-=======
     static int dx = 20, dy = 25, jitter = 1;
 
     /* If we're not enabled, nothing to do here. */
     if (screensaver->mode == DISABLED)
->>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
         return;
 
     /* System is still not idle for long enough to activate or we've been running for too long */
@@ -97,17 +90,6 @@ void screensaver_task(device_t *state) {
     if ((time_us_32()) - last_pointer_move < mouse_move_delay)
         return;
 
-<<<<<<< HEAD
-    /* Check if we are bouncing off the walls and reverse direction in that case. */
-    if (report.x + dx < MIN_SCREEN_COORD || report.x + dx > MAX_SCREEN_COORD)
-        dx = -dx;
-
-    if (report.y + dy < MIN_SCREEN_COORD || report.y + dy > MAX_SCREEN_COORD)
-        dy = -dy;
-
-    report.x += dx;
-    report.y += dy;
-=======
     switch (screensaver->mode) {
         case PONG:
             /* Check if we are bouncing off the walls and reverse direction in that case. */
@@ -128,7 +110,6 @@ void screensaver_task(device_t *state) {
             jitter = -jitter;
             break;
     }
->>>>>>> 7a0e7f31ffc3151dc5618b9b21a0303e9952df4b
 
     /* Move mouse pointer */
     queue_mouse_report(&report, state);
