@@ -21,6 +21,7 @@ if (NOT PICO_TINYUSB_PATH)
 endif()
 
 if (NOT TINYUSB_OPT_OS)
+	message("Setting OPT_OS_PICO")
 	set(TINYUSB_OPT_OS OPT_OS_PICO)
 endif()
 
@@ -71,6 +72,7 @@ target_sources(tinyusb_device_base INTERFACE
 		${TOP}/src/device/usbd_control.c
 		${TOP}/src/class/cdc/cdc_device.c
 		${TOP}/src/class/hid/hid_device.c
+		${TOP}/src/class/msc/msc_device.c
 		)
 
 #------------------------------------
@@ -82,10 +84,7 @@ target_sources(tinyusb_host_base INTERFACE
 		${TOP}/src/portable/raspberrypi/rp2040/rp2040_usb.c
 		${TOP}/src/host/usbh.c
 		${TOP}/src/host/hub.c
-		${TOP}/src/class/cdc/cdc_host.c
 		${TOP}/src/class/hid/hid_host.c
-		${TOP}/src/class/msc/msc_host.c
-		${TOP}/src/class/vendor/vendor_host.c
 		)
 
 # Sometimes have to do host specific actions in mostly common functions
@@ -122,6 +121,8 @@ target_link_libraries(tinyusb_bsp	INTERFACE pico_unique_id)
 # tinyusb_additions will hold our extra settings for examples
 add_library(tinyusb_additions INTERFACE)
 
+	
+message("Setting PICO workarounds")
 target_compile_definitions(tinyusb_additions INTERFACE
 	PICO_RP2040_USB_DEVICE_ENUMERATION_FIX=1
 	PICO_RP2040_USB_DEVICE_UFRAME_FIX=1
@@ -307,7 +308,6 @@ function(suppress_tinyusb_warnings)
 				${PICO_TINYUSB_PATH}/src/device/usbd_control.c
 				${PICO_TINYUSB_PATH}/src/host/usbh.c
 				${PICO_TINYUSB_PATH}/src/class/cdc/cdc_device.c
-				${PICO_TINYUSB_PATH}/src/class/cdc/cdc_host.c
 				${PICO_TINYUSB_PATH}/src/class/hid/hid_device.c
 				${PICO_TINYUSB_PATH}/src/class/hid/hid_host.c
 				${PICO_TINYUSB_PATH}/src/class/audio/audio_device.c
@@ -360,9 +360,6 @@ function(suppress_tinyusb_warnings)
 		set_source_files_properties(
 				${PICO_TINYUSB_PATH}/src/class/cdc/cdc_device.c
 				COMPILE_FLAGS "-Wno-unreachable-code")
-		set_source_files_properties(
-				${PICO_TINYUSB_PATH}/src/class/cdc/cdc_host.c
-				COMPILE_FLAGS "-Wno-unreachable-code-fallthrough")
 		set_source_files_properties(
 				${PICO_TINYUSB_PATH}/lib/fatfs/source/ff.c
 				PROPERTIES

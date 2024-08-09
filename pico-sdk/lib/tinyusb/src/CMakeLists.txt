@@ -13,14 +13,22 @@ function(add_tinyusb TARGET)
     # device
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/device/usbd.c
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/device/usbd_control.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/audio/audio_device.c
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/cdc/cdc_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/dfu/dfu_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/dfu/dfu_rt_device.c
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/hid/hid_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/midi/midi_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/msc/msc_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/net/ecm_rndis_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/net/ncm_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/usbtmc/usbtmc_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/vendor/vendor_device.c
+    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/video/video_device.c
     # host
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/host/usbh.c
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/host/hub.c
-    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/cdc/cdc_host.c
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/hid/hid_host.c
-    ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/class/vendor/vendor_host.c
     # typec
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/typec/usbc.c
     )
@@ -30,7 +38,7 @@ function(add_tinyusb TARGET)
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../lib/networking
     )
 
-  if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
     target_compile_options(${TARGET} PRIVATE
       -Wall
       -Wextra

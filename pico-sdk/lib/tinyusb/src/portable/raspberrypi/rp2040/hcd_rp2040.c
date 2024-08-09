@@ -113,7 +113,7 @@ static void __tusb_irq_path_func(_handle_buff_status_bit)(uint bit, struct hw_en
 static void __tusb_irq_path_func(hw_handle_buff_status)(void)
 {
   uint32_t remaining_buffers = usb_hw->buf_status;
-  pico_trace("buf_status 0x%08x\n", remaining_buffers);
+  pico_trace("buf_status 0x%08lx\n", remaining_buffers);
 
   // Check EPX first
   uint bit = 0b1;
@@ -325,10 +325,8 @@ static void _hw_endpoint_init(struct hw_endpoint *ep, uint8_t dev_addr, uint8_t 
   ep->wMaxPacketSize = wMaxPacketSize;
   ep->transfer_type = transfer_type;
 
-  pico_trace("hw_endpoint_init dev %d ep %d %s xfer %d\n", ep->dev_addr, tu_edpt_number(ep->ep_addr),
-             ep_dir_string[tu_edpt_dir(ep->ep_addr)], ep->transfer_type);
-  pico_trace("dev %d ep %d %s setup buffer @ 0x%p\n", ep->dev_addr, tu_edpt_number(ep->ep_addr),
-             ep_dir_string[tu_edpt_dir(ep->ep_addr)], ep->hw_data_buf);
+  pico_trace("hw_endpoint_init dev %d ep %02X xfer %d\n", ep->dev_addr, ep->ep_addr, ep->transfer_type);
+  pico_trace("dev %d ep %02X setup buffer @ 0x%p\n", ep->dev_addr, ep->ep_addr, ep->hw_data_buf);
   uint dpram_offset = hw_data_offset(ep->hw_data_buf);
   // Bits 0-5 should be 0
   assert(!(dpram_offset & 0b111111));
@@ -343,7 +341,7 @@ static void _hw_endpoint_init(struct hw_endpoint *ep, uint8_t dev_addr, uint8_t 
     ep_reg |= (uint32_t) ((bmInterval - 1) << EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB);
   }
   *ep->endpoint_control = ep_reg;
-  pico_trace("endpoint control (0x%p) <- 0x%x\n", ep->endpoint_control, ep_reg);
+  pico_trace("endpoint control (0x%p) <- 0x%lx\n", ep->endpoint_control, ep_reg);
   ep->configured = true;
 
   if ( ep != &epx )
@@ -407,6 +405,16 @@ bool hcd_init(uint8_t rhport)
                  USB_INTE_TRANS_COMPLETE_BITS   |
                  USB_INTE_ERROR_RX_TIMEOUT_BITS |
                  USB_INTE_ERROR_DATA_SEQ_BITS   ;
+
+  return true;
+}
+
+bool hcd_deinit(uint8_t rhport) {
+  (void) rhport;
+
+  irq_remove_handler(USBCTRL_IRQ, hcd_rp2040_irq);
+  reset_block(RESETS_RESET_USBCTRL_BITS);
+  unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
 
   return true;
 }

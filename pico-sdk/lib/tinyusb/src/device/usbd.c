@@ -39,16 +39,25 @@
 // USBD Configuration
 //--------------------------------------------------------------------+
 #ifndef CFG_TUD_TASK_QUEUE_SZ
-  #define CFG_TUD_TASK_QUEUE_SZ   16
+  #define CFG_TUD_TASK_QUEUE_SZ   32
 #endif
 
 //--------------------------------------------------------------------+
-// Callback weak stubs (called if application does not provide)
+// Weak stubs: invoked if no strong implementation is available
 //--------------------------------------------------------------------+
+TU_ATTR_WEAK bool dcd_deinit(uint8_t rhport) {
+  (void) rhport;
+  return false;
+}
+
 TU_ATTR_WEAK void tud_event_hook_cb(uint8_t rhport, uint32_t eventid, bool in_isr) {
   (void)rhport;
   (void)eventid;
   (void)in_isr;
+}
+
+TU_ATTR_WEAK void tud_sof_cb(uint32_t frame_count) {
+  (void)frame_count;
 }
 
 //--------------------------------------------------------------------+
@@ -68,9 +77,10 @@ typedef struct {
     uint8_t remote_wakeup_support : 1; // configuration descriptor's attribute
     uint8_t self_powered          : 1; // configuration descriptor's attribute
   };
-
   volatile uint8_t cfg_num; // current active configuration (0x00 is not configured)
   uint8_t speed;
+  volatile uint8_t setup_count;
+  volatile uint8_t sof_consumer;
 
   uint8_t itf2drv[CFG_TUD_INTERFACE_MAX];   // map interface number to driver (0xff is invalid)
   uint8_t ep2drv[CFG_TUD_ENDPPOINT_MAX][2]; // map endpoint to driver ( 0xff is invalid ), can use only 4-bit each
@@ -85,17 +95,18 @@ tu_static usbd_device_t _usbd_dev;
 // Class Driver
 //--------------------------------------------------------------------+
 #if CFG_TUSB_DEBUG >= CFG_TUD_LOG_LEVEL
-  #define DRIVER_NAME(_name)    .name = _name,
+  #define DRIVER_NAME(_name)  _name
 #else
-  #define DRIVER_NAME(_name)
+  #define DRIVER_NAME(_name)  NULL
 #endif
 
 // Built-in class drivers
 tu_static usbd_class_driver_t const _usbd_driver[] = {
     #if CFG_TUD_CDC
     {
-        DRIVER_NAME("CDC")
+        .name             = DRIVER_NAME("CDC"),
         .init             = cdcd_init,
+        .deinit           = cdcd_deinit,
         .reset            = cdcd_reset,
         .open             = cdcd_open,
         .control_xfer_cb  = cdcd_control_xfer_cb,
@@ -106,8 +117,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
 
     #if CFG_TUD_MSC
     {
-        DRIVER_NAME("MSC")
+        .name             = DRIVER_NAME("MSC"),
         .init             = mscd_init,
+        .deinit           = NULL,
         .reset            = mscd_reset,
         .open             = mscd_open,
         .control_xfer_cb  = mscd_control_xfer_cb,
@@ -118,121 +130,131 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
 
     #if CFG_TUD_HID
     {
-      DRIVER_NAME("HID")
-      .init             = hidd_init,
-      .reset            = hidd_reset,
-      .open             = hidd_open,
-      .control_xfer_cb  = hidd_control_xfer_cb,
-      .xfer_cb          = hidd_xfer_cb,
-      .sof              = NULL
+        .name             = DRIVER_NAME("HID"),
+        .init             = hidd_init,
+        .deinit           = hidd_deinit,
+        .reset            = hidd_reset,
+        .open             = hidd_open,
+        .control_xfer_cb  = hidd_control_xfer_cb,
+        .xfer_cb          = hidd_xfer_cb,
+        .sof              = NULL
     },
     #endif
 
     #if CFG_TUD_AUDIO
     {
-      DRIVER_NAME("AUDIO")
-      .init             = audiod_init,
-      .reset            = audiod_reset,
-      .open             = audiod_open,
-      .control_xfer_cb  = audiod_control_xfer_cb,
-      .xfer_cb          = audiod_xfer_cb,
-      .sof              = audiod_sof_isr
+        .name             = DRIVER_NAME("AUDIO"),
+        .init             = audiod_init,
+        .deinit           = audiod_deinit,
+        .reset            = audiod_reset,
+        .open             = audiod_open,
+        .control_xfer_cb  = audiod_control_xfer_cb,
+        .xfer_cb          = audiod_xfer_cb,
+        .sof              = audiod_sof_isr
     },
     #endif
 
     #if CFG_TUD_VIDEO
     {
-      DRIVER_NAME("VIDEO")
-      .init             = videod_init,
-      .reset            = videod_reset,
-      .open             = videod_open,
-      .control_xfer_cb  = videod_control_xfer_cb,
-      .xfer_cb          = videod_xfer_cb,
-      .sof              = NULL
+        .name             = DRIVER_NAME("VIDEO"),
+        .init             = videod_init,
+        .deinit           = videod_deinit,
+        .reset            = videod_reset,
+        .open             = videod_open,
+        .control_xfer_cb  = videod_control_xfer_cb,
+        .xfer_cb          = videod_xfer_cb,
+        .sof              = NULL
     },
     #endif
 
     #if CFG_TUD_MIDI
     {
-      DRIVER_NAME("MIDI")
-      .init             = midid_init,
-      .open             = midid_open,
-      .reset            = midid_reset,
-      .control_xfer_cb  = midid_control_xfer_cb,
-      .xfer_cb          = midid_xfer_cb,
-      .sof              = NULL
+        .name             = DRIVER_NAME("MIDI"),
+        .init             = midid_init,
+        .deinit           = midid_deinit,
+        .open             = midid_open,
+        .reset            = midid_reset,
+        .control_xfer_cb  = midid_control_xfer_cb,
+        .xfer_cb          = midid_xfer_cb,
+        .sof              = NULL
     },
     #endif
 
     #if CFG_TUD_VENDOR
     {
-      DRIVER_NAME("VENDOR")
-      .init             = vendord_init,
-      .reset            = vendord_reset,
-      .open             = vendord_open,
-      .control_xfer_cb  = tud_vendor_control_xfer_cb,
-      .xfer_cb          = vendord_xfer_cb,
-      .sof              = NULL
+        .name             = DRIVER_NAME("VENDOR"),
+        .init             = vendord_init,
+        .deinit           = vendord_deinit,
+        .reset            = vendord_reset,
+        .open             = vendord_open,
+        .control_xfer_cb  = tud_vendor_control_xfer_cb,
+        .xfer_cb          = vendord_xfer_cb,
+        .sof              = NULL
     },
     #endif
 
     #if CFG_TUD_USBTMC
     {
-      DRIVER_NAME("TMC")
-      .init             = usbtmcd_init_cb,
-      .reset            = usbtmcd_reset_cb,
-      .open             = usbtmcd_open_cb,
-      .control_xfer_cb  = usbtmcd_control_xfer_cb,
-      .xfer_cb          = usbtmcd_xfer_cb,
-      .sof              = NULL
+        .name             = DRIVER_NAME("TMC"),
+        .init             = usbtmcd_init_cb,
+        .deinit           = usbtmcd_deinit,
+        .reset            = usbtmcd_reset_cb,
+        .open             = usbtmcd_open_cb,
+        .control_xfer_cb  = usbtmcd_control_xfer_cb,
+        .xfer_cb          = usbtmcd_xfer_cb,
+        .sof              = NULL
     },
     #endif
 
     #if CFG_TUD_DFU_RUNTIME
     {
-      DRIVER_NAME("DFU-RUNTIME")
-      .init             = dfu_rtd_init,
-      .reset            = dfu_rtd_reset,
-      .open             = dfu_rtd_open,
-      .control_xfer_cb  = dfu_rtd_control_xfer_cb,
-      .xfer_cb          = NULL,
-      .sof              = NULL
+        .name             = DRIVER_NAME("DFU-RUNTIME"),
+        .init             = dfu_rtd_init,
+        .deinit           = dfu_rtd_deinit,
+        .reset            = dfu_rtd_reset,
+        .open             = dfu_rtd_open,
+        .control_xfer_cb  = dfu_rtd_control_xfer_cb,
+        .xfer_cb          = NULL,
+        .sof              = NULL
     },
     #endif
 
     #if CFG_TUD_DFU
     {
-      DRIVER_NAME("DFU")
-      .init             = dfu_moded_init,
-      .reset            = dfu_moded_reset,
-      .open             = dfu_moded_open,
-      .control_xfer_cb  = dfu_moded_control_xfer_cb,
-      .xfer_cb          = NULL,
-      .sof              = NULL
+        .name             = DRIVER_NAME("DFU"),
+        .init             = dfu_moded_init,
+        .deinit           = dfu_moded_deinit,
+        .reset            = dfu_moded_reset,
+        .open             = dfu_moded_open,
+        .control_xfer_cb  = dfu_moded_control_xfer_cb,
+        .xfer_cb          = NULL,
+        .sof              = NULL
     },
     #endif
 
     #if CFG_TUD_ECM_RNDIS || CFG_TUD_NCM
     {
-      DRIVER_NAME("NET")
-      .init             = netd_init,
-      .reset            = netd_reset,
-      .open             = netd_open,
-      .control_xfer_cb  = netd_control_xfer_cb,
-      .xfer_cb          = netd_xfer_cb,
-      .sof                  = NULL,
+        .name             = DRIVER_NAME("NET"),
+        .init             = netd_init,
+        .deinit           = netd_deinit,
+        .reset            = netd_reset,
+        .open             = netd_open,
+        .control_xfer_cb  = netd_control_xfer_cb,
+        .xfer_cb          = netd_xfer_cb,
+        .sof                  = NULL,
     },
     #endif
 
     #if CFG_TUD_BTH
     {
-      DRIVER_NAME("BTH")
-      .init             = btd_init,
-      .reset            = btd_reset,
-      .open             = btd_open,
-      .control_xfer_cb  = btd_control_xfer_cb,
-      .xfer_cb          = btd_xfer_cb,
-      .sof              = NULL
+        .name             = DRIVER_NAME("BTH"),
+        .init             = btd_init,
+        .deinit           = btd_deinit,
+        .reset            = btd_reset,
+        .open             = btd_open,
+        .control_xfer_cb  = btd_control_xfer_cb,
+        .xfer_cb          = btd_xfer_cb,
+        .sof              = NULL
     },
     #endif
 };
@@ -258,6 +280,7 @@ TU_ATTR_ALWAYS_INLINE static inline usbd_class_driver_t const * get_driver(uint8
   return driver;
 }
 
+
 //--------------------------------------------------------------------+
 // DCD Event
 //--------------------------------------------------------------------+
@@ -279,9 +302,9 @@ tu_static osal_queue_t _usbd_q;
 #endif
 
 TU_ATTR_ALWAYS_INLINE static inline bool queue_event(dcd_event_t const * event, bool in_isr) {
-  bool ret = osal_queue_send(_usbd_q, event, in_isr);
+  TU_ASSERT(osal_queue_send(_usbd_q, event, in_isr));
   tud_event_hook_cb(event->rhport, event->event_id, in_isr);
-  return ret;
+  return true;
 }
 
 //--------------------------------------------------------------------+
@@ -290,7 +313,9 @@ TU_ATTR_ALWAYS_INLINE static inline bool queue_event(dcd_event_t const * event, 
 static bool process_control_request(uint8_t rhport, tusb_control_request_t const * p_request);
 static bool process_set_config(uint8_t rhport, uint8_t cfg_num);
 static bool process_get_descriptor(uint8_t rhport, tusb_control_request_t const * p_request);
-
+#if CFG_TUD_TEST_MODE
+static bool process_test_mode_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);
+#endif
 // from usbd_control.c
 void usbd_control_reset(void);
 void usbd_control_set_request(tusb_control_request_t const *request);
@@ -319,7 +344,7 @@ void usbd_driver_print_control_complete_name(usbd_control_xfer_cb_t callback) {
   for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++) {
     usbd_class_driver_t const* driver = get_driver(i);
     if (driver && driver->control_xfer_cb == callback) {
-      TU_LOG_USBD("  %s control complete\r\n", driver->name);
+      TU_LOG_USBD("%s control complete\r\n", driver->name);
       return;
     }
   }
@@ -365,6 +390,12 @@ bool tud_connect(void) {
   return true;
 }
 
+bool tud_sof_cb_enable(bool en)
+{
+  usbd_sof_enable(_usbd_rhport, SOF_CONSUMER_USER, en);
+  return true;
+}
+
 //--------------------------------------------------------------------+
 // USBD Task
 //--------------------------------------------------------------------+
@@ -372,13 +403,13 @@ bool tud_inited(void) {
   return _usbd_rhport != RHPORT_INVALID;
 }
 
-bool tud_init (uint8_t rhport)
-{
+bool tud_init(uint8_t rhport) {
   // skip if already initialized
-  if ( tud_inited() ) return true;
+  if (tud_inited()) return true;
 
   TU_LOG_USBD("USBD init on controller %u\r\n", rhport);
   TU_LOG_INT(CFG_TUD_LOG_LEVEL, sizeof(usbd_device_t));
+  TU_LOG_INT(CFG_TUD_LOG_LEVEL, sizeof(dcd_event_t));
   TU_LOG_INT(CFG_TUD_LOG_LEVEL, sizeof(tu_fifo_t));
   TU_LOG_INT(CFG_TUD_LOG_LEVEL, sizeof(tu_edpt_stream_t));
 
@@ -395,16 +426,14 @@ bool tud_init (uint8_t rhport)
   TU_ASSERT(_usbd_q);
 
   // Get application driver if available
-  if ( usbd_app_driver_get_cb )
-  {
+  if (usbd_app_driver_get_cb) {
     _app_driver = usbd_app_driver_get_cb(&_app_driver_count);
   }
 
   // Init class drivers
-  for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++)
-  {
-    usbd_class_driver_t const * driver = get_driver(i);
-    TU_ASSERT(driver);
+  for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++) {
+    usbd_class_driver_t const* driver = get_driver(i);
+    TU_ASSERT(driver && driver->init);
     TU_LOG_USBD("%s init\r\n", driver->name);
     driver->init();
   }
@@ -418,31 +447,61 @@ bool tud_init (uint8_t rhport)
   return true;
 }
 
-static void configuration_reset(uint8_t rhport)
-{
-  for ( uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++ )
-  {
-    usbd_class_driver_t const * driver = get_driver(i);
-    TU_ASSERT(driver, );
+bool tud_deinit(uint8_t rhport) {
+  // skip if not initialized
+  if (!tud_inited()) return true;
+
+  TU_LOG_USBD("USBD deinit on controller %u\r\n", rhport);
+
+  // Deinit device controller driver
+  dcd_int_disable(rhport);
+  dcd_disconnect(rhport);
+  dcd_deinit(rhport);
+
+  // Deinit class drivers
+  for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++) {
+    usbd_class_driver_t const* driver = get_driver(i);
+    if(driver && driver->deinit) {
+      TU_LOG_USBD("%s deinit\r\n", driver->name);
+      driver->deinit();
+    }
+  }
+
+  // Deinit device queue & task
+  osal_queue_delete(_usbd_q);
+  _usbd_q = NULL;
+
+#if OSAL_MUTEX_REQUIRED
+  // TODO make sure there is no task waiting on this mutex
+  osal_mutex_delete(_usbd_mutex);
+  _usbd_mutex = NULL;
+#endif
+
+  _usbd_rhport = RHPORT_INVALID;
+
+  return true;
+}
+
+static void configuration_reset(uint8_t rhport) {
+  for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++) {
+    usbd_class_driver_t const* driver = get_driver(i);
+    TU_ASSERT(driver,);
     driver->reset(rhport);
   }
 
   tu_varclr(&_usbd_dev);
   memset(_usbd_dev.itf2drv, DRVID_INVALID, sizeof(_usbd_dev.itf2drv)); // invalid mapping
-  memset(_usbd_dev.ep2drv , DRVID_INVALID, sizeof(_usbd_dev.ep2drv )); // invalid mapping
+  memset(_usbd_dev.ep2drv, DRVID_INVALID, sizeof(_usbd_dev.ep2drv)); // invalid mapping
 }
 
-static void usbd_reset(uint8_t rhport)
-{
+static void usbd_reset(uint8_t rhport) {
   configuration_reset(rhport);
   usbd_control_reset();
 }
 
-bool tud_task_event_ready(void)
-{
+bool tud_task_event_ready(void) {
   // Skip if stack is not initialized
-  if ( !tud_inited() ) return false;
-
+  if (!tud_inited()) return false;
   return !osal_queue_empty(_usbd_q);
 }
 
@@ -450,57 +509,52 @@ bool tud_task_event_ready(void)
  * This top level thread manages all device controller event and delegates events to class-specific drivers.
  * This should be called periodically within the mainloop or rtos thread.
  *
-   @code
-    int main(void)
-    {
+    int main(void) {
       application_init();
       tusb_init();
 
-      while(1) // the mainloop
-      {
+      while(1) { // the mainloop
         application_code();
         tud_task(); // tinyusb device task
       }
     }
-    @endcode
  */
-void tud_task_ext(uint32_t timeout_ms, bool in_isr)
-{
+void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
   (void) in_isr; // not implemented yet
 
   // Skip if stack is not initialized
-  if ( !tud_inited() ) return;
+  if (!tud_inited()) return;
 
   // Loop until there is no more events in the queue
-  while (1)
-  {
+  while (1) {
     dcd_event_t event;
-    if ( !osal_queue_receive(_usbd_q, &event, timeout_ms) ) return;
+    if (!osal_queue_receive(_usbd_q, &event, timeout_ms)) return;
 
 #if CFG_TUSB_DEBUG >= CFG_TUD_LOG_LEVEL
     if (event.event_id == DCD_EVENT_SETUP_RECEIVED) TU_LOG_USBD("\r\n"); // extra line for setup
     TU_LOG_USBD("USBD %s ", event.event_id < DCD_EVENT_COUNT ? _usbd_event_str[event.event_id] : "CORRUPTED");
 #endif
 
-    switch ( event.event_id )
-    {
+    switch (event.event_id) {
       case DCD_EVENT_BUS_RESET:
         TU_LOG_USBD(": %s Speed\r\n", tu_str_speed[event.bus_reset.speed]);
         usbd_reset(event.rhport);
         _usbd_dev.speed = event.bus_reset.speed;
-      break;
+        break;
 
       case DCD_EVENT_UNPLUGGED:
         TU_LOG_USBD("\r\n");
         usbd_reset(event.rhport);
-
-        // invoke callback
         if (tud_umount_cb) tud_umount_cb();
-      break;
+        break;
 
       case DCD_EVENT_SETUP_RECEIVED:
+        _usbd_dev.setup_count--;
         TU_LOG_BUF(CFG_TUD_LOG_LEVEL, &event.setup_received, 8);
-        TU_LOG_USBD("\r\n");
+        if (_usbd_dev.setup_count) {
+          TU_LOG_USBD("  Skipped since there is other SETUP in queue\r\n");
+          break;
+        }
 
         // Mark as connected after receiving 1st setup packet.
         // But it is easier to set it every time instead of wasting time to check then set
@@ -509,87 +563,82 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
         // mark both in & out control as free
         _usbd_dev.ep_status[0][TUSB_DIR_OUT].busy = 0;
         _usbd_dev.ep_status[0][TUSB_DIR_OUT].claimed = 0;
-        _usbd_dev.ep_status[0][TUSB_DIR_IN ].busy = 0;
-        _usbd_dev.ep_status[0][TUSB_DIR_IN ].claimed = 0;
+        _usbd_dev.ep_status[0][TUSB_DIR_IN].busy = 0;
+        _usbd_dev.ep_status[0][TUSB_DIR_IN].claimed = 0;
 
         // Process control request
-        if ( !process_control_request(event.rhport, &event.setup_received) )
-        {
+        if (!process_control_request(event.rhport, &event.setup_received)) {
           TU_LOG_USBD("  Stall EP0\r\n");
           // Failed -> stall both control endpoint IN and OUT
           dcd_edpt_stall(event.rhport, 0);
           dcd_edpt_stall(event.rhport, 0 | TUSB_DIR_IN_MASK);
         }
-      break;
+        break;
 
-      case DCD_EVENT_XFER_COMPLETE:
-      {
+      case DCD_EVENT_XFER_COMPLETE: {
         // Invoke the class callback associated with the endpoint address
         uint8_t const ep_addr = event.xfer_complete.ep_addr;
-        uint8_t const epnum   = tu_edpt_number(ep_addr);
-        uint8_t const ep_dir  = tu_edpt_dir(ep_addr);
+        uint8_t const epnum = tu_edpt_number(ep_addr);
+        uint8_t const ep_dir = tu_edpt_dir(ep_addr);
 
         TU_LOG_USBD("on EP %02X with %u bytes\r\n", ep_addr, (unsigned int) event.xfer_complete.len);
 
         _usbd_dev.ep_status[epnum][ep_dir].busy = 0;
         _usbd_dev.ep_status[epnum][ep_dir].claimed = 0;
 
-        if ( 0 == epnum )
-        {
-          usbd_control_xfer_cb(event.rhport, ep_addr, (xfer_result_t) event.xfer_complete.result, event.xfer_complete
-          .len);
-        }
-        else
-        {
-          usbd_class_driver_t const * driver = get_driver( _usbd_dev.ep2drv[epnum][ep_dir] );
-          TU_ASSERT(driver, );
+        if (0 == epnum) {
+          usbd_control_xfer_cb(event.rhport, ep_addr, (xfer_result_t) event.xfer_complete.result,
+                               event.xfer_complete.len);
+        } else {
+          usbd_class_driver_t const* driver = get_driver(_usbd_dev.ep2drv[epnum][ep_dir]);
+          TU_ASSERT(driver,);
 
           TU_LOG_USBD("  %s xfer callback\r\n", driver->name);
           driver->xfer_cb(event.rhport, ep_addr, (xfer_result_t) event.xfer_complete.result, event.xfer_complete.len);
         }
+        break;
       }
-      break;
 
       case DCD_EVENT_SUSPEND:
         // NOTE: When plugging/unplugging device, the D+/D- state are unstable and
         // can accidentally meet the SUSPEND condition ( Bus Idle for 3ms ), which result in a series of event
         // e.g suspend -> resume -> unplug/plug. Skip suspend/resume if not connected
-        if ( _usbd_dev.connected )
-        {
+        if (_usbd_dev.connected) {
           TU_LOG_USBD(": Remote Wakeup = %u\r\n", _usbd_dev.remote_wakeup_en);
           if (tud_suspend_cb) tud_suspend_cb(_usbd_dev.remote_wakeup_en);
-        }else
-        {
+        } else {
           TU_LOG_USBD(" Skipped\r\n");
         }
-      break;
+        break;
 
       case DCD_EVENT_RESUME:
-        if ( _usbd_dev.connected )
-        {
+        if (_usbd_dev.connected) {
           TU_LOG_USBD("\r\n");
           if (tud_resume_cb) tud_resume_cb();
-        }else
-        {
+        } else {
           TU_LOG_USBD(" Skipped\r\n");
         }
-      break;
+        break;
 
       case USBD_EVENT_FUNC_CALL:
         TU_LOG_USBD("\r\n");
-        if ( event.func_call.func ) event.func_call.func(event.func_call.param);
-      break;
+        if (event.func_call.func) event.func_call.func(event.func_call.param);
+        break;
 
       case DCD_EVENT_SOF:
+        if (tu_bit_test(_usbd_dev.sof_consumer, SOF_CONSUMER_USER)) {
+          TU_LOG_USBD("\r\n");
+          tud_sof_cb(event.sof.frame_count);
+        }
+      break;
+
       default:
         TU_BREAKPOINT();
-      break;
+        break;
     }
 
-#if CFG_TUSB_OS != OPT_OS_NONE && CFG_TUSB_OS != OPT_OS_PICO
     // return if there is no more events, for application to run other background
     if (osal_queue_empty(_usbd_q)) return;
-#endif
   }
 }
 
@@ -598,24 +647,20 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
 //--------------------------------------------------------------------+
 
 // Helper to invoke class driver control request handler
-static bool invoke_class_control(uint8_t rhport, usbd_class_driver_t const * driver, tusb_control_request_t const * request)
-{
+static bool invoke_class_control(uint8_t rhport, usbd_class_driver_t const * driver, tusb_control_request_t const * request) {
   usbd_control_set_complete_callback(driver->control_xfer_cb);
   TU_LOG_USBD("  %s control request\r\n", driver->name);
   return driver->control_xfer_cb(rhport, CONTROL_STAGE_SETUP, request);
 }
 
 // This handles the actual request and its response.
-// return false will cause its caller to stall control endpoint
-static bool process_control_request(uint8_t rhport, tusb_control_request_t const * p_request)
-{
+// Returns false if unable to complete the request, causing caller to stall control endpoints.
+static bool process_control_request(uint8_t rhport, tusb_control_request_t const * p_request) {
   usbd_control_set_complete_callback(NULL);
-
   TU_ASSERT(p_request->bmRequestType_bit.type < TUSB_REQ_TYPE_INVALID);
 
   // Vendor request
-  if ( p_request->bmRequestType_bit.type == TUSB_REQ_TYPE_VENDOR )
-  {
+  if ( p_request->bmRequestType_bit.type == TUSB_REQ_TYPE_VENDOR ) {
     TU_VERIFY(tud_vendor_control_xfer_cb);
 
     usbd_control_set_complete_callback(tud_vendor_control_xfer_cb);
@@ -623,19 +668,16 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
   }
 
 #if CFG_TUSB_DEBUG >= CFG_TUD_LOG_LEVEL
-  if (TUSB_REQ_TYPE_STANDARD == p_request->bmRequestType_bit.type && p_request->bRequest <= TUSB_REQ_SYNCH_FRAME)
-  {
+  if (TUSB_REQ_TYPE_STANDARD == p_request->bmRequestType_bit.type && p_request->bRequest <= TUSB_REQ_SYNCH_FRAME) {
     TU_LOG_USBD("  %s", tu_str_std_request[p_request->bRequest]);
     if (TUSB_REQ_GET_DESCRIPTOR != p_request->bRequest) TU_LOG_USBD("\r\n");
   }
 #endif
 
-  switch ( p_request->bmRequestType_bit.recipient )
-  {
+  switch ( p_request->bmRequestType_bit.recipient ) {
     //------------- Device Requests e.g in enumeration -------------//
     case TUSB_REQ_RCPT_DEVICE:
-      if ( TUSB_REQ_TYPE_CLASS == p_request->bmRequestType_bit.type )
-      {
+      if ( TUSB_REQ_TYPE_CLASS == p_request->bmRequestType_bit.type ) {
         uint8_t const itf = tu_u16_low(p_request->wIndex);
         TU_VERIFY(itf < TU_ARRAY_SIZE(_usbd_dev.itf2drv));
 
@@ -646,15 +688,13 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
         return invoke_class_control(rhport, driver, p_request);
       }
 
-      if ( TUSB_REQ_TYPE_STANDARD != p_request->bmRequestType_bit.type )
-      {
+      if ( TUSB_REQ_TYPE_STANDARD != p_request->bmRequestType_bit.type ) {
         // Non standard request is not supported
         TU_BREAKPOINT();
         return false;
       }
 
-      switch ( p_request->bRequest )
-      {
+      switch ( p_request->bRequest ) {
         case TUSB_REQ_SET_ADDRESS:
           // Depending on mcu, status phase could be sent either before or after changing device address,
           // or even require stack to not response with status at all
@@ -665,24 +705,23 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
           _usbd_dev.addressed = 1;
         break;
 
-        case TUSB_REQ_GET_CONFIGURATION:
-        {
+        case TUSB_REQ_GET_CONFIGURATION: {
           uint8_t cfg_num = _usbd_dev.cfg_num;
           tud_control_xfer(rhport, p_request, &cfg_num, 1);
         }
         break;
 
-        case TUSB_REQ_SET_CONFIGURATION:
-        {
+        case TUSB_REQ_SET_CONFIGURATION: {
           uint8_t const cfg_num = (uint8_t) p_request->wValue;
 
           // Only process if new configure is different
-          if (_usbd_dev.cfg_num != cfg_num)
-          {
-            if ( _usbd_dev.cfg_num )
-            {
+          if (_usbd_dev.cfg_num != cfg_num) {
+            if ( _usbd_dev.cfg_num ) {
               // already configured: need to clear all endpoints and driver first
               TU_LOG_USBD("  Clear current Configuration (%u) before switching\r\n", _usbd_dev.cfg_num);
+
+              // disable SOF
+              dcd_sof_enable(rhport, false);
 
               // close all non-control endpoints, cancel all pending transfers if any
               dcd_edpt_close_all(rhport);
@@ -695,15 +734,11 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
             }
 
             // Handle the new configuration and execute the corresponding callback
-            if ( cfg_num )
-            {
+            if ( cfg_num ) {
               // switch to new configuration if not zero
               TU_ASSERT( process_set_config(rhport, cfg_num) );
-
               if ( tud_mount_cb ) tud_mount_cb();
-            }
-            else
-            {
+            } else {
               if ( tud_umount_cb ) tud_umount_cb();
             }
           }
@@ -718,14 +753,47 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
         break;
 
         case TUSB_REQ_SET_FEATURE:
-          // Only support remote wakeup for device feature
-          TU_VERIFY(TUSB_REQ_FEATURE_REMOTE_WAKEUP == p_request->wValue);
+          // Handle the feature selector
+          switch(p_request->wValue)
+          {
+            // Support for remote wakeup
+            case TUSB_REQ_FEATURE_REMOTE_WAKEUP:
+              TU_LOG_USBD("    Enable Remote Wakeup\r\n");
 
-          TU_LOG_USBD("    Enable Remote Wakeup\r\n");
+              // Host may enable remote wake up before suspending especially HID device
+              _usbd_dev.remote_wakeup_en = true;
+              tud_control_status(rhport, p_request);
+            break;
 
-          // Host may enable remote wake up before suspending especially HID device
-          _usbd_dev.remote_wakeup_en = true;
-          tud_control_status(rhport, p_request);
+#if CFG_TUD_TEST_MODE
+            // Support for TEST_MODE
+            case TUSB_REQ_FEATURE_TEST_MODE: {
+              // Only handle the test mode if supported and valid
+              TU_VERIFY(dcd_enter_test_mode && dcd_check_test_mode_support && 0 == tu_u16_low(p_request->wIndex));
+
+              uint8_t selector = tu_u16_high(p_request->wIndex);
+
+              // Stall request if the selected test mode isn't supported
+              if (!dcd_check_test_mode_support((test_mode_t)selector))
+              {
+                TU_LOG_USBD("    Unsupported Test Mode (test selector index: %d)\r\n", selector);
+
+                return false;
+              }
+
+              // Acknowledge request
+              tud_control_status(rhport, p_request);
+
+              TU_LOG_USBD("    Enter Test Mode (test selector index: %d)\r\n", selector);
+
+              usbd_control_set_complete_callback(process_test_mode_cb);
+              break;
+            }
+#endif /* CFG_TUD_TEST_MODE */
+
+            // Stall unsupported feature selector
+            default: return false;
+          }
         break;
 
         case TUSB_REQ_CLEAR_FEATURE:
@@ -739,15 +807,14 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
           tud_control_status(rhport, p_request);
         break;
 
-        case TUSB_REQ_GET_STATUS:
-        {
+        case TUSB_REQ_GET_STATUS: {
           // Device status bit mask
           // - Bit 0: Self Powered
           // - Bit 1: Remote Wakeup enabled
           uint16_t status = (uint16_t) ((_usbd_dev.self_powered ? 1u : 0u) | (_usbd_dev.remote_wakeup_en ? 2u : 0u));
           tud_control_xfer(rhport, p_request, &status, 2);
+          break;
         }
-        break;
 
         // Unknown/Unsupported request
         default: TU_BREAKPOINT(); return false;
@@ -755,8 +822,7 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
     break;
 
     //------------- Class/Interface Specific Request -------------//
-    case TUSB_REQ_RCPT_INTERFACE:
-    {
+    case TUSB_REQ_RCPT_INTERFACE: {
       uint8_t const itf = tu_u16_low(p_request->wIndex);
       TU_VERIFY(itf < TU_ARRAY_SIZE(_usbd_dev.itf2drv));
 
@@ -765,25 +831,21 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
 
       // all requests to Interface (STD or Class) is forwarded to class driver.
       // notable requests are: GET HID REPORT DESCRIPTOR, SET_INTERFACE, GET_INTERFACE
-      if ( !invoke_class_control(rhport, driver, p_request) )
-      {
+      if ( !invoke_class_control(rhport, driver, p_request) ) {
         // For GET_INTERFACE and SET_INTERFACE, it is mandatory to respond even if the class
         // driver doesn't use alternate settings or implement this
         TU_VERIFY(TUSB_REQ_TYPE_STANDARD == p_request->bmRequestType_bit.type);
 
-        switch(p_request->bRequest)
-        {
+        switch(p_request->bRequest) {
           case TUSB_REQ_GET_INTERFACE:
           case TUSB_REQ_SET_INTERFACE:
             // Clear complete callback if driver set since it can also stall the request.
             usbd_control_set_complete_callback(NULL);
 
-            if (TUSB_REQ_GET_INTERFACE == p_request->bRequest)
-            {
+            if (TUSB_REQ_GET_INTERFACE == p_request->bRequest) {
               uint8_t alternate = 0;
               tud_control_xfer(rhport, p_request, &alternate, 1);
-            }else
-            {
+            }else {
               tud_control_status(rhport, p_request);
             }
           break;
@@ -791,54 +853,42 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
           default: return false;
         }
       }
+      break;
     }
-    break;
 
     //------------- Endpoint Request -------------//
-    case TUSB_REQ_RCPT_ENDPOINT:
-    {
+    case TUSB_REQ_RCPT_ENDPOINT: {
       uint8_t const ep_addr = tu_u16_low(p_request->wIndex);
       uint8_t const ep_num  = tu_edpt_number(ep_addr);
       uint8_t const ep_dir  = tu_edpt_dir(ep_addr);
 
       TU_ASSERT(ep_num < TU_ARRAY_SIZE(_usbd_dev.ep2drv) );
-
       usbd_class_driver_t const * driver = get_driver(_usbd_dev.ep2drv[ep_num][ep_dir]);
 
-      if ( TUSB_REQ_TYPE_STANDARD != p_request->bmRequestType_bit.type )
-      {
+      if ( TUSB_REQ_TYPE_STANDARD != p_request->bmRequestType_bit.type ) {
         // Forward class request to its driver
         TU_VERIFY(driver);
         return invoke_class_control(rhport, driver, p_request);
-      }
-      else
-      {
+      } else {
         // Handle STD request to endpoint
-        switch ( p_request->bRequest )
-        {
-          case TUSB_REQ_GET_STATUS:
-          {
+        switch ( p_request->bRequest ) {
+          case TUSB_REQ_GET_STATUS: {
             uint16_t status = usbd_edpt_stalled(rhport, ep_addr) ? 0x0001 : 0x0000;
             tud_control_xfer(rhport, p_request, &status, 2);
           }
           break;
 
           case TUSB_REQ_CLEAR_FEATURE:
-          case TUSB_REQ_SET_FEATURE:
-          {
-            if ( TUSB_REQ_FEATURE_EDPT_HALT == p_request->wValue )
-            {
-              if ( TUSB_REQ_CLEAR_FEATURE ==  p_request->bRequest )
-              {
+          case TUSB_REQ_SET_FEATURE: {
+            if ( TUSB_REQ_FEATURE_EDPT_HALT == p_request->wValue ) {
+              if ( TUSB_REQ_CLEAR_FEATURE ==  p_request->bRequest ) {
                 usbd_edpt_clear_stall(rhport, ep_addr);
-              }else
-              {
+              }else {
                 usbd_edpt_stall(rhport, ep_addr);
               }
             }
 
-            if (driver)
-            {
+            if (driver) {
               // Some classes such as USBTMC needs to clear/re-init its buffer when receiving CLEAR_FEATURE request
               // We will also forward std request targeted endpoint to class drivers as well
 
@@ -854,14 +904,18 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
           break;
 
           // Unknown/Unsupported request
-          default: TU_BREAKPOINT(); return false;
+          default:
+            TU_BREAKPOINT();
+            return false;
         }
       }
     }
     break;
 
     // Unknown recipient
-    default: TU_BREAKPOINT(); return false;
+    default:
+      TU_BREAKPOINT();
+      return false;
   }
 
   return true;
@@ -1067,6 +1121,20 @@ static bool process_get_descriptor(uint8_t rhport, tusb_control_request_t const 
   }
 }
 
+#if CFG_TUD_TEST_MODE
+static bool process_test_mode_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request)
+{
+  // At this point it should already be ensured that dcd_enter_test_mode() is defined
+
+  // Only enter the test mode after the request for it has completed
+  TU_VERIFY(CONTROL_STAGE_ACK == stage);
+
+  dcd_enter_test_mode(rhport, (test_mode_t)tu_u16_high(request->wIndex));
+
+  return true;
+}
+#endif /* CFG_TUD_TEST_MODE */
+
 //--------------------------------------------------------------------+
 // DCD Event Handler
 //--------------------------------------------------------------------+
@@ -1101,6 +1169,14 @@ TU_ATTR_FAST_FUNC void dcd_event_handler(dcd_event_t const* event, bool in_isr) 
       break;
 
     case DCD_EVENT_SOF:
+      // SOF driver handler in ISR context
+      for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++) {
+        usbd_class_driver_t const* driver = get_driver(i);
+        if (driver && driver->sof) {
+          driver->sof(event->rhport, event->sof.frame_count);
+        }
+      }
+
       // Some MCUs after running dcd_remote_wakeup() does not have way to detect the end of remote wakeup
       // which last 1-15 ms. DCD can use SOF as a clear indicator that bus is back to operational
       if (_usbd_dev.suspended) {
@@ -1110,15 +1186,15 @@ TU_ATTR_FAST_FUNC void dcd_event_handler(dcd_event_t const* event, bool in_isr) 
         queue_event(&event_resume, in_isr);
       }
 
-      // SOF driver handler in ISR context
-      for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++) {
-        usbd_class_driver_t const* driver = get_driver(i);
-        if (driver && driver->sof) {
-          driver->sof(event->rhport, event->sof.frame_count);
-        }
+      if (tu_bit_test(_usbd_dev.sof_consumer, SOF_CONSUMER_USER)) {
+        dcd_event_t const event_sof = {.rhport = event->rhport, .event_id = DCD_EVENT_SOF};
+        queue_event(&event_sof, in_isr);
       }
+      break;
 
-      // skip osal queue for SOF in usbd task
+    case DCD_EVENT_SETUP_RECEIVED:
+      _usbd_dev.setup_count++;
+      send = true;
       break;
 
     default:
@@ -1186,8 +1262,7 @@ void usbd_defer_func(osal_task_func_t func, void* param, bool in_isr) {
 // USBD Endpoint API
 //--------------------------------------------------------------------+
 
-bool usbd_edpt_open(uint8_t rhport, tusb_desc_endpoint_t const * desc_ep)
-{
+bool usbd_edpt_open(uint8_t rhport, tusb_desc_endpoint_t const* desc_ep) {
   rhport = _usbd_rhport;
 
   TU_ASSERT(tu_edpt_number(desc_ep->bEndpointAddress) < CFG_TUD_ENDPPOINT_MAX);
@@ -1196,42 +1271,44 @@ bool usbd_edpt_open(uint8_t rhport, tusb_desc_endpoint_t const * desc_ep)
   return dcd_edpt_open(rhport, desc_ep);
 }
 
-bool usbd_edpt_claim(uint8_t rhport, uint8_t ep_addr)
-{
+bool usbd_edpt_claim(uint8_t rhport, uint8_t ep_addr) {
   (void) rhport;
 
   // TODO add this check later, also make sure we don't starve an out endpoint while suspending
   // TU_VERIFY(tud_ready());
 
-  uint8_t const epnum       = tu_edpt_number(ep_addr);
-  uint8_t const dir         = tu_edpt_dir(ep_addr);
+  uint8_t const epnum = tu_edpt_number(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
   tu_edpt_state_t* ep_state = &_usbd_dev.ep_status[epnum][dir];
 
   return tu_edpt_claim(ep_state, _usbd_mutex);
 }
 
-bool usbd_edpt_release(uint8_t rhport, uint8_t ep_addr)
-{
+bool usbd_edpt_release(uint8_t rhport, uint8_t ep_addr) {
   (void) rhport;
 
-  uint8_t const epnum       = tu_edpt_number(ep_addr);
-  uint8_t const dir         = tu_edpt_dir(ep_addr);
+  uint8_t const epnum = tu_edpt_number(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
   tu_edpt_state_t* ep_state = &_usbd_dev.ep_status[epnum][dir];
 
   return tu_edpt_release(ep_state, _usbd_mutex);
 }
 
-bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t total_bytes)
-{
+bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t* buffer, uint16_t total_bytes) {
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
-  uint8_t const dir   = tu_edpt_dir(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
 
   // TODO skip ready() check for now since enumeration also use this API
   // TU_VERIFY(tud_ready());
 
   TU_LOG_USBD("  Queue EP %02X with %u bytes ...\r\n", ep_addr, total_bytes);
+#if CFG_TUD_LOG_LEVEL >= 3
+  if(dir == TUSB_DIR_IN) {
+    TU_LOG_MEM(CFG_TUD_LOG_LEVEL, buffer, total_bytes, 2);
+  }
+#endif
 
   // Attempt to transfer on a busy endpoint, sound like an race condition !
   TU_ASSERT(_usbd_dev.ep_status[epnum][dir].busy == 0);
@@ -1240,11 +1317,9 @@ bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t 
   // could return and USBD task can preempt and clear the busy
   _usbd_dev.ep_status[epnum][dir].busy = 1;
 
-  if ( dcd_edpt_xfer(rhport, ep_addr, buffer, total_bytes) )
-  {
+  if (dcd_edpt_xfer(rhport, ep_addr, buffer, total_bytes)) {
     return true;
-  }else
-  {
+  } else {
     // DCD error, mark endpoint as ready to allow next transfer
     _usbd_dev.ep_status[epnum][dir].busy = 0;
     _usbd_dev.ep_status[epnum][dir].claimed = 0;
@@ -1258,12 +1333,11 @@ bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t 
 // bytes should be written and second to keep the return value free to give back a boolean
 // success message. If total_bytes is too big, the FIFO will copy only what is available
 // into the USB buffer!
-bool usbd_edpt_xfer_fifo(uint8_t rhport, uint8_t ep_addr, tu_fifo_t * ff, uint16_t total_bytes)
-{
+bool usbd_edpt_xfer_fifo(uint8_t rhport, uint8_t ep_addr, tu_fifo_t* ff, uint16_t total_bytes) {
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
-  uint8_t const dir   = tu_edpt_dir(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
 
   TU_LOG_USBD("  Queue ISO EP %02X with %u bytes ... ", ep_addr, total_bytes);
 
@@ -1274,12 +1348,10 @@ bool usbd_edpt_xfer_fifo(uint8_t rhport, uint8_t ep_addr, tu_fifo_t * ff, uint16
   // and usbd task can preempt and clear the busy
   _usbd_dev.ep_status[epnum][dir].busy = 1;
 
-  if (dcd_edpt_xfer_fifo(rhport, ep_addr, ff, total_bytes))
-  {
+  if (dcd_edpt_xfer_fifo(rhport, ep_addr, ff, total_bytes)) {
     TU_LOG_USBD("OK\r\n");
     return true;
-  }else
-  {
+  } else {
     // DCD error, mark endpoint as ready to allow next transfer
     _usbd_dev.ep_status[epnum][dir].busy = 0;
     _usbd_dev.ep_status[epnum][dir].claimed = 0;
@@ -1289,75 +1361,62 @@ bool usbd_edpt_xfer_fifo(uint8_t rhport, uint8_t ep_addr, tu_fifo_t * ff, uint16
   }
 }
 
-bool usbd_edpt_busy(uint8_t rhport, uint8_t ep_addr)
-{
+bool usbd_edpt_busy(uint8_t rhport, uint8_t ep_addr) {
   (void) rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
-  uint8_t const dir   = tu_edpt_dir(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
 
   return _usbd_dev.ep_status[epnum][dir].busy;
 }
 
-void usbd_edpt_stall(uint8_t rhport, uint8_t ep_addr)
-{
+void usbd_edpt_stall(uint8_t rhport, uint8_t ep_addr) {
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
-  uint8_t const dir   = tu_edpt_dir(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
 
   // only stalled if currently cleared
-  if ( !_usbd_dev.ep_status[epnum][dir].stalled )
-  {
-    TU_LOG_USBD("    Stall EP %02X\r\n", ep_addr);
-    dcd_edpt_stall(rhport, ep_addr);
-    _usbd_dev.ep_status[epnum][dir].stalled = 1;
-    _usbd_dev.ep_status[epnum][dir].busy = 1;
-  }
+  TU_LOG_USBD("    Stall EP %02X\r\n", ep_addr);
+  dcd_edpt_stall(rhport, ep_addr);
+  _usbd_dev.ep_status[epnum][dir].stalled = 1;
+  _usbd_dev.ep_status[epnum][dir].busy = 1;
 }
 
-void usbd_edpt_clear_stall(uint8_t rhport, uint8_t ep_addr)
-{
+void usbd_edpt_clear_stall(uint8_t rhport, uint8_t ep_addr) {
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
-  uint8_t const dir   = tu_edpt_dir(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
 
   // only clear if currently stalled
-  if ( _usbd_dev.ep_status[epnum][dir].stalled )
-  {
-    TU_LOG_USBD("    Clear Stall EP %02X\r\n", ep_addr);
-    dcd_edpt_clear_stall(rhport, ep_addr);
-    _usbd_dev.ep_status[epnum][dir].stalled = 0;
-    _usbd_dev.ep_status[epnum][dir].busy = 0;
-  }
+  TU_LOG_USBD("    Clear Stall EP %02X\r\n", ep_addr);
+  dcd_edpt_clear_stall(rhport, ep_addr);
+  _usbd_dev.ep_status[epnum][dir].stalled = 0;
+  _usbd_dev.ep_status[epnum][dir].busy = 0;
 }
 
-bool usbd_edpt_stalled(uint8_t rhport, uint8_t ep_addr)
-{
+bool usbd_edpt_stalled(uint8_t rhport, uint8_t ep_addr) {
   (void) rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
-  uint8_t const dir   = tu_edpt_dir(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
 
   return _usbd_dev.ep_status[epnum][dir].stalled;
 }
 
 /**
  * usbd_edpt_close will disable an endpoint.
- *
  * In progress transfers on this EP may be delivered after this call.
- *
  */
-void usbd_edpt_close(uint8_t rhport, uint8_t ep_addr)
-{
+void usbd_edpt_close(uint8_t rhport, uint8_t ep_addr) {
   rhport = _usbd_rhport;
 
   TU_ASSERT(dcd_edpt_close, /**/);
   TU_LOG_USBD("  CLOSING Endpoint: 0x%02X\r\n", ep_addr);
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
-  uint8_t const dir   = tu_edpt_dir(ep_addr);
+  uint8_t const dir = tu_edpt_dir(ep_addr);
 
   dcd_edpt_close(rhport, ep_addr);
   _usbd_dev.ep_status[epnum][dir].stalled = 0;
@@ -1367,17 +1426,24 @@ void usbd_edpt_close(uint8_t rhport, uint8_t ep_addr)
   return;
 }
 
-void usbd_sof_enable(uint8_t rhport, bool en)
-{
+void usbd_sof_enable(uint8_t rhport, sof_consumer_t consumer, bool en) {
   rhport = _usbd_rhport;
 
-  // TODO: Check needed if all drivers including the user sof_cb does not need an active SOF ISR any more.
-  // Only if all drivers switched off SOF calls the SOF interrupt may be disabled
-  dcd_sof_enable(rhport, en);
+  uint8_t consumer_old = _usbd_dev.sof_consumer;
+  // Keep track how many class instances need the SOF interrupt
+  if (en) {
+    _usbd_dev.sof_consumer |= (uint8_t)(1 << consumer);
+  } else {
+    _usbd_dev.sof_consumer &= (uint8_t)(~(1 << consumer));
+  }
+
+  // Test logically unequal
+  if(!_usbd_dev.sof_consumer != !consumer_old) {
+    dcd_sof_enable(rhport, _usbd_dev.sof_consumer);
+  }
 }
 
-bool usbd_edpt_iso_alloc(uint8_t rhport, uint8_t ep_addr, uint16_t largest_packet_size)
-{
+bool usbd_edpt_iso_alloc(uint8_t rhport, uint8_t ep_addr, uint16_t largest_packet_size) {
   rhport = _usbd_rhport;
 
   TU_ASSERT(dcd_edpt_iso_alloc);
@@ -1386,12 +1452,11 @@ bool usbd_edpt_iso_alloc(uint8_t rhport, uint8_t ep_addr, uint16_t largest_packe
   return dcd_edpt_iso_alloc(rhport, ep_addr, largest_packet_size);
 }
 
-bool usbd_edpt_iso_activate(uint8_t rhport, tusb_desc_endpoint_t const * desc_ep)
-{
+bool usbd_edpt_iso_activate(uint8_t rhport, tusb_desc_endpoint_t const* desc_ep) {
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(desc_ep->bEndpointAddress);
-  uint8_t const dir   = tu_edpt_dir(desc_ep->bEndpointAddress);
+  uint8_t const dir = tu_edpt_dir(desc_ep->bEndpointAddress);
 
   TU_ASSERT(dcd_edpt_iso_activate);
   TU_ASSERT(epnum < CFG_TUD_ENDPPOINT_MAX);

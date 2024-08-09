@@ -203,7 +203,7 @@ uint8_t rdwr10_validate_cmd(msc_cbw_t const* cbw)
 //--------------------------------------------------------------------+
 // Debug
 //--------------------------------------------------------------------+
-#if CFG_TUSB_DEBUG >= 2
+#if CFG_TUSB_DEBUG >= CFG_TUD_MSC_LOG_LEVEL
 
 TU_ATTR_UNUSED tu_static tu_lookup_entry_t const _msc_scsi_cmd_lookup[] =
 {
@@ -251,9 +251,13 @@ static inline void set_sense_medium_not_present(uint8_t lun)
 //--------------------------------------------------------------------+
 // USBD Driver API
 //--------------------------------------------------------------------+
-void mscd_init(void)
-{
+void mscd_init(void) {
   tu_memclr(&_mscd_itf, sizeof(mscd_interface_t));
+}
+
+bool mscd_deinit(void) {
+  // nothing to do
+  return true;
 }
 
 void mscd_reset(uint8_t rhport)
@@ -684,6 +688,24 @@ static int32_t proc_builtin_scsi(uint8_t lun, uint8_t const scsi_cmd[16], uint8_
         }
       }
     break;
+
+    case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
+      resplen = 0;
+
+      if (tud_msc_prevent_allow_medium_removal_cb)
+      {
+         scsi_prevent_allow_medium_removal_t const * prevent_allow = (scsi_prevent_allow_medium_removal_t const *) scsi_cmd;
+        if ( !tud_msc_prevent_allow_medium_removal_cb(lun, prevent_allow->prohibit_removal, prevent_allow->control) )
+        {
+          // Failed status response
+          resplen = - 1;
+
+          // set default sense if not set by callback
+          if ( p_msc->sense_key == 0 ) set_sense_medium_not_present(lun);
+        }
+      }
+    break;
+
 
     case SCSI_CMD_READ_CAPACITY_10:
     {

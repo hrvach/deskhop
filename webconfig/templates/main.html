@@ -1,0 +1,142 @@
+{# templates/main.j2 #}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    {% include "style.css" %}
+  </style>
+
+  <title>DeskHop Config</title>
+</head>
+
+<body>
+
+  <main class="wrapper">
+
+    <section class="container">    
+
+      <div class="row" id="warning" style="display: none;"> 
+        <blockquote>
+          <h3> Oh, no! </h3>
+          Unfortunately, your browser does not support WebHID or the Permissions Policy is blocking its usage. Please try Chromium <br />
+          (or Chrome if you have to). Apologies for the inconvenience, hopefully a cross-browser solution happens soon.
+        </blockquote> 
+      </div>
+
+      <div class="row">
+
+        <div class="column column-80" style="padding-top: 1%;">
+          <h3>Desk<span style="color: #5e9f41;">Hop</span> Config</h3>
+        </div>
+      </div>
+
+      <div class="column" style="border: 2px solid #d7e5f0; padding-right: 3em;">
+
+
+      <div class="row">
+        <div class="column column-20" style="margin-right: 2em; padding-top: 2em; background-color: #d7e5f0">
+
+          <svg style="width:180px; height:110px; stroke:#384955; stroke-width:1px; fill:white">
+            <g transform="translate(-135, -190) scale (2)">
+              <path d="m 88.742006,98.633938 c -0.12648,0.0838 -0.252994,0.223292 -0.309214,0.320992 -0.0984,0.223308 0.337328,26.23798 0.44977,26.53106 0.0984,0.2512 0.42166,0.41868 0.74493,0.41868 0.309218,0 0.224886,0.0838 3.837102,-3.37742 l 1.672582,-1.56312 0.210828,0.43264 c 0.11244,0.23728 1.236868,2.5261 2.473736,5.09408 1.9818,4.11712 2.27696,4.68934 2.47373,4.81496 0.16868,0.1116 0.28111,0.1396 0.44977,0.1256 0.16868,-0.014 5.34102,-2.42842 6.21245,-2.88898 0.253,-0.1396 0.42166,-0.4187 0.42166,-0.68386 0,-0.1814 -0.59032,-1.4654 -2.44562,-5.28946 -1.33526,-2.77734 -2.43157,-5.06616 -2.40346,-5.09408 0.0281,-0.0278 1.57419,-0.23728 3.4295,-0.47452 1.8553,-0.23724 3.47166,-0.47452 3.5841,-0.5164 0.23894,-0.1116 0.46383,-0.43262 0.46383,-0.6699 0,-0.0838 -0.0562,-0.25122 -0.11244,-0.36286 -0.0703,-0.1256 -1.02604,-0.963 -2.41752,-2.09346 -1.26498,-1.03276 -5.80484,-4.75912 -10.077656,-8.29008 -4.272816,-3.53096 -7.842866,-6.447844 -7.941254,-6.489712 -0.23894,-0.12554 -0.47788,-0.11164 -0.71682,0.0558 z" />
+              <path d="m 112.69484,105.14605 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 17.58204 a 1.8639801,1.8639801 0 0 0 1.86328,-1.86328 1.8639801,1.8639801 0 0 0 -1.86328,-1.86328 z" />
+              <path d="m 136.31594,110.95075 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 2.71874 a 1.8639801,1.8639801 0 0 0 1.8672,-1.86328 1.8639801,1.8639801 0 0 0 -1.8672,-1.86328 z" />
+              <path d="m 121.55422,128.36481 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 2.72266 a 1.8639801,1.8639801 0 0 0 1.86328,-1.86328 1.8639801,1.8639801 0 0 0 -1.86328,-1.86328 z" />
+              <path d="m 121.55812,110.83355 a 1.8639801,1.8639801 0 0 0 -1.86328,1.8672 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 4.15626 a 1.8639801,1.8639801 0 0 0 1.86328,-1.86328 1.8639801,1.8639801 0 0 0 -1.86328,-1.8672 z" />
+              <path d="m 118.64406,116.75543 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 24.70704 a 1.8639801,1.8639801 0 0 0 1.86718,-1.86328 1.8639801,1.8639801 0 0 0 -1.86718,-1.86328 z" />
+              <path d="m 129.55812,122.56011 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.8633 h 10.6836 a 1.8639801,1.8639801 0 0 0 1.86328,-1.8633 1.8639801,1.8639801 0 0 0 -1.86328,-1.86328 z" />
+              <path d="m 104.01516,99.341366 a 1.8639801,1.8639801 0 0 0 -1.86329,1.863284 1.8639801,1.8639801 0 0 0 1.86329,1.86328 h 27.4375 a 1.8639801,1.8639801 0 0 0 1.86718,-1.86328 1.8639801,1.8639801 0 0 0 -1.86718,-1.863284 z" />
+            </g>
+          </svg>
+        
+          <div id="menu-buttons">
+            <button data-handler="connectHandler" class="button button-clear button-shifted">Connect</button><br />
+            <button data-handler="readHandler" class="button button-clear button-shifted online">Read</button><br />
+            <button data-handler="saveHandler" class="button button-clear button-shifted online">Save</button><br />
+            <button data-handler="rebootHandler" class="button button-clear button-shifted online">Exit</button><br />
+
+            <hr />
+            <button data-handler="blinkHandler" class="button button-clear button-shifted online">Blink</button><br />
+            <button data-handler="blinkBothHandler" class="button button-clear button-shifted online">Blink both</button><br />
+            <button data-handler="enterBootloaderHandler" class="button button-clear button-shifted online">Bootloader</button><br />
+            <button data-handler="wipeConfigHandler" class="button button-clear button-shifted online">Wipe Config</button><br />                       
+            
+          </div>
+
+        </div>
+
+        <div class="column" style="padding-top: 2em;">
+
+          <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="90" height="70" stroke="black" stroke-width="2" fill="#beffa1" rx="10" ry="10" />
+            <line x1="50" y1="90" x2="50" y2="75" stroke="black" stroke-width="2" />
+            <rect x="30" y="90" width="40" height="3" stroke="black" stroke-width="2" fill="#d7e5f0" rx="5" ry="5" />
+          </svg>
+
+            <h3>Output A</h3>
+
+            {% for item in screen_A %}
+              {% include "form.html" with context %}             
+            {% endfor %}
+
+        </div>
+        <div class="column" style="padding-top: 2em;">
+
+          <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="90" height="70" stroke="black" stroke-width="2" fill="#beffa1" rx="10" ry="10" />
+            <line x1="50" y1="90" x2="50" y2="75" stroke="black" stroke-width="2" />
+            <rect x="30" y="90" width="40" height="3" stroke="black" stroke-width="2" fill="#d7e5f0" rx="5" ry="5" />
+          </svg>
+          
+            <h3>Output B</h3>
+
+            {% for item in screen_B %}
+              {% include "form.html" with context %}                           
+            {% endfor %}
+          
+        </div>
+
+      </div>
+
+      <div class="row">
+        <div class="column column-20" style="background-color: #d7e5f0; margin-right: 2em;">
+        </div>
+        <div class="column-20" style="background-color: #d7e5f0;">
+        </div>
+
+        <div class="column">
+
+
+          <h3>Common Config</h3>
+
+            {% for item in config %}
+              {% include "form.html" with context %}             
+            {% endfor %}
+
+          <input type="submit" value="Save" id="submitButton">
+        </div>
+
+        <div class="column">
+          <h3>Device Status</h3>
+
+          {% for item in status %}
+            {% include "form.html" with context %}             
+          {% endfor %}
+
+        </div>
+
+      </div>
+    </div>
+    </section>
+  </main>
+
+  <script>
+  {% include "script.js" %}
+  </script>
+</body>
+
+</html>

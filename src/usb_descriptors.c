@@ -30,29 +30,20 @@
 //--------------------------------------------------------------------+
 // Device Descriptors
 //--------------------------------------------------------------------+
-tusb_desc_device_t const desc_device = {.bLength         = sizeof(tusb_desc_device_t),
-                                        .bDescriptorType = TUSB_DESC_DEVICE,
-                                        .bcdUSB          = 0x0200,
-                                        .bDeviceClass    = 0x00,
-                                        .bDeviceSubClass = 0x00,
-                                        .bDeviceProtocol = 0x00,
-                                        .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
 
                                         // https://github.com/raspberrypi/usb-pid
-                                        .idVendor  = 0x2E8A,
-                                        .idProduct = 0x107C,
-                                        .bcdDevice = 0x0100,
-
-                                        .iManufacturer = 0x01,
-                                        .iProduct      = 0x02,
-                                        .iSerialNumber = 0x03,
-
-                                        .bNumConfigurations = 0x01};
+tusb_desc_device_t const desc_device = DEVICE_DESCRIPTOR(0x2e8a, 0x107c);
+                                       
+                                        // https://pid.codes/1209/C000/
+tusb_desc_device_t const desc_device_config = DEVICE_DESCRIPTOR(0x1209, 0xc000);
 
 // Invoked when received GET DEVICE DESCRIPTOR
 // Application return pointer to descriptor
 uint8_t const *tud_descriptor_device_cb(void) {
-    return (uint8_t const *)&desc_device;
+    if (global_state.config_mode_active) 
+        return (uint8_t const *)&desc_device_config;
+    else
+        return (uint8_t const *)&desc_device;
 }
 
 //--------------------------------------------------------------------+
@@ -62,36 +53,42 @@ uint8_t const *tud_descriptor_device_cb(void) {
 // Relative mouse is used to overcome limitations of multiple desktops on MacOS and Windows
 
 uint8_t const desc_hid_report[] = {TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(REPORT_ID_KEYBOARD)),
-                                   TUD_HID_REPORT_DESC_ABSMOUSE(HID_REPORT_ID(REPORT_ID_MOUSE)),
-                                   TUD_HID_REPORT_DESC_CONSUMER_CTRL(HID_REPORT_ID(REPORT_ID_CONSUMER))
+                                   TUD_HID_REPORT_DESC_ABS_MOUSE(HID_REPORT_ID(REPORT_ID_MOUSE)),
+                                   TUD_HID_REPORT_DESC_CONSUMER_CTRL(HID_REPORT_ID(REPORT_ID_CONSUMER)),
+                                   TUD_HID_REPORT_DESC_SYSTEM_CONTROL(HID_REPORT_ID(REPORT_ID_SYSTEM))
                                    };
 
 uint8_t const desc_hid_report_relmouse[] = {TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(REPORT_ID_RELMOUSE))};
+
+uint8_t const desc_hid_report_vendor[] = {TUD_HID_REPORT_DESC_VENDOR_CTRL(HID_REPORT_ID(REPORT_ID_VENDOR))};
+
 
 // Invoked when received GET HID REPORT DESCRIPTOR
 // Application return pointer to descriptor
 // Descriptor contents must exist long enough for transfer to complete
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
-    if (instance == ITF_NUM_HID_REL_M) {
-        return desc_hid_report_relmouse;
-    }
+    if (global_state.config_mode_active)
+        if (instance == ITF_NUM_HID_VENDOR)
+            return desc_hid_report_vendor;
 
-    /* Default */
-    return desc_hid_report;
+    switch(instance) {
+        case ITF_NUM_HID:
+            return desc_hid_report;
+        case ITF_NUM_HID_REL_M:
+            return desc_hid_report_relmouse;        
+        default:
+            return desc_hid_report;
+    }    
 }
 
-bool tud_mouse_report(uint8_t mode,
-                      uint8_t buttons,
-                      int16_t x,
-                      int16_t y,
-                      int8_t wheel) {
+bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel) {
 
     if (mode == ABSOLUTE) {
         mouse_report_t report = {.buttons = buttons, .x = x, .y = y, .wheel = wheel};
         return tud_hid_n_report(ITF_NUM_HID, REPORT_ID_MOUSE, &report, sizeof(report));
-    }
-    else {
-        hid_mouse_report_t report = {.buttons = buttons, .x = x - 16384, .y = y - 16384, .wheel = wheel, .pan = 0};
+    } else {
+        hid_mouse_report_t report
+            = {.buttons = buttons, .x = x - SCREEN_MIDPOINT, .y = y - SCREEN_MIDPOINT, .wheel = wheel, .pan = 0};
         return tud_hid_n_report(ITF_NUM_HID_REL_M, REPORT_ID_RELMOUSE, &report, sizeof(report));
     }
 }
@@ -107,9 +104,11 @@ char const *string_desc_arr[] = {
     "Hrvoje Cavrak",            // 1: Manufacturer
     "DeskHop Switch",           // 2: Product
     "0",                        // 3: Serials, should use chip ID
-    "MouseHelper",              // 4: Relative mouse to work around OS issues
+    "DeskHop Helper",           // 4: Mouse Helper Interface
+    "DeskHop Config",           // 5: Vendor Interface
+    "DeskHop Disk",             // 6: Disk Interface
 #ifdef DH_DEBUG
-    "Debug Interface", // 5: Debug Interface
+    "DeskHop Debug",            // 7: Debug Interface
 #endif
 };
 
@@ -120,6 +119,8 @@ enum {
     STRID_PRODUCT,
     STRID_SERIAL,
     STRID_MOUSE,
+    STRID_VENDOR,
+    STRID_DISK,
     STRID_DEBUG,
 };
 
@@ -166,21 +167,31 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-#define EPNUM_HID       0x81
-#define EPNUM_HID_REL_M 0x82
+#define EPNUM_HID        0x81
+#define EPNUM_HID_REL_M  0x82
+#define EPNUM_HID_VENDOR 0x83
+
+#define EPNUM_MSC_OUT    0x04
+#define EPNUM_MSC_IN     0x84
 
 #ifndef DH_DEBUG
 
-enum { ITF_NUM_TOTAL = 2 };
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN)
+#define ITF_NUM_TOTAL 2
+#define ITF_NUM_TOTAL_CONFIG 3
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN)
+#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN)
 
 #else
+#define ITF_NUM_CDC 3
+#define ITF_NUM_TOTAL 3
+#define ITF_NUM_TOTAL_CONFIG 4
 
-enum { ITF_NUM_CDC = 2, ITF_NUM_TOTAL = 3 };
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
-#define EPNUM_CDC_NOTIF  0x83
-#define EPNUM_CDC_OUT    0x04
-#define EPNUM_CDC_IN     0x84
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
+#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN + TUD_CDC_DESC_LEN)
+
+#define EPNUM_CDC_NOTIF  0x85
+#define EPNUM_CDC_OUT    0x06
+#define EPNUM_CDC_IN     0x86
 
 #endif
 
@@ -205,16 +216,51 @@ uint8_t const desc_configuration[] = {
                        EPNUM_HID_REL_M,
                        CFG_TUD_HID_EP_BUFSIZE,
                        1),
-
 #ifdef DH_DEBUG
     // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
     TUD_CDC_DESCRIPTOR(
         ITF_NUM_CDC, STRID_DEBUG, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, CFG_TUD_CDC_EP_BUFSIZE),
 #endif
+};
 
+uint8_t const desc_configuration_config[] = {
+    // Config number, interface count, string index, total length, attribute, power in mA
+    TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL_CONFIG, 0, CONFIG_TOTAL_LEN_CFG, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 500),
+
+    // Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID,
+                       STRID_PRODUCT,
+                       HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report),
+                       EPNUM_HID,
+                       CFG_TUD_HID_EP_BUFSIZE,
+                       1),
+
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_VENDOR,
+                       STRID_VENDOR,
+                       HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_vendor),
+                       EPNUM_HID_VENDOR,
+                       CFG_TUD_HID_EP_BUFSIZE,
+                       1),
+
+    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC,
+                       STRID_DISK,
+                       EPNUM_MSC_OUT,
+                       EPNUM_MSC_IN,
+                       64),
+#ifdef DH_DEBUG
+    // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
+    TUD_CDC_DESCRIPTOR(
+        ITF_NUM_CDC, STRID_DEBUG, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, CFG_TUD_CDC_EP_BUFSIZE),
+#endif                       
 };
 
 uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
     (void)index; // for multiple configurations
-    return desc_configuration;
+    
+    if (global_state.config_mode_active) 
+        return desc_configuration_config;    
+    else
+        return desc_configuration;
 }

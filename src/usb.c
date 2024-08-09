@@ -28,7 +28,7 @@ uint16_t tud_hid_get_report_cb(uint8_t instance,
                                uint8_t report_id,
                                hid_report_type_t report_type,
                                uint8_t *buffer,
-                               uint16_t request_len) {
+                               uint16_t request_len) {                                
     return 0;
 }
 
@@ -44,13 +44,35 @@ void tud_hid_set_report_cb(uint8_t instance,
                            hid_report_type_t report_type,
                            uint8_t const *buffer,
                            uint16_t bufsize) {
+
+    /* We received a report on the config report ID */
+    if (instance == ITF_NUM_HID_VENDOR && report_id == REPORT_ID_VENDOR) {    
+        /* Security - only if config mode is enabled are we allowed to do anything. While the report_id
+           isn't even advertised when not in config mode, security must always be explicit and never assume */           
+        if (!global_state.config_mode_active)
+            return;
+
+        /* We insist on a fixed size packet. No overflows. */
+        if (bufsize != RAW_PACKET_LENGTH)
+            return;    
+
+        uart_packet_t *packet = (uart_packet_t *) (buffer + START_LENGTH);
+
+        /* Only a certain packet types are accepted */
+        if (!validate_packet(packet))
+            return;
+
+        process_packet(packet, &global_state);        
+    }        
+
+    /* Only other set report we care about is LED state change, and that's exactly 1 byte long */
     if (report_id != REPORT_ID_KEYBOARD || bufsize != 1 || report_type != HID_REPORT_TYPE_OUTPUT)
         return;
 
     uint8_t leds = buffer[0];
 
     /* If we are using caps lock LED to indicate the chosen output, that has priority */
-    if (KBD_LED_AS_INDICATOR) {
+    if (global_state.config.kbd_led_as_indicator) {
         leds = leds & 0xFD; /* 1111 1101 (Clear Caps Lock bit) */
 
         if (global_state.active_output)
@@ -82,65 +104,71 @@ void tud_umount_cb(void) {
  * ================================================== */
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
-    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    uint8_t itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+
+    if (dev_addr >= MAX_DEVICES || instance > MAX_INTERFACES)
+        return;
+
+    hid_interface_t *iface = &global_state.iface[dev_addr-1][instance];
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
             global_state.keyboard_connected = false;
-            memset(&global_state.kbd_dev, 0, sizeof(global_state.kbd_dev));
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
-            global_state.mouse_connected = false;
-
-            /* Clear this so reconnecting a mouse doesn't try to continue in HID REPORT protocol */
-            memset(&global_state.mouse_dev, 0, sizeof(global_state.mouse_dev));
             break;
     }
+
+    /* Also clear the interface structure, otherwise plugging something else later
+       might be a fun (and confusing) experience */
+    memset(iface, 0, sizeof(hid_interface_t));
 }
 
-void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len) {
-    uint8_t const itf_protocol                          = tuh_hid_interface_protocol(dev_addr, instance);
-    tuh_hid_report_info_t report_info[MAX_REPORT_ITEMS] = {0};
-    tuh_hid_report_info_t *info;
-    uint8_t num_parsed;
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len) {    
+    uint8_t itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+
+    if (dev_addr >= MAX_DEVICES || instance > MAX_INTERFACES)
+        return;
+      
+    /* Get interface information */
+    hid_interface_t *iface = &global_state.iface[dev_addr-1][instance];
+
+    iface->protocol = tuh_hid_get_protocol(dev_addr, instance);
+   
+    /* Safeguard against memory corruption in case the number of instances exceeds our maximum */
+    if (instance >= MAX_INTERFACES)
+        return;
+
+    /* Parse the report descriptor into our internal structure. */
+    parse_report_descriptor(iface, desc_report, desc_len);    
 
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_KEYBOARD:
-            if (ENFORCE_PORTS && BOARD_ROLE == PICO_B)
+            if (global_state.config.enforce_ports && BOARD_ROLE == OUTPUT_B)
                 return;
-
+            
+            if (global_state.config.force_kbd_boot_protocol)
+                tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_BOOT);
+                       
             /* Keeping this is required for setting leds from device set_report callback */
             global_state.kbd_dev_addr       = dev_addr;
             global_state.kbd_instance       = instance;
-            global_state.keyboard_connected = true;
+            global_state.keyboard_connected = true;            
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
-            if (ENFORCE_PORTS && BOARD_ROLE == PICO_A)
+            if (global_state.config.enforce_ports && BOARD_ROLE == OUTPUT_A)
                 return;
 
-            /* Switch to using protocol report instead of boot report, it's more complicated but
+            /* Switch to using report protocol instead of boot, it's more complicated but
                at least we get all the information we need (looking at you, mouse wheel) */
             if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
                 tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
             }
-
-            global_state.mouse_dev.protocol = tuh_hid_get_protocol(dev_addr, instance);
-            parse_report_descriptor(&global_state.mouse_dev, MAX_REPORTS, desc_report, desc_len);
-
-            global_state.mouse_connected = true;
             break;
-
-        case HID_ITF_PROTOCOL_NONE:
-            num_parsed = tuh_hid_parse_report_descriptor(&report_info[0], MAX_REPORT_ITEMS, desc_report, desc_len);
-
-            for (int report_num = 0; report_num < num_parsed; report_num++) {
-                info = &report_info[report_num];
-
-                if (info->usage == HID_USAGE_CONSUMER_CONTROL && info->usage_page == HID_USAGE_PAGE_CONSUMER)
-                    global_state.kbd_dev.consumer_report_id = info->report_id;
-            }
+        
+        case HID_ITF_PROTOCOL_NONE:            
             break;
     }
     /* Flash local led to indicate a device was connected */
@@ -149,7 +177,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
     /* Also signal the other board to flash LED, to enable easy verification if serial works */
     send_value(ENABLE, FLASH_LED_MSG);
 
-    /* Kick off the report querying */
+    /* Kick off the report querying */  
     tuh_hid_receive_report(dev_addr, instance);
 }
 
@@ -157,26 +185,41 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len) {
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
 
-    switch (itf_protocol) {
-        case HID_ITF_PROTOCOL_KEYBOARD:
-            process_keyboard_report((uint8_t *)report, len, &global_state);
-            break;
+    if (dev_addr >= MAX_DEVICES || instance > MAX_INTERFACES)
+        return;
 
-        case HID_ITF_PROTOCOL_MOUSE:
-            process_mouse_report((uint8_t *)report, len, &global_state);
-            break;
+    hid_interface_t *iface = &global_state.iface[dev_addr-1][instance];
 
-        case HID_ITF_PROTOCOL_NONE:
-            process_consumer_report((uint8_t *)report, len, &global_state);            
-            break;
+    /* Safeguard against memory corruption in case the number of instances exceeds our maximum */
+    if (instance >= MAX_INTERFACES)
+        return;
+
+    if (iface->uses_report_id) {
+        uint8_t report_id = report[0];
+
+        if (report_id < MAX_REPORTS) {
+            process_report_f receiver = iface->report_handler[report_id];
+
+            if (receiver != NULL)
+                receiver((uint8_t *)report, len, itf_protocol, iface);
+        }                      
+    }
+    else if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD) {
+        process_keyboard_report((uint8_t *)report, len, itf_protocol, iface);
+    }
+    else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE) {
+        process_mouse_report((uint8_t *)report, len, itf_protocol, iface);
     }
 
     /* Continue requesting reports */
     tuh_hid_receive_report(dev_addr, instance);
 }
 
-/* Set protocol in a callback. If we were called, command succeeded. We're only
-   doing this for the mouse for now, so we can only be called about the mouse */
-void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol) {
-    global_state.mouse_dev.protocol = protocol;
+/* Set protocol in a callback. This is tied to an interface, not a specific report ID */
+void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol) {   
+    if (dev_addr >= MAX_DEVICES || idx > MAX_INTERFACES)
+        return;
+
+    hid_interface_t *iface = &global_state.iface[dev_addr-1][idx];
+    iface->protocol = protocol;
 }

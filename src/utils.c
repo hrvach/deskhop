@@ -36,20 +36,23 @@ bool verify_checksum(const uart_packet_t *packet) {
     return checksum == packet->checksum;
 }
 
-/**================================================== *
- * ==============  Watchdog Functions  ============== *
- * ================================================== */
+uint32_t crc32_iter(uint32_t crc, const uint8_t byte) {
+    return crc32_lookup_table[(byte ^ crc) & 0xff] ^ (crc >> 8); 
+}
 
-void kick_watchdog(device_t *state) {
-    /* Read the timer AFTER duplicating the core1 timestamp,
-       so it doesn't get updated in the meantime. */
+/* TODO - use DMA sniffer's built-in CRC32 */
+uint32_t calc_crc32(const uint8_t *s, size_t n) {
+	uint32_t crc = 0xffffffff;
 
-    uint64_t core1_last_loop_pass = state->core1_last_loop_pass;
-    uint64_t current_time         = time_us_64();
+	for(size_t i=0; i < n; i++) {
+        crc = crc32_iter(crc, s[i]);
+	}
 
-    /* If core1 stops updating the timestamp, we'll stop kicking the watchog and reboot */
-    if (current_time - core1_last_loop_pass < CORE1_HANG_TIMEOUT_US)
-        watchdog_update();
+	return ~crc;
+}
+
+uint32_t calculate_firmware_crc32(void) {
+    return calc_crc32(ADDR_FW_RUNNING, STAGING_IMAGE_SIZE - FLASH_SECTOR_SIZE);
 }
 
 /* ================================================== *
@@ -58,19 +61,31 @@ void kick_watchdog(device_t *state) {
 
 void wipe_config(void) {
     uint32_t ints = save_and_disable_interrupts();
-    flash_range_erase(PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE, FLASH_SECTOR_SIZE);
+    flash_range_erase((uint32_t)ADDR_CONFIG - XIP_BASE, FLASH_SECTOR_SIZE);
     restore_interrupts(ints);
 }
 
+void write_flash_page(uint32_t target_addr, uint8_t *buffer) {
+    /* Start of sector == first 256-byte page in a 4096 byte block */
+    bool is_sector_start = (target_addr & 0xf00) == 0;
+
+    uint32_t ints = save_and_disable_interrupts();            
+    if (is_sector_start)
+        flash_range_erase(target_addr, FLASH_SECTOR_SIZE);
+
+    flash_range_program(target_addr, buffer, FLASH_PAGE_SIZE);        
+    restore_interrupts(ints);    
+}
+
 void load_config(device_t *state) {
-    const config_t *config   = ADDR_CONFIG_BASE_ADDR;
+    const config_t *config   = ADDR_CONFIG;
     config_t *running_config = &state->config;
 
     /* Load the flash config first, including the checksum */
-    memcpy(running_config, config, sizeof(config_t));
-
+    memcpy(running_config, config, sizeof(config_t));    
+    
     /* Calculate and update checksum, size without checksum */
-    uint8_t checksum = calc_checksum((uint8_t *)running_config, sizeof(config_t) - sizeof(uint32_t));
+    uint8_t checksum = calc_crc32((uint8_t *)running_config, sizeof(config_t) - sizeof(uint32_t));
 
     /* We expect a certain byte to start the config header */
     bool magic_header_fail = (running_config->magic_header != 0xB00B1E5);
@@ -87,75 +102,118 @@ void load_config(device_t *state) {
 }
 
 void save_config(device_t *state) {
-    uint8_t buf[FLASH_PAGE_SIZE];
     uint8_t *raw_config = (uint8_t *)&state->config;
 
     /* Calculate and update checksum, size without checksum */
-    uint8_t checksum       = calc_checksum(raw_config, sizeof(config_t) - sizeof(uint32_t));
+    uint8_t checksum       = calc_crc32(raw_config, sizeof(config_t) - sizeof(uint32_t));
     state->config.checksum = checksum;
 
-    /* Copy the config to buffer and wipe the old one */
-    memcpy(buf, raw_config, sizeof(config_t));
-    wipe_config();
+    /* Copy the config to buffer and pad the rest with zeros */
+    memcpy(state->page_buffer, raw_config, sizeof(config_t));
+    memset(state->page_buffer + sizeof(config_t), 0, FLASH_PAGE_SIZE - sizeof(config_t));    
 
-    /* Disable interrupts, then write the flash page and re-enable */
-    uint32_t ints = save_and_disable_interrupts();
-    flash_range_program(PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE, buf, FLASH_PAGE_SIZE);
-    restore_interrupts(ints);
+    /* Write the new config to flash */    
+    write_flash_page((uint32_t)ADDR_CONFIG - XIP_BASE, state->page_buffer);
 }
 
-/* Have something fun and entertaining when idle. */
-void screensaver_task(device_t *state) {
-    const int mouse_move_delay = 5000;
-    screensaver_t *screensaver = &state->config.output[BOARD_ROLE].screensaver;
-
-    static mouse_report_t report = {.x = 0, .y = 0};
-    static int last_pointer_move = 0;
-
-    uint64_t current_time      = time_us_64();
-    uint64_t inactivity_period = current_time - state->last_activity[BOARD_ROLE];
-
-    /* "Randomly" chosen initial values */
-    static int dx = 20;
-    static int dy = 25;
-
-    /* If we're not enabled, nothing to do here. */
-    if (!screensaver->enabled)
-        return;
-
-    /* System is still not idle for long enough to activate or we've been running for too long */
-    if (inactivity_period < screensaver->idle_time_us)
-        return;
-
-    /* We exceeded the maximum permitted screensaver runtime */
-    if (screensaver->max_time_us
-        && inactivity_period > (screensaver->max_time_us + screensaver->idle_time_us))
-        return;
-
-    /* If we're not the selected output and that is required, nothing to do here. */
-    if (screensaver->only_if_inactive && CURRENT_BOARD_IS_ACTIVE_OUTPUT)
-        return;
-
-    /* We're active! Now check if it's time to move the cursor yet. */
-    if ((time_us_32()) - last_pointer_move < mouse_move_delay)
-        return;
-
-    /* Check if we are bouncing off the walls and reverse direction in that case. */
-    if (report.x + dx < MIN_SCREEN_COORD || report.x + dx > MAX_SCREEN_COORD)
-        dx = -dx;
-
-    if (report.y + dy < MIN_SCREEN_COORD || report.y + dy > MAX_SCREEN_COORD)
-        dy = -dy;
-
-    report.x += dx;
-    report.y += dy;
-
-    /* Move mouse pointer */
-    queue_mouse_report(&report, state);
-
-    /* Update timer of the last pointer move */
-    last_pointer_move = time_us_32();
+void reset_config_timer(device_t *state) {
+    /* Once this is reached, we leave the config mode */
+    state->config_mode_timer = time_us_64() + CONFIG_MODE_TIMEOUT;
 }
+ 
+void _configure_flash_cs(enum gpio_override gpo, uint pin_index) {
+  hw_write_masked(&ioqspi_hw->io[pin_index].ctrl, 
+                  gpo << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB, 
+                  IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
+}
+
+bool is_bootsel_pressed(void) {
+  const uint CS_PIN_INDEX = 1;
+  uint32_t flags = save_and_disable_interrupts();
+
+  /* Set chip select to high impedance */
+  _configure_flash_cs(GPIO_OVERRIDE_LOW, CS_PIN_INDEX);
+  sleep_us(20);
+
+  /* Button pressed pulls pin DOWN, so invert */
+  bool button_pressed = !(sio_hw->gpio_hi_in & (1u << CS_PIN_INDEX));
+
+  /* Restore chip select state */
+  _configure_flash_cs(GPIO_OVERRIDE_NORMAL, CS_PIN_INDEX);
+  restore_interrupts(flags);
+
+  return button_pressed;
+}
+
+void request_byte(device_t *state, uint32_t address) {
+    uart_packet_t packet = {
+        .data32[0] = address,
+        .type = REQUEST_BYTE_MSG,
+    };
+    state->fw.byte_done = false;
+
+    queue_try_add(&global_state.uart_tx_queue, &packet);        
+}
+
+void reboot(void) {
+    *((volatile uint32_t*)(PPB_BASE + 0x0ED0C)) = 0x5FA0004;    
+}
+
+bool is_start_of_packet(device_t *state) {
+    return (uart_rxbuf[state->dma_ptr] == START1 && uart_rxbuf[NEXT_RING_IDX(state->dma_ptr)] == START2);
+}
+
+uint32_t get_ptr_delta(uint32_t current_pointer, device_t *state) {
+    uint32_t delta;
+
+    if (current_pointer >= state->dma_ptr)
+        delta = current_pointer - state->dma_ptr;
+    else
+        delta = DMA_RX_BUFFER_SIZE - state->dma_ptr + current_pointer;
+
+    /* Clamp to 12 bits since it can never be bigger */
+    delta = delta & 0x3FF;
+
+    return delta;
+}
+
+void fetch_packet(device_t *state) {
+    uint8_t *dst = (uint8_t *)&state->in_packet;
+
+    for (int i = 0; i < RAW_PACKET_LENGTH; i++) {
+        /* Skip the header preamble */
+        if (i >= START_LENGTH)
+            dst[i - START_LENGTH] = uart_rxbuf[state->dma_ptr];
+
+        state->dma_ptr = NEXT_RING_IDX(state->dma_ptr);
+    }
+}
+
+/* Validating any input is mandatory. Only packets of these type are allowed
+   to be sent to the device over configuration endpoint. */
+bool validate_packet(uart_packet_t *packet) {
+    const enum packet_type_e ALLOWED_PACKETS[] = {
+        FLASH_LED_MSG,
+        GET_VAL_MSG,
+        SET_VAL_MSG,
+        WIPE_CONFIG_MSG,
+        SAVE_CONFIG_MSG,
+        REBOOT_MSG,
+        PROXY_PACKET_MSG,
+    };
+    uint8_t packet_type = packet->type;
+
+    /* Proxied packets are encapsulated in the data field, but same rules apply */
+    if (packet->type == PROXY_PACKET_MSG) 
+        packet_type = packet->data[0];                
+
+    for (int i = 0; i < ARRAY_SIZE(ALLOWED_PACKETS); i++) {
+        if (ALLOWED_PACKETS[i] == packet_type)
+            return true;
+    }
+    return false;
+}
+
 
 /* ================================================== *
  * Debug functions
@@ -174,6 +232,11 @@ int dh_debug_printf(const char *format, ...) {
 
     va_end(args);
     return string_len;
+}
+#else
+
+int dh_debug_printf(const char *format, ...) {
+    return 0;
 }
 
 #endif

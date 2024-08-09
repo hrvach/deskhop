@@ -21,16 +21,33 @@
     __stack (== StackTop)
 */
 
+/* Total image is 256 kB, consisting of:
+    Executable = 188 kB
+    FAT disk image = 64 kB
+    Firmware metadata = 4 kB (contains checksum)
+*/
+
+__FLASH_LEN = 188k;
+__DISK_IMAGE_LEN = 64k;
+__METADATA_LEN = 4k;
+__TOTAL_IMAGE_LENGTH = 256k;
+
 __CONFIG_STORAGE_LEN = 4k;
 
 MEMORY
 {
-    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 2048k - __CONFIG_STORAGE_LEN
+    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = __FLASH_LEN
+    DISK_IMAGE(rw) : ORIGIN = 0x10000000 + __FLASH_LEN, LENGTH = __DISK_IMAGE_LEN
+    FW_METADATA(rw) : ORIGIN = 0x10000000 + (__TOTAL_IMAGE_LENGTH - __METADATA_LEN), LENGTH = __METADATA_LEN
+    FW_STAGING(rw) : ORIGIN = 0x10000000 + __TOTAL_IMAGE_LENGTH, LENGTH = __TOTAL_IMAGE_LENGTH
+
     FLASH_CONFIG(rw) : ORIGIN = 0x10000000 + (2048k - __CONFIG_STORAGE_LEN), LENGTH = __CONFIG_STORAGE_LEN
     RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 256k
     SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k
     SCRATCH_Y(rwx) : ORIGIN = 0x20041000, LENGTH = 4k
 }
+PROVIDE(_staging_metadata = ORIGIN(FW_STAGING) + (__TOTAL_IMAGE_LENGTH - __METADATA_LEN));
+PROVIDE(_firmware_metadata = ORIGIN(FW_METADATA));
 
 ENTRY(_entry_point)
 
@@ -42,6 +59,7 @@ SECTIONS
     */
 
     .flash_begin : {
+        ADDR_FW_RUNNING = .;
         __flash_binary_start = .;
     } > FLASH
 
@@ -180,6 +198,7 @@ SECTIONS
 
     .uninitialized_data (NOLOAD): {
         . = ALIGN(4);
+        __udata_end__ = .;
         *(.uninitialized_data*)
     } > RAM
 
@@ -217,10 +236,35 @@ SECTIONS
         __HeapLimit = .;
     } > RAM
 
-    /* Configuration flash section (4k in size, end of flash) */
-    
-    .section_config : {
-        "ADDR_CONFIG" = .;  
+    /* Store web configuration utility HTML */
+    .section_disk : {
+        ADDR_DISK_IMAGE = .;  
+        KEEP(*(.section_disk))
+    } > DISK_IMAGE    
+
+    /* Firmware metadata section (4k in size, contains version, checksum etc.) */   
+    .section_metadata : {
+        ADDR_FW_METADATA = .;  
+        KEEP(*(.section_metadata));
+    } > FW_METADATA
+
+    /* Firmware staging section (256k in size, near the end of flash) */
+    .section_staging : {
+        ADDR_FW_STAGING = .;  
+        KEEP(*(.section_staging))
+    } > FW_STAGING
+
+    /* Just padding so we can have a nice, consistently-sized .bin file */
+    .fill : {
+        FILL(0x00);
+        . = ORIGIN(FW_METADATA) + LENGTH(FW_METADATA) - 1;
+        BYTE(0x00)
+        ___ROM_AT = .;
+    } > FW_METADATA
+
+    /* Configuration flash section (4k in size, end of flash) */   
+    .section_config (NOLOAD) : {
+        ADDR_CONFIG = .;
     } > FLASH_CONFIG
 
     /* .stack*_dummy section doesn't contains any symbols. It is only
@@ -244,6 +288,14 @@ SECTIONS
     .flash_end : {
         __flash_binary_end = .;
     } > FLASH
+
+    .pad : {
+        /* This section will be filled with zeroes */
+        FILL(0x00)
+        . = ADDR_DISK_IMAGE - __flash_binary_end - 1;
+        BYTE(0x00)
+        KEEP(*(.pad))
+    } > FLASH    
 
     /* stack limit is poorly named, but historically is maximum heap ptr */
     __StackLimit = ORIGIN(RAM) + LENGTH(RAM);

@@ -18,7 +18,7 @@ const config_t default_config = {
             .os = OUTPUT_A_OS,
             .pos = RIGHT,
             .screensaver = {
-                .enabled = SCREENSAVER_A_ENABLED,
+                .mode = SCREENSAVER_A_MODE,
                 .only_if_inactive = SCREENSAVER_A_ONLY_IF_INACTIVE,
                 .idle_time_us = SCREENSAVER_A_IDLE_TIME_SEC * 1000000,
                 .max_time_us = SCREENSAVER_A_MAX_TIME_SEC * 1000000,                
@@ -38,10 +38,17 @@ const config_t default_config = {
             .os = OUTPUT_B_OS,
             .pos = LEFT,
             .screensaver = {
-                .enabled = SCREENSAVER_B_ENABLED,
+                .mode = SCREENSAVER_B_MODE,
                 .only_if_inactive = SCREENSAVER_B_ONLY_IF_INACTIVE,
                 .idle_time_us = SCREENSAVER_B_IDLE_TIME_SEC * 1000000,
                 .max_time_us = SCREENSAVER_B_MAX_TIME_SEC * 1000000,                
             }
         },
+    .enforce_ports = ENFORCE_PORTS,
+    .force_kbd_boot_protocol = ENFORCE_KEYBOARD_BOOT_PROTOCOL,
+    .force_mouse_boot_mode = false,
+    .enable_acceleration = ENABLE_ACCELERATION,
+    .hotkey_toggle = HID_KEY_F24,
+    .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
+    .jump_treshold = 0,
 };
