@@ -184,8 +184,8 @@ void check_screen_switch(const mouse_values_t *values, device_t *state) {
 
     int direction = jump_left ? LEFT : RIGHT;
 
-    /* No switching allowed if explicitly disabled or mouse button is held */
-    if (state->switch_lock || state->mouse_buttons)
+    /* No switching allowed if explicitly disabled */
+    if (state->switch_lock)
         return;
 
     /* No jump condition met == nothing to do, return */
@@ -194,9 +194,12 @@ void check_screen_switch(const mouse_values_t *values, device_t *state) {
 
     /* We want to jump in the direction of the other computer */
     if (output->pos != direction) {
-        if (output->screen_index == 1) /* We are at the border -> switch outputs */
-            switch_screen(state, output, new_x, state->active_output, 1 - state->active_output, direction);
-
+        if (output->screen_index == 1) { /* We are at the border -> switch outputs */
+            if (state->mouse_buttons) /* If mouse button is held, switching output is disallowed */
+                return;
+            else /* But we can switch screens on the same output if button is held */
+                switch_screen(state, output, new_x, state->active_output, 1 - state->active_output, direction);
+        }
         /* If here, this output has multiple desktops and we are not on the main one */
         else
             switch_desktop(state, output, output->screen_index - 1, direction);
