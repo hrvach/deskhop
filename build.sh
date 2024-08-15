@@ -5,9 +5,11 @@
 #
 # Copyright 2024 J. Cody Collins
 #
-# Last Modified:Thu 2024-07-11 16:14:47 (-0400)
+# Last Modified:Fri 2024-08-09 12:35:42 (-0400)
 #
 # =============================================================================
+BUILDFILE=deskhop.uf2
+
 function showhelp {
     echo "Usage: build.sh [OPTION] [DIRECTORY]"
     echo ""
@@ -53,16 +55,13 @@ cmake --build build
 
 # Copy output to directory (default cwd)
 if ${OPT_OVERRIDE_OUTPUT_DIR}; then
-    echo "board_A.uf2 copied to ${OUTPUT_DIR}"
-    echo "board_B.uf2 copied to ${OUTPUT_DIR}"
+    echo "${BUILDFILE} copied to ${OUTPUT_DIR}"
 else
     OUTPUT_DIR=.
-    echo "board_A.uf2 copied to CWD"
-    echo "board_B.uf2 copied to CWD"
+    echo "${BUILDFILE} copied to CWD"
 fi
 
-cp build/board_A.uf2 ${OUTPUT_DIR}
-cp build/board_B.uf2 ${OUTPUT_DIR}
+cp build/${BUILDFILE} ${OUTPUT_DIR}
 
 echo "Right Shift + F12 + Left Shift + A -- board A upgrade mode"
 echo "Right Shift + F12 + Left Shift + B -- board B upgrade mode"
