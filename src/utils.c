@@ -195,6 +195,7 @@ bool validate_packet(uart_packet_t *packet) {
     const enum packet_type_e ALLOWED_PACKETS[] = {
         FLASH_LED_MSG,
         GET_VAL_MSG,
+	GET_ALL_VALS_MSG,
         SET_VAL_MSG,
         WIPE_CONFIG_MSG,
         SAVE_CONFIG_MSG,

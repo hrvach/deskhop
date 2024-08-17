@@ -24,7 +24,7 @@
 :root {
   --highlight-color: #384955;
   --font-color: #384955;
-  --highlight-color2: #5e9f41;  
+  --highlight-color2: #5e9f41;
 }
 
 html {
@@ -492,7 +492,7 @@ input[type='number'].input-inline {
 @media (min-width: 40rem) {
   .row {
     flex-direction: row;
-    
+
     width: calc(100% + 2.0rem);
   }
   .row .column {
@@ -681,14 +681,14 @@ img {
 
   <main class="wrapper">
 
-    <section class="container">    
+    <section class="container">
 
-      <div class="row" id="warning" style="display: none;"> 
+      <div class="row" id="warning" style="display: none;">
         <blockquote>
           <h3> Oh, no! </h3>
           Unfortunately, your browser does not support WebHID or the Permissions Policy is blocking its usage. Please try Chromium <br />
           (or Chrome if you have to). Apologies for the inconvenience, hopefully a cross-browser solution happens soon.
-        </blockquote> 
+        </blockquote>
       </div>
 
       <div class="row">
@@ -716,7 +716,7 @@ img {
               <path d="m 104.01516,99.341366 a 1.8639801,1.8639801 0 0 0 -1.86329,1.863284 1.8639801,1.8639801 0 0 0 1.86329,1.86328 h 27.4375 a 1.8639801,1.8639801 0 0 0 1.86718,-1.86328 1.8639801,1.8639801 0 0 0 -1.86718,-1.863284 z" />
             </g>
           </svg>
-        
+
           <div id="menu-buttons">
             <button data-handler="connectHandler" class="button button-clear button-shifted">Connect</button><br />
             <button data-handler="readHandler" class="button button-clear button-shifted online">Read</button><br />
@@ -727,8 +727,8 @@ img {
             <button data-handler="blinkHandler" class="button button-clear button-shifted online">Blink</button><br />
             <button data-handler="blinkBothHandler" class="button button-clear button-shifted online">Blink both</button><br />
             <button data-handler="enterBootloaderHandler" class="button button-clear button-shifted online">Bootloader</button><br />
-            <button data-handler="wipeConfigHandler" class="button button-clear button-shifted online">Wipe Config</button><br />                       
-            
+            <button data-handler="wipeConfigHandler" class="button button-clear button-shifted online">Wipe Config</button><br />
+
           </div>
 
         </div>
@@ -757,20 +757,20 @@ img {
     
 <label class=""> Screen Count</label>
 
-    <select class="api" data-type="uint32" data-key="11" required>                 
+    <select class="api" data-type="uint32" data-key="11" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="1">1</option>
-        
+    
     <option value="2">2</option>
-        
+    
     <option value="3">3</option>
     
     </select><br />
 
   
-             
+
             
               
 
@@ -789,22 +789,22 @@ img {
 
 
       
-<input class="input-inline" type="number" name="aInput12" data-type="int32" data-key="12" 
+<input class="input-inline" type="number" name="aInput12" data-type="int32" data-key="12"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange12.value=this.value" />
+
       
-      
-<input class="range api" type="range" name="aRange12" data-type="int32" data-key="12" 
+<input class="range api" type="range" name="aRange12" data-type="int32" data-key="12"
   onchange="valueChangedHandler(this)"
 
-        min="" max="" oninput="this.form.aInput12.value=this.value" />               
+        min="" max="" oninput="this.form.aInput12.value=this.value" />
     </form>
-    
+
   </div>
 
   
-             
+
             
               
 
@@ -823,22 +823,22 @@ img {
 
 
       
-<input class="input-inline" type="number" name="aInput13" data-type="int32" data-key="13" 
+<input class="input-inline" type="number" name="aInput13" data-type="int32" data-key="13"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange13.value=this.value" />
+
       
-      
-<input class="range api" type="range" name="aRange13" data-type="int32" data-key="13" 
+<input class="range api" type="range" name="aRange13" data-type="int32" data-key="13"
   onchange="valueChangedHandler(this)"
 
-        min="" max="" oninput="this.form.aInput13.value=this.value" />               
+        min="" max="" oninput="this.form.aInput13.value=this.value" />
     </form>
-    
+
   </div>
 
   
-             
+
             
               
 
@@ -854,12 +854,12 @@ img {
 <label class=""> Border Top</label>
 
       
-<input class="api" type="text" name="name14" data-type="int32" data-key="14" 
+<input class="api" type="text" name="name14" data-type="int32" data-key="14"
   onchange="valueChangedHandler(this)"
   />
 
   
-             
+
             
               
 
@@ -875,12 +875,12 @@ img {
 <label class=""> Border Bottom</label>
 
       
-<input class="api" type="text" name="name15" data-type="int32" data-key="15" 
+<input class="api" type="text" name="name15" data-type="int32" data-key="15"
   onchange="valueChangedHandler(this)"
   />
 
   
-             
+
             
               
 
@@ -895,24 +895,24 @@ img {
     
 <label class=""> Operating System</label>
 
-    <select class="api" data-type="uint8" data-key="16" required>                 
+    <select class="api" data-type="uint8" data-key="16" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="1">Linux</option>
-        
+    
     <option value="2">MacOS</option>
-        
+    
     <option value="3">Windows</option>
-        
+    
     <option value="4">Android</option>
-        
+    
     <option value="255">Other</option>
     
     </select><br />
 
   
-             
+
             
               
 
@@ -927,18 +927,18 @@ img {
     
 <label class=""> Screen Position</label>
 
-    <select class="api" data-type="uint8" data-key="17" required>                 
+    <select class="api" data-type="uint8" data-key="17" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="1">Left</option>
-        
+    
     <option value="2">Right</option>
     
     </select><br />
 
   
-             
+
             
               
 
@@ -953,20 +953,20 @@ img {
     
 <label class=""> Cursor Park Position</label>
 
-    <select class="api" data-type="uint8" data-key="18" required>                 
+    <select class="api" data-type="uint8" data-key="18" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="0">Top</option>
-        
+    
     <option value="1">Bottom</option>
-        
+    
     <option value="3">Previous</option>
     
     </select><br />
 
   
-             
+
             
               
 
@@ -983,7 +983,7 @@ img {
 
 
   
-             
+
             
               
 
@@ -998,20 +998,20 @@ img {
     
 <label class=""> Mode</label>
 
-    <select class="api" data-type="uint8" data-key="19" required>                 
+    <select class="api" data-type="uint8" data-key="19" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="0">Disabled</option>
-        
+    
     <option value="1">Pong</option>
-        
+    
     <option value="2">Jitter</option>
     
     </select><br />
 
   
-             
+
             
               
 
@@ -1026,16 +1026,16 @@ img {
   <div class="clearfix">
     
 <label class="label-inline"> Only If Inactive</label>
+
     
-    
-<input class="api" type="checkbox" name="name20" data-type="uint8" data-key="20" 
+<input class="api" type="checkbox" name="name20" data-type="uint8" data-key="20"
   onchange="valueChangedHandler(this)"
   />
 
   </div>
 
   
-             
+
             
               
 
@@ -1051,12 +1051,12 @@ img {
 <label class=""> Idle Time (μs)</label>
 
       
-<input class="api" type="text" name="name21" data-type="uint64" data-key="21" 
+<input class="api" type="text" name="name21" data-type="uint64" data-key="21"
   onchange="valueChangedHandler(this)"
   />
 
   
-             
+
             
               
 
@@ -1072,12 +1072,12 @@ img {
 <label class=""> Max Time (μs)</label>
 
       
-<input class="api" type="text" name="name22" data-type="uint64" data-key="22" 
+<input class="api" type="text" name="name22" data-type="uint64" data-key="22"
   onchange="valueChangedHandler(this)"
   />
 
   
-             
+
             
 
         </div>
@@ -1088,7 +1088,7 @@ img {
             <line x1="50" y1="90" x2="50" y2="75" stroke="black" stroke-width="2" />
             <rect x="30" y="90" width="40" height="3" stroke="black" stroke-width="2" fill="#d7e5f0" rx="5" ry="5" />
           </svg>
-          
+
             <h3>Output B</h3>
 
             
@@ -1105,20 +1105,20 @@ img {
     
 <label class=""> Screen Count</label>
 
-    <select class="api" data-type="uint32" data-key="41" required>                 
+    <select class="api" data-type="uint32" data-key="41" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="1">1</option>
-        
+    
     <option value="2">2</option>
-        
+    
     <option value="3">3</option>
     
     </select><br />
 
   
-                           
+
             
               
 
@@ -1137,22 +1137,22 @@ img {
 
 
       
-<input class="input-inline" type="number" name="aInput42" data-type="int32" data-key="42" 
+<input class="input-inline" type="number" name="aInput42" data-type="int32" data-key="42"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange42.value=this.value" />
+
       
-      
-<input class="range api" type="range" name="aRange42" data-type="int32" data-key="42" 
+<input class="range api" type="range" name="aRange42" data-type="int32" data-key="42"
   onchange="valueChangedHandler(this)"
 
-        min="" max="" oninput="this.form.aInput42.value=this.value" />               
+        min="" max="" oninput="this.form.aInput42.value=this.value" />
     </form>
-    
+
   </div>
 
   
-                           
+
             
               
 
@@ -1171,22 +1171,22 @@ img {
 
 
       
-<input class="input-inline" type="number" name="aInput43" data-type="int32" data-key="43" 
+<input class="input-inline" type="number" name="aInput43" data-type="int32" data-key="43"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange43.value=this.value" />
+
       
-      
-<input class="range api" type="range" name="aRange43" data-type="int32" data-key="43" 
+<input class="range api" type="range" name="aRange43" data-type="int32" data-key="43"
   onchange="valueChangedHandler(this)"
 
-        min="" max="" oninput="this.form.aInput43.value=this.value" />               
+        min="" max="" oninput="this.form.aInput43.value=this.value" />
     </form>
-    
+
   </div>
 
   
-                           
+
             
               
 
@@ -1202,12 +1202,12 @@ img {
 <label class=""> Border Top</label>
 
       
-<input class="api" type="text" name="name44" data-type="int32" data-key="44" 
+<input class="api" type="text" name="name44" data-type="int32" data-key="44"
   onchange="valueChangedHandler(this)"
   />
 
   
-                           
+
             
               
 
@@ -1223,12 +1223,12 @@ img {
 <label class=""> Border Bottom</label>
 
       
-<input class="api" type="text" name="name45" data-type="int32" data-key="45" 
+<input class="api" type="text" name="name45" data-type="int32" data-key="45"
   onchange="valueChangedHandler(this)"
   />
 
   
-                           
+
             
               
 
@@ -1243,24 +1243,24 @@ img {
     
 <label class=""> Operating System</label>
 
-    <select class="api" data-type="uint8" data-key="46" required>                 
+    <select class="api" data-type="uint8" data-key="46" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="1">Linux</option>
-        
+    
     <option value="2">MacOS</option>
-        
+    
     <option value="3">Windows</option>
-        
+    
     <option value="4">Android</option>
-        
+    
     <option value="255">Other</option>
     
     </select><br />
 
   
-                           
+
             
               
 
@@ -1275,18 +1275,18 @@ img {
     
 <label class=""> Screen Position</label>
 
-    <select class="api" data-type="uint8" data-key="47" required>                 
+    <select class="api" data-type="uint8" data-key="47" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="1">Left</option>
-        
+    
     <option value="2">Right</option>
     
     </select><br />
 
   
-                           
+
             
               
 
@@ -1301,20 +1301,20 @@ img {
     
 <label class=""> Cursor Park Position</label>
 
-    <select class="api" data-type="uint8" data-key="48" required>                 
+    <select class="api" data-type="uint8" data-key="48" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="0">Top</option>
-        
+    
     <option value="1">Bottom</option>
-        
+    
     <option value="3">Previous</option>
     
     </select><br />
 
   
-                           
+
             
               
 
@@ -1331,7 +1331,7 @@ img {
 
 
   
-                           
+
             
               
 
@@ -1346,20 +1346,20 @@ img {
     
 <label class=""> Mode</label>
 
-    <select class="api" data-type="uint8" data-key="49" required>                 
+    <select class="api" data-type="uint8" data-key="49" required>
     <option disabled selected value></option>
 
-        
+    
     <option value="0">Disabled</option>
-        
+    
     <option value="1">Pong</option>
-        
+    
     <option value="2">Jitter</option>
     
     </select><br />
 
   
-                           
+
             
               
 
@@ -1374,16 +1374,16 @@ img {
   <div class="clearfix">
     
 <label class="label-inline"> Only If Inactive</label>
+
     
-    
-<input class="api" type="checkbox" name="name50" data-type="uint8" data-key="50" 
+<input class="api" type="checkbox" name="name50" data-type="uint8" data-key="50"
   onchange="valueChangedHandler(this)"
   />
 
   </div>
 
   
-                           
+
             
               
 
@@ -1399,12 +1399,12 @@ img {
 <label class=""> Idle Time (μs)</label>
 
       
-<input class="api" type="text" name="name51" data-type="uint64" data-key="51" 
+<input class="api" type="text" name="name51" data-type="uint64" data-key="51"
   onchange="valueChangedHandler(this)"
   />
 
   
-                           
+
             
               
 
@@ -1420,14 +1420,14 @@ img {
 <label class=""> Max Time (μs)</label>
 
       
-<input class="api" type="text" name="name52" data-type="uint64" data-key="52" 
+<input class="api" type="text" name="name52" data-type="uint64" data-key="52"
   onchange="valueChangedHandler(this)"
   />
 
   
-                           
+
             
-          
+
         </div>
 
       </div>
@@ -1459,7 +1459,7 @@ img {
 
 
   
-             
+
             
               
 
@@ -1474,16 +1474,16 @@ img {
   <div class="clearfix">
     
 <label class="label-inline"> Force Mouse Boot Mode</label>
+
     
-    
-<input class="api" type="checkbox" name="name71" data-type="uint8" data-key="71" 
+<input class="api" type="checkbox" name="name71" data-type="uint8" data-key="71"
   onchange="valueChangedHandler(this)"
   />
 
   </div>
 
   
-             
+
             
               
 
@@ -1498,16 +1498,16 @@ img {
   <div class="clearfix">
     
 <label class="label-inline"> Enable Acceleration</label>
+
     
-    
-<input class="api" type="checkbox" name="name75" data-type="uint8" data-key="75" 
+<input class="api" type="checkbox" name="name75" data-type="uint8" data-key="75"
   onchange="valueChangedHandler(this)"
   />
 
   </div>
 
   
-             
+
             
               
 
@@ -1526,22 +1526,22 @@ img {
 
 
       
-<input class="input-inline" type="number" name="aInput77" data-type="uint16" data-key="77" 
+<input class="input-inline" type="number" name="aInput77" data-type="uint16" data-key="77"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange77.value=this.value" />
+
       
-      
-<input class="range api" type="range" name="aRange77" data-type="uint16" data-key="77" 
+<input class="range api" type="range" name="aRange77" data-type="uint16" data-key="77"
   onchange="valueChangedHandler(this)"
 
-        min="" max="" oninput="this.form.aInput77.value=this.value" />               
+        min="" max="" oninput="this.form.aInput77.value=this.value" />
     </form>
-    
+
   </div>
 
   
-             
+
             
               
 
@@ -1558,7 +1558,7 @@ img {
 
 
   
-             
+
             
               
 
@@ -1573,16 +1573,16 @@ img {
   <div class="clearfix">
     
 <label class="label-inline"> Force KBD Boot Protocol</label>
+
     
-    
-<input class="api" type="checkbox" name="name72" data-type="uint8" data-key="72" 
+<input class="api" type="checkbox" name="name72" data-type="uint8" data-key="72"
   onchange="valueChangedHandler(this)"
   />
 
   </div>
 
   
-             
+
             
               
 
@@ -1597,16 +1597,16 @@ img {
   <div class="clearfix">
     
 <label class="label-inline"> KBD LED as Indicator</label>
+
     
-    
-<input class="api" type="checkbox" name="name73" data-type="uint8" data-key="73" 
+<input class="api" type="checkbox" name="name73" data-type="uint8" data-key="73"
   onchange="valueChangedHandler(this)"
   />
 
   </div>
 
   
-             
+
             
               
 
@@ -1621,16 +1621,16 @@ img {
   <div class="clearfix">
     
 <label class="label-inline"> Enforce Ports</label>
+
     
-    
-<input class="api" type="checkbox" name="name76" data-type="uint8" data-key="76" 
+<input class="api" type="checkbox" name="name76" data-type="uint8" data-key="76"
   onchange="valueChangedHandler(this)"
   />
 
   </div>
 
   
-             
+
             
 
           <input type="submit" value="Save" id="submitButton">
@@ -1654,12 +1654,12 @@ img {
 <label class="label-inline"> Running FW version:</label>
 
     
-<input class="content api" type="text" name="name78" data-type="uint16" data-key="78" 
+<input class="content api" type="text" name="name78" data-type="uint16" data-key="78"
   onchange="valueChangedHandler(this)"
  data-hex readonly />
 
   
-             
+
           
             
 
@@ -1675,12 +1675,12 @@ img {
 <label class="label-inline"> Running FW checksum:</label>
 
     
-<input class="content api" type="text" name="name79" data-type="uint32" data-key="79" 
+<input class="content api" type="text" name="name79" data-type="uint32" data-key="79"
   onchange="valueChangedHandler(this)"
  data-hex readonly />
 
   
-             
+
           
 
         </div>
@@ -1697,7 +1697,7 @@ var device;
 const packetType = {
   keyboardReportMsg: 1, mouseReportMsg: 2, outputSelectMsg: 3, firmwareUpgradeMsg: 4, switchLockMsg: 7,
   syncBordersMsg: 8, flashLedMsg: 9, wipeConfigMsg: 10, readConfigMsg: 16, writeConfigMsg: 17, saveConfigMsg: 18,
-  rebootMsg: 19, getValMsg: 20, setValMsg: 21, proxyPacketMsg: 23
+  rebootMsg: 19, getValMsg: 20, setValMsg: 21, getValAllMsg: 22, proxyPacketMsg: 23
 };
 
 function calcChecksum(report) {
@@ -1710,26 +1710,26 @@ function calcChecksum(report) {
 
 async function sendReport(type, payload = [], sendBoth = false) {
   if (!device || !device.opened)
-    return;  
-  
+    return;
+
   /* First send this one, if the first one gets e.g. rebooted */
-  if (sendBoth) {      
+  if (sendBoth) {
     var reportProxy = makeReport(type, payload, true);
     await device.sendReport(mgmtReportId, reportProxy);
     }
-    
+
     var report = makeReport(type, payload, false);
-    await device.sendReport(mgmtReportId, report);   
+    await device.sendReport(mgmtReportId, report);
 }
 
 function makeReport(type, payload, proxy=false) {
   var dataOffset = proxy ? 4 : 3;
-  report = new Uint8Array([0xaa, 0x55, type, ...new Array(9).fill(0)]);   
+  report = new Uint8Array([0xaa, 0x55, type, ...new Array(9).fill(0)]);
 
-  if (proxy) 
-    report = new Uint8Array([0xaa, 0x55, packetType.proxyPacketMsg, type, ...new Array(7).fill(0), type]);  
-      
-  if (payload) {    
+  if (proxy)
+    report = new Uint8Array([0xaa, 0x55, packetType.proxyPacketMsg, type, ...new Array(7).fill(0), type]);
+
+  if (payload) {
     report.set([...payload], dataOffset);
     report[report.length - 1] = calcChecksum(report);
   }
@@ -1784,7 +1784,8 @@ async function connectHandler() {
   });
 
   device = devices[0];
-  device.open().then(async () => {     
+  device.open().then(async () => {
+    device.addEventListener('inputreport', handleInputReport);
     document.querySelectorAll('.online').forEach(element => { element.style.opacity = 1.0; });
     await readHandler();
   });
@@ -1816,8 +1817,12 @@ function setValue(element, value) {
 }
 
 
-function updateElement(element, event, dataType) {
-  var dataOffset = 3;
+function updateElement(key, event) {
+  var dataOffset = 4;
+  var element = document.querySelector(`[data-key="${key}"]`);
+
+  if (!element)
+    return;
 
   const methods = {
     "uint32": event.data.getUint32,
@@ -1828,6 +1833,8 @@ function updateElement(element, event, dataType) {
     "int16": event.data.getInt16,
     "int8": event.data.getInt8
   };
+
+  dataType = element.getAttribute('data-type');
 
   if (dataType in methods) {
     var value = methods[dataType].call(event.data, dataOffset, true);
@@ -1842,24 +1849,14 @@ async function readHandler() {
   if (!device || !device.opened)
     await connectHandler();
 
-  const elements = document.querySelectorAll('.api');
+  await sendReport(packetType.getValAllMsg);
+}
 
-  for (const element of elements) {
-    var key = element.getAttribute('data-key');
-    var dataType = element.getAttribute('data-type');
+async function handleInputReport(event) {
+  var data = new Uint8Array(event.data.buffer);
+  var key = data[3];
 
-    await sendReport(packetType.getValMsg, [key]);
-
-    let incomingReport = await new Promise((resolve, reject) => {
-      const handleInputReport = (event) => {
-        updateElement(element, event, dataType);
-
-        device.removeEventListener('inputreport', handleInputReport);
-        resolve();
-      }
-      device.addEventListener('inputreport', handleInputReport);
-    });
-  }
+  updateElement(key, event);
 }
 
 async function rebootHandler() {
@@ -1879,7 +1876,7 @@ async function valueChangedHandler(element) {
 
   if (origValue != newValue) {
     uintBuffer = packValue(element, key, dataType);
-    
+
     /* Send to both devices */
     await sendReport(packetType.setValMsg, uintBuffer, true);
 
@@ -1901,7 +1898,7 @@ async function saveHandler() {
       continue;
 
     if (origValue != getValue(element))
-      await valueChangedHandler(element);    
+      await valueChangedHandler(element);
   }
   await sendReport(packetType.saveConfigMsg, [], true);
 }

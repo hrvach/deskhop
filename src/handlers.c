@@ -67,6 +67,12 @@ void switchlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     send_value(state->switch_lock, SWITCH_LOCK_MSG);
 }
 
+/* This key combo toggles gaming mode */
+void toggle_relative_mode_handler(device_t *state, hid_keyboard_report_t *report) {
+    state->relative_mouse ^= 1;
+    send_value(state->relative_mouse, RELATIVE_MODE_MSG);
+};
+
 /* This key combo locks both outputs simultaneously */
 void screenlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     hid_keyboard_report_t lock_report = {0}, release_keys = {0};
@@ -199,9 +205,9 @@ void handle_wipe_config_msg(uart_packet_t *packet, device_t *state) {
     load_config(state);
 }
 
-/* Process consumer control message, TODO: use queue instead of sending directly */
+/* Process consumer control message */
 void handle_consumer_control_msg(uart_packet_t *packet, device_t *state) {
-    tud_hid_n_report(0, REPORT_ID_CONSUMER, &packet->data[0], CONSUMER_CONTROL_LENGTH);
+    queue_cc_packet(packet->data, state);
 }
 
 /* Process request to store config to flash */
@@ -217,6 +223,11 @@ void handle_reboot_msg(uart_packet_t *packet, device_t *state) {
 /* Decapsulate and send to the other box */
 void handle_proxy_msg(uart_packet_t *packet, device_t *state) {
     queue_packet(&packet->data[1], (enum packet_type_e)packet->data[0], PACKET_DATA_LENGTH - 1);
+}
+
+/* Process request to reboot the board */
+void handle_toggle_relative_msg(uart_packet_t *packet, device_t *state) {
+    state->relative_mouse = packet->data[0];
 }
 
 /* Process api communication messages */
@@ -239,15 +250,24 @@ void handle_api_msgs(uart_packet_t *packet, device_t *state) {
         memcpy(ptr, &packet->data[1], map->len);
     }
     else if (packet->type == GET_VAL_MSG) {
-        uart_packet_t response = {.type=GET_VAL_MSG, .data={0}};
-        memcpy(response.data, ptr, map->len);
-        queue_try_add(&state->cfg_queue_out, &response);
+	uart_packet_t response = {.type=GET_VAL_MSG, .data={[0] = value_idx}};
+	memcpy(&response.data[1], ptr, map->len);
+	queue_cfg_packet(&response, state);
     }
 
     /* With each GET/SET message, we reset the configuration mode timeout */
     reset_config_timer(state);
 }
 
+/* Handle the "read all" message by calling our "read one" handler for each type */
+void handle_api_read_all_msg(uart_packet_t *packet, device_t *state) {
+    uart_packet_t result = {.type=GET_VAL_MSG};
+
+    for (int i = 0; i < get_field_map_length(); i++) {
+        result.data[0] = get_field_map_index(i)->idx;
+        handle_api_msgs(&result, state);
+    }
+}
 
 /* Process request packet and create a response */
 void handle_request_byte_msg(uart_packet_t *packet, device_t *state) {

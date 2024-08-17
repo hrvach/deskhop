@@ -15,7 +15,7 @@
 :root {
   --highlight-color: #384955;
   --font-color: #384955;
-  --highlight-color2: #5e9f41;  
+  --highlight-color2: #5e9f41;
 }
 
 html {
@@ -483,7 +483,7 @@ input[type='number'].input-inline {
 @media (min-width: 40rem) {
   .row {
     flex-direction: row;
-    
+
     width: calc(100% + 2.0rem);
   }
   .row .column {

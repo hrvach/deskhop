@@ -122,12 +122,14 @@ enum packet_type_e {
     FLASH_LED_MSG        = 9,
     WIPE_CONFIG_MSG      = 10,
     HEARTBEAT_MSG        = 12,
+    RELATIVE_MODE_MSG    = 13,
     CONSUMER_CONTROL_MSG = 14,
     SYSTEM_CONTROL_MSG   = 15,
     SAVE_CONFIG_MSG      = 18,
     REBOOT_MSG           = 19,
     GET_VAL_MSG          = 20,
     SET_VAL_MSG          = 21,
+    GET_ALL_VALS_MSG     = 22,
     PROXY_PACKET_MSG     = 23,
     REQUEST_BYTE_MSG     = 24,
     RESPONSE_BYTE_MSG    = 25,
@@ -166,7 +168,7 @@ typedef struct {
 #define RAW_PACKET_LENGTH (START_LENGTH + PACKET_LENGTH)
 
 #define UART_QUEUE_LENGTH  256
-#define CFG_QUEUE_LENGTH   128
+#define HID_QUEUE_LENGTH   128
 #define KBD_QUEUE_LENGTH   128
 #define MOUSE_QUEUE_LENGTH 512
 
@@ -345,6 +347,25 @@ typedef struct TU_ATTR_PACKED {
     uint8_t mode;
 } mouse_report_t;
 
+/* Used to work around OS issues with absolute coordinates on
+   multiple desktops (Windows/MacOS) */
+typedef struct {
+    uint8_t tip_pressure;
+    uint8_t buttons; // Buttons
+    uint16_t x;      // X coordinate (0-32767)
+    uint16_t y;      // Y coordinate (0-32767)
+} touch_report_t;
+
+/* This stores various packets other than kbd/mouse to go out
+   (configuration, consumer control, system...) */
+typedef struct {
+    uint8_t instance;
+    uint8_t report_id;
+    uint8_t type;
+    uint8_t len;
+    uint8_t data[RAW_PACKET_LENGTH];
+} hid_generic_pkt_t;
+
 typedef enum { IDLE, READING_PACKET, PROCESSING_PACKET } receiver_state_t;
 
 typedef struct {
@@ -370,7 +391,7 @@ typedef struct {
     int16_t mouse_buttons; // Store and update the state of mouse buttons
 
     config_t config;       // Device configuration, loaded from flash or defaults used
-    queue_t cfg_queue_out; // Queue that stores outgoing vendor config messages
+    queue_t hid_queue_out; // Queue that stores outgoing hid messages
     queue_t kbd_queue;     // Queue that stores keyboard reports
     queue_t mouse_queue;   // Queue that stores mouse reports
     queue_t uart_tx_queue; // Queue that stores outgoing packets
@@ -427,6 +448,8 @@ void process_consumer_report(uint8_t *, int, uint8_t, hid_interface_t *);
 void process_system_report(uint8_t *, int, uint8_t, hid_interface_t *);
 void release_all_keys(device_t *);
 void queue_kbd_report(hid_keyboard_report_t *, device_t *);
+void queue_cc_packet(uint8_t *, device_t *);
+void queue_system_packet(uint8_t *, device_t *);
 void send_key(hid_keyboard_report_t *, device_t *);
 void send_consumer_control(uint8_t *, device_t *);
 bool key_in_report(uint8_t, const hid_keyboard_report_t *);
@@ -474,7 +497,7 @@ void reboot(void);
 /*********  Tasks  **********/
 void process_uart_tx_task(device_t *);
 void process_mouse_queue_task(device_t *);
-void process_cfg_queue_task(device_t *);
+void process_hid_queue_task(device_t *);
 void process_kbd_queue_task(device_t *);
 void usb_device_task(device_t *);
 void kick_watchdog_task(device_t *);
@@ -495,7 +518,10 @@ void reset_config_timer(device_t *);
 
 extern const field_map_t api_field_map[];
 const field_map_t* get_field_map_entry(uint32_t);
+const field_map_t* get_field_map_index(uint32_t);
+size_t get_field_map_length(void);
 bool validate_packet(uart_packet_t *);
+void queue_cfg_packet(uart_packet_t *, device_t *);
 
 /*********  Handlers  **********/
 void output_toggle_hotkey_handler(device_t *, hid_keyboard_report_t *);
@@ -505,6 +531,7 @@ void fw_upgrade_hotkey_handler_B(device_t *, hid_keyboard_report_t *);
 void mouse_zoom_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void all_keys_released_handler(device_t *);
 void switchlock_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void toggle_relative_mode_handler(device_t *, hid_keyboard_report_t *);
 void screenlock_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void output_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void wipe_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
@@ -530,6 +557,8 @@ void handle_response_byte_msg(uart_packet_t *, device_t *);
 void handle_heartbeat_msg(uart_packet_t *, device_t *);
 void handle_proxy_msg(uart_packet_t *, device_t *);
 void handle_api_msgs(uart_packet_t *, device_t *);
+void handle_api_read_all_msg(uart_packet_t *, device_t *);
+void handle_toggle_relative_msg(uart_packet_t *, device_t *);
 
 void switch_output(device_t *, uint8_t);
 

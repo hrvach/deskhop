@@ -1,2 +1,2 @@
 render:
-	python3 render.py
+	python3 -B render.py

@@ -4,7 +4,7 @@ var device;
 const packetType = {
   keyboardReportMsg: 1, mouseReportMsg: 2, outputSelectMsg: 3, firmwareUpgradeMsg: 4, switchLockMsg: 7,
   syncBordersMsg: 8, flashLedMsg: 9, wipeConfigMsg: 10, readConfigMsg: 16, writeConfigMsg: 17, saveConfigMsg: 18,
-  rebootMsg: 19, getValMsg: 20, setValMsg: 21, proxyPacketMsg: 23
+  rebootMsg: 19, getValMsg: 20, setValMsg: 21, getValAllMsg: 22, proxyPacketMsg: 23
 };
 
 function calcChecksum(report) {
@@ -17,26 +17,26 @@ function calcChecksum(report) {
 
 async function sendReport(type, payload = [], sendBoth = false) {
   if (!device || !device.opened)
-    return;  
-  
+    return;
+
   /* First send this one, if the first one gets e.g. rebooted */
-  if (sendBoth) {      
+  if (sendBoth) {
     var reportProxy = makeReport(type, payload, true);
     await device.sendReport(mgmtReportId, reportProxy);
     }
-    
+
     var report = makeReport(type, payload, false);
-    await device.sendReport(mgmtReportId, report);   
+    await device.sendReport(mgmtReportId, report);
 }
 
 function makeReport(type, payload, proxy=false) {
   var dataOffset = proxy ? 4 : 3;
-  report = new Uint8Array([0xaa, 0x55, type, ...new Array(9).fill(0)]);   
+  report = new Uint8Array([0xaa, 0x55, type, ...new Array(9).fill(0)]);
 
-  if (proxy) 
-    report = new Uint8Array([0xaa, 0x55, packetType.proxyPacketMsg, type, ...new Array(7).fill(0), type]);  
-      
-  if (payload) {    
+  if (proxy)
+    report = new Uint8Array([0xaa, 0x55, packetType.proxyPacketMsg, type, ...new Array(7).fill(0), type]);
+
+  if (payload) {
     report.set([...payload], dataOffset);
     report[report.length - 1] = calcChecksum(report);
   }
@@ -91,7 +91,8 @@ async function connectHandler() {
   });
 
   device = devices[0];
-  device.open().then(async () => {     
+  device.open().then(async () => {
+    device.addEventListener('inputreport', handleInputReport);
     document.querySelectorAll('.online').forEach(element => { element.style.opacity = 1.0; });
     await readHandler();
   });
@@ -123,8 +124,12 @@ function setValue(element, value) {
 }
 
 
-function updateElement(element, event, dataType) {
-  var dataOffset = 3;
+function updateElement(key, event) {
+  var dataOffset = 4;
+  var element = document.querySelector(`[data-key="${key}"]`);
+
+  if (!element)
+    return;
 
   const methods = {
     "uint32": event.data.getUint32,
@@ -135,6 +140,8 @@ function updateElement(element, event, dataType) {
     "int16": event.data.getInt16,
     "int8": event.data.getInt8
   };
+
+  dataType = element.getAttribute('data-type');
 
   if (dataType in methods) {
     var value = methods[dataType].call(event.data, dataOffset, true);
@@ -149,24 +156,14 @@ async function readHandler() {
   if (!device || !device.opened)
     await connectHandler();
 
-  const elements = document.querySelectorAll('.api');
+  await sendReport(packetType.getValAllMsg);
+}
 
-  for (const element of elements) {
-    var key = element.getAttribute('data-key');
-    var dataType = element.getAttribute('data-type');
+async function handleInputReport(event) {
+  var data = new Uint8Array(event.data.buffer);
+  var key = data[3];
 
-    await sendReport(packetType.getValMsg, [key]);
-
-    let incomingReport = await new Promise((resolve, reject) => {
-      const handleInputReport = (event) => {
-        updateElement(element, event, dataType);
-
-        device.removeEventListener('inputreport', handleInputReport);
-        resolve();
-      }
-      device.addEventListener('inputreport', handleInputReport);
-    });
-  }
+  updateElement(key, event);
 }
 
 async function rebootHandler() {
@@ -186,7 +183,7 @@ async function valueChangedHandler(element) {
 
   if (origValue != newValue) {
     uintBuffer = packValue(element, key, dataType);
-    
+
     /* Send to both devices */
     await sendReport(packetType.setValMsg, uintBuffer, true);
 
@@ -208,7 +205,7 @@ async function saveHandler() {
       continue;
 
     if (origValue != getValue(element))
-      await valueChangedHandler(element);    
+      await valueChangedHandler(element);
   }
   await sendReport(packetType.saveConfigMsg, [], true);
 }

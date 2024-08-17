@@ -67,3 +67,38 @@ const field_map_t* get_field_map_entry(uint32_t index) {
 
     return NULL;
 }
+
+
+const field_map_t* get_field_map_index(uint32_t index) {
+    return &api_field_map[index];
+}
+
+size_t get_field_map_length(void) {
+    return ARRAY_SIZE(api_field_map);
+}
+
+void _queue_packet(uint8_t *payload, device_t *state, uint8_t type, uint8_t len, uint8_t id, uint8_t inst) {
+    hid_generic_pkt_t generic_packet = {
+        .instance = inst,
+        .report_id = id,
+        .type = type,
+        .len = len,
+    };
+
+    memcpy(generic_packet.data, payload, len);
+    queue_try_add(&state->hid_queue_out, &generic_packet);
+}
+
+void queue_cfg_packet(uart_packet_t *packet, device_t *state) {
+    uint8_t raw_packet[RAW_PACKET_LENGTH];
+    write_raw_packet(raw_packet, packet);
+    _queue_packet(raw_packet, state, 0, RAW_PACKET_LENGTH, REPORT_ID_VENDOR, ITF_NUM_HID_VENDOR);
+}
+
+void queue_cc_packet(uint8_t *payload, device_t *state) {
+    _queue_packet(payload, state, 1, CONSUMER_CONTROL_LENGTH, REPORT_ID_CONSUMER, ITF_NUM_HID);
+}
+
+void queue_system_packet(uint8_t *payload, device_t *state) {
+    _queue_packet(payload, state, 2, SYSTEM_CONTROL_LENGTH, REPORT_ID_SYSTEM, ITF_NUM_HID);
+}

@@ -237,8 +237,8 @@ void initial_setup(device_t *state) {
     queue_init(&state->kbd_queue, sizeof(hid_keyboard_report_t), KBD_QUEUE_LENGTH);
     queue_init(&state->mouse_queue, sizeof(mouse_report_t), MOUSE_QUEUE_LENGTH);
 
-    /* Initialize vendor config protocol queue */
-    queue_init(&state->cfg_queue_out, sizeof(uart_packet_t), CFG_QUEUE_LENGTH);
+    /* Initialize generic HID packet queue */
+    queue_init(&state->hid_queue_out, sizeof(hid_generic_pkt_t), HID_QUEUE_LENGTH);
 
     /* Initialize UART queue */
     queue_init(&state->uart_tx_queue, sizeof(uart_packet_t), UART_QUEUE_LENGTH);

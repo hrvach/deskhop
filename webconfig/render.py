@@ -37,12 +37,12 @@ def encode_file(payload):
     return base64_compressed_data
 
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     # Read main template contents
     webpage = render(
-        INPUT_FILENAME, 
-        screen_A=output_A(), 
-        screen_B=output_B(), 
+        INPUT_FILENAME,
+        screen_A=output_A(),
+        screen_B=output_B(),
         status=output_status(),
         config=output_config(),
     )
@@ -56,6 +56,6 @@ if __name__ == "__main__":
 
     # Write data to output filename
     write_file(self_extracting_webpage)
-    
+
     # Write unpacked webpage
     write_file(webpage, OUTPUT_UNPACKED)

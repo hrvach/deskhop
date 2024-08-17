@@ -23,6 +23,10 @@
  *
  * defined as HID_KEY_<something>
  *
+ * In addition, keyboard.c defines right ctrl as a modifier key required to
+ * activate this. So, the current shortcut is RIGHT CTRL + whatever is defined
+ * here.
+ *
  * If you do not want to use a key for switching outputs, you may be tempted
  * to select HID_KEY_NONE here; don't do that! That code appears in many HID
  * messages and the result will be a non-functional keyboard. Instead, choose
@@ -32,7 +36,7 @@
  *
  * */
 
-#define HOTKEY_TOGGLE HID_KEY_F24
+#define HOTKEY_TOGGLE HID_KEY_CAPS_LOCK
 
 /**================================================== *
  * ==============  Mouse Speed Factor  ============== *
@@ -53,13 +57,13 @@
  *
  * */
 
-/* Output A values */
+/* Output A values, default is for the most common ~ 16:9 ratio screen */
 #define MOUSE_SPEED_A_FACTOR_X 16
-#define MOUSE_SPEED_A_FACTOR_Y 16
+#define MOUSE_SPEED_A_FACTOR_Y 28
 
-/* Output B values  */
+/* Output B values, default is for the most common ~ 16:9 ratio screen */
 #define MOUSE_SPEED_B_FACTOR_X 16
-#define MOUSE_SPEED_B_FACTOR_Y 16
+#define MOUSE_SPEED_B_FACTOR_Y 28
 
 #define JUMP_THRESHOLD 0
 

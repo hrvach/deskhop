@@ -58,7 +58,7 @@ uint8_t const desc_hid_report[] = {TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RE
                                    TUD_HID_REPORT_DESC_SYSTEM_CONTROL(HID_REPORT_ID(REPORT_ID_SYSTEM))
                                    };
 
-uint8_t const desc_hid_report_relmouse[] = {TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(REPORT_ID_RELMOUSE))};
+uint8_t const desc_hid_report_relmouse[] = {TUD_HID_REPORT_DESC_MOUSEHELP(HID_REPORT_ID(REPORT_ID_RELMOUSE))};
 
 uint8_t const desc_hid_report_vendor[] = {TUD_HID_REPORT_DESC_VENDOR_CTRL(HID_REPORT_ID(REPORT_ID_VENDOR))};
 
@@ -82,15 +82,16 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
 }
 
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel) {
+    mouse_report_t report = {.buttons = buttons, .wheel = wheel, .x = x, .y = y, .mode = mode};
+    uint8_t instance = ITF_NUM_HID;
+    uint8_t report_id = REPORT_ID_MOUSE;
 
-    if (mode == ABSOLUTE) {
-        mouse_report_t report = {.buttons = buttons, .x = x, .y = y, .wheel = wheel};
-        return tud_hid_n_report(ITF_NUM_HID, REPORT_ID_MOUSE, &report, sizeof(report));
-    } else {
-        hid_mouse_report_t report
-            = {.buttons = buttons, .x = x - SCREEN_MIDPOINT, .y = y - SCREEN_MIDPOINT, .wheel = wheel, .pan = 0};
-        return tud_hid_n_report(ITF_NUM_HID_REL_M, REPORT_ID_RELMOUSE, &report, sizeof(report));
+    if (mode == RELATIVE) {
+        instance = ITF_NUM_HID_REL_M;
+        report_id = REPORT_ID_RELMOUSE;
     }
+
+    return tud_hid_n_report(instance, report_id, &report, sizeof(report));
 }
 
 

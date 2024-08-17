@@ -64,6 +64,10 @@ void update_mouse_position(device_t *state, mouse_values_t *values) {
     output_t *current    = &state->config.output[state->active_output];
     uint8_t reduce_speed = 0;
 
+    /* If relative mouse mode is active, just pass mouse movements and update nothing */
+    if (state->relative_mouse)
+        return;
+
     /* Check if we are configured to move slowly */
     if (state->mouse_zoom)
         reduce_speed = MOUSE_ZOOM_SCALING_FACTOR;
@@ -141,13 +145,13 @@ void switch_desktop(device_t *state, output_t *output, int new_index, int direct
     /* Fix for MACOS: Send relative mouse movement here, one or two pixels in the
        direction of movement, BEFORE absolute report sets X to 0 */
     mouse_report_t move_relative_one
-        = {.x = (direction == LEFT) ? SCREEN_MIDPOINT - 2 : SCREEN_MIDPOINT + 2, .mode = RELATIVE};
+        = {.x = (direction == LEFT) ? -5 : 5, .mode = RELATIVE};
 
     switch (output->os) {
         case MACOS:
-            /* Once doesn't seem reliable enough, do it twice */
-            output_mouse_report(&move_relative_one, state);
-            output_mouse_report(&move_relative_one, state);
+            /* Once doesn't seem reliable enough, do it a few times */
+            for (int i = 0; i < 5; i++)
+                output_mouse_report(&move_relative_one, state);
             break;
 
         case WINDOWS:
@@ -184,8 +188,8 @@ void check_screen_switch(const mouse_values_t *values, device_t *state) {
 
     int direction = jump_left ? LEFT : RIGHT;
 
-    /* No switching allowed if explicitly disabled or mouse button is held */
-    if (state->switch_lock || state->mouse_buttons)
+    /* No switching allowed if explicitly disabled */
+    if (state->switch_lock)
         return;
 
     /* No jump condition met == nothing to do, return */
@@ -194,9 +198,13 @@ void check_screen_switch(const mouse_values_t *values, device_t *state) {
 
     /* We want to jump in the direction of the other computer */
     if (output->pos != direction) {
-        if (output->screen_index == 1) /* We are at the border -> switch outputs */
-            switch_screen(state, output, new_x, state->active_output, 1 - state->active_output, direction);
+        if (output->screen_index == 1) { /* We are at the border -> switch outputs */
+            /* No switching allowed if mouse button is held. Should only apply to the border! */
+            if (state->mouse_buttons)
+                return;
 
+            switch_screen(state, output, new_x, state->active_output, 1 - state->active_output, direction);
+        }
         /* If here, this output has multiple desktops and we are not on the main one */
         else
             switch_desktop(state, output, output->screen_index - 1, direction);
@@ -240,11 +248,9 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
 
     /* Workaround for Windows multiple desktops */
     if (state->relative_mouse) {
-        mouse_report.x = SCREEN_MIDPOINT + values->move_x;
-        mouse_report.y = SCREEN_MIDPOINT + values->move_y;
+        mouse_report.x = values->move_x;
+        mouse_report.y = values->move_y;
         mouse_report.mode = RELATIVE;
-        mouse_report.buttons = values->buttons;
-        mouse_report.wheel = values->wheel;
     }
 
     return mouse_report;

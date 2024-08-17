@@ -3,7 +3,7 @@
 {% set key = item.key %}
 
 {% macro input(item, type='text', class='api', name='name') %}
-<input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}" 
+<input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}"
   onchange="valueChangedHandler(this)"
 {% endmacro %}
 
@@ -26,26 +26,26 @@
 
       {{ input(item, class='input-inline', type='number', name='aInput') }}
         readonly oninput="this.form.aRange{{ key }}.value=this.value" />
-      
+
       {{ input(item, class='range api', type='range', name='aRange') }}
-        min="{{ item.values.min }}" max="{{ item.values.max }}" oninput="this.form.aInput{{key}}.value=this.value" />               
+        min="{{ item.values.min }}" max="{{ item.values.max }}" oninput="this.form.aInput{{key}}.value=this.value" />
     </form>
-    
+
   </div>
 
   {% elif item.get("elem") == "checkbox" %}
   <div class="clearfix">
-    {{ label(item) }}    
+    {{ label(item) }}
     {{ input(item, type="checkbox") }}  />
 
   </div>
 
   {% elif item["values"] %}
     {{ label(item, class='') }}
-    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" required>                 
+    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" required>
     <option disabled selected value></option>
 
-    {% for k, v in item["values"].items() %}    
+    {% for k, v in item["values"].items() %}
     <option value="{{ k }}">{{ v }}</option>
     {% endfor %}
     </select><br />

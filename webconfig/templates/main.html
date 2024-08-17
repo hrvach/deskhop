@@ -17,14 +17,14 @@
 
   <main class="wrapper">
 
-    <section class="container">    
+    <section class="container">
 
-      <div class="row" id="warning" style="display: none;"> 
+      <div class="row" id="warning" style="display: none;">
         <blockquote>
           <h3> Oh, no! </h3>
           Unfortunately, your browser does not support WebHID or the Permissions Policy is blocking its usage. Please try Chromium <br />
           (or Chrome if you have to). Apologies for the inconvenience, hopefully a cross-browser solution happens soon.
-        </blockquote> 
+        </blockquote>
       </div>
 
       <div class="row">
@@ -52,7 +52,7 @@
               <path d="m 104.01516,99.341366 a 1.8639801,1.8639801 0 0 0 -1.86329,1.863284 1.8639801,1.8639801 0 0 0 1.86329,1.86328 h 27.4375 a 1.8639801,1.8639801 0 0 0 1.86718,-1.86328 1.8639801,1.8639801 0 0 0 -1.86718,-1.863284 z" />
             </g>
           </svg>
-        
+
           <div id="menu-buttons">
             <button data-handler="connectHandler" class="button button-clear button-shifted">Connect</button><br />
             <button data-handler="readHandler" class="button button-clear button-shifted online">Read</button><br />
@@ -63,8 +63,8 @@
             <button data-handler="blinkHandler" class="button button-clear button-shifted online">Blink</button><br />
             <button data-handler="blinkBothHandler" class="button button-clear button-shifted online">Blink both</button><br />
             <button data-handler="enterBootloaderHandler" class="button button-clear button-shifted online">Bootloader</button><br />
-            <button data-handler="wipeConfigHandler" class="button button-clear button-shifted online">Wipe Config</button><br />                       
-            
+            <button data-handler="wipeConfigHandler" class="button button-clear button-shifted online">Wipe Config</button><br />
+
           </div>
 
         </div>
@@ -80,7 +80,7 @@
             <h3>Output A</h3>
 
             {% for item in screen_A %}
-              {% include "form.html" with context %}             
+              {% include "form.html" with context %}
             {% endfor %}
 
         </div>
@@ -91,13 +91,13 @@
             <line x1="50" y1="90" x2="50" y2="75" stroke="black" stroke-width="2" />
             <rect x="30" y="90" width="40" height="3" stroke="black" stroke-width="2" fill="#d7e5f0" rx="5" ry="5" />
           </svg>
-          
+
             <h3>Output B</h3>
 
             {% for item in screen_B %}
-              {% include "form.html" with context %}                           
+              {% include "form.html" with context %}
             {% endfor %}
-          
+
         </div>
 
       </div>
@@ -114,7 +114,7 @@
           <h3>Common Config</h3>
 
             {% for item in config %}
-              {% include "form.html" with context %}             
+              {% include "form.html" with context %}
             {% endfor %}
 
           <input type="submit" value="Save" id="submitButton">
@@ -124,7 +124,7 @@
           <h3>Device Status</h3>
 
           {% for item in status %}
-            {% include "form.html" with context %}             
+            {% include "form.html" with context %}
           {% endfor %}
 
         </div>

@@ -148,25 +148,23 @@ void heartbeat_output_task(device_t *state) {
     queue_try_add(&global_state.uart_tx_queue, &packet);
 }
 
-/* Process outgoing config report messages. */
-void process_cfg_queue_task(device_t *state) {
-    uint8_t raw_packet[RAW_PACKET_LENGTH] = {[0] = START1, [1] = START2, [11] = 0};
-    uart_packet_t packet;
 
-    if (!queue_try_peek(&state->cfg_queue_out, &packet))
+/* Process other outgoing hid report messages. */
+void process_hid_queue_task(device_t *state) {
+    hid_generic_pkt_t packet;
+
+    if (!queue_try_peek(&state->hid_queue_out, &packet))
         return;
 
-    if (!tud_hid_n_ready(ITF_NUM_HID_VENDOR))
+    if (!tud_hid_n_ready(packet.instance))
         return;
-
-    write_raw_packet(raw_packet, &packet);
 
     /* ... try sending it to the host, if it's successful */
-    bool succeeded = tud_hid_n_report(ITF_NUM_HID_VENDOR, REPORT_ID_VENDOR, raw_packet, RAW_PACKET_LENGTH);
+    bool succeeded = tud_hid_n_report(packet.instance, packet.report_id, packet.data, packet.len);
 
     /* ... then we can remove it from the queue. Race conditions shouldn't happen [tm] */
     if (succeeded)
-        queue_try_remove(&state->cfg_queue_out, &packet);
+	queue_try_remove(&state->hid_queue_out, &packet);
 }
 
 /* Task that handles copying firmware from the other device to ours */

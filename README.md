@@ -42,7 +42,7 @@ The actual switch happens at the very moment when one arrow stops moving and the
 
 ## Keyboard
 
-Acting as a USB Host and querying your keyboard periodically, it looks for a preconfigured hotkey in the hid report (usually Caps Lock for me). When found, it will forward all subsequent characters to the other output.
+Acting as a USB Host and querying your keyboard periodically, it looks for a preconfigured hotkey in the hid report (usually Ctrl + Caps Lock for me). When found, it will forward all subsequent characters to the other output.
 
 To have a visual indication which output you are using at any given moment, you can repurpose keyboard LEDs and have them provide the necessary feedback. 
 
@@ -100,6 +100,10 @@ This will make sure you won't accidentally leave your current screen. To turn of
 
 You can lock both computers at once by using ```RIGHT CTRL + L```. 
 To make use of this feature, first set up the OS for each output in config (since the shortcuts are different).
+
+### Gaming Mode
+
+If you're gaming, there is a chance your game might not work properly with absolute mouse mode. To address that issue, a **gaming mode** is introduced, toggled by ```LEFT SHIFT + RIGHT SHIFT + G```. When in gaming mode, you are locked to the current screen and your mouse behaves like a standard relative mouse. This should also fix various virtual machine issues, currently unsupported operating systems etc.
 
 ### Screensaver
 
@@ -216,7 +220,8 @@ _Usage_
 - ```Right CTRL + Right ALT``` - Toggle slower mouse mode
 - ```Right CTRL + K``` - Lock/Unlock mouse desktop switching
 - ```Right CTRL + L``` - Lock both outputs at once (set output OS before, see shortcuts below)
-- ```Caps Lock``` - Switch between outputs
+- ```Left Shift + Right Shift + G``` - Toggle gaming mode (lock to screen, act as standard mouse)
+- ```Left CTRL + Caps Lock``` - Switch between outputs
 
 ### Switch cursor height calibration
 
