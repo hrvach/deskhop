@@ -79,14 +79,14 @@ void tud_hid_set_report_cb(uint8_t instance,
             leds |= KEYBOARD_LED_CAPSLOCK;
     }
 
-    global_state.keyboard_leds[global_state.active_output] = leds;
+    global_state.keyboard_leds[BOARD_ROLE] = leds;
 
-    /* If the board doesn't have the keyboard hooked up directly, we need to relay this information
-       to the other one that has (and LEDs you can turn on). */
-    if (global_state.keyboard_connected)
+    /* If the board has a keyboard connected directly, restore those leds. */
+    if (global_state.keyboard_connected && CURRENT_BOARD_IS_ACTIVE_OUTPUT)
         restore_leds(&global_state);
-    else
-        send_value(leds, KBD_SET_REPORT_MSG);
+
+    /* Always send to the other one, so it is aware of the change */
+    send_value(leds, KBD_SET_REPORT_MSG);
 }
 
 /* Invoked when device is mounted */
@@ -194,8 +194,11 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     if (instance >= MAX_INTERFACES)
         return;
 
-    if (iface->uses_report_id) {
-        uint8_t report_id = report[0];
+    if (itf_protocol == HID_ITF_PROTOCOL_NONE) {
+        uint8_t report_id = 0;
+
+        if (iface->uses_report_id)
+            report_id = report[0];
 
         if (report_id < MAX_REPORTS) {
             process_report_f receiver = iface->report_handler[report_id];

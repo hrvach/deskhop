@@ -52,7 +52,7 @@ hotkey_combo_t hotkeys[] = {
      .action_handler = &screenlock_hotkey_handler},
 
     /* Toggle gaming mode */
-    {.modifier       = KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT,
+    {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
      .keys           = {HID_KEY_G},
      .key_count      = 1,
      .acknowledge    = true,
@@ -73,7 +73,7 @@ hotkey_combo_t hotkeys[] = {
      .action_handler = &screen_border_hotkey_handler},
 
     /* Switch to configuration mode  */
-    {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
+    {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
      .keys           = {HID_KEY_C, HID_KEY_O},
      .key_count      = 2,
      .acknowledge    = true,

@@ -172,8 +172,12 @@ void handle_mouse_zoom_msg(uart_packet_t *packet, device_t *state) {
 
 /* Process request to update keyboard LEDs */
 void handle_set_report_msg(uart_packet_t *packet, device_t *state) {
-    state->keyboard_leds[BOARD_ROLE] = packet->data[0];
-    restore_leds(state);
+    /* We got this via serial, so it's stored to the opposite of our board role */
+    state->keyboard_leds[OTHER_ROLE] = packet->data[0];
+
+    /* If we have a keyboard we can control leds on, restore state if active */
+    if (global_state.keyboard_connected && !CURRENT_BOARD_IS_ACTIVE_OUTPUT)
+        restore_leds(state);
 }
 
 /* Process request to block mouse from switching, update internal state */

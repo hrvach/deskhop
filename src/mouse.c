@@ -64,10 +64,6 @@ void update_mouse_position(device_t *state, mouse_values_t *values) {
     output_t *current    = &state->config.output[state->active_output];
     uint8_t reduce_speed = 0;
 
-    /* If relative mouse mode is active, just pass mouse movements and update nothing */
-    if (state->relative_mouse)
-        return;
-
     /* Check if we are configured to move slowly */
     if (state->mouse_zoom)
         reduce_speed = MOUSE_ZOOM_SCALING_FACTOR;
@@ -299,7 +295,7 @@ void process_mouse_queue_task(device_t *state) {
     if (!tud_hid_n_ready(ITF_NUM_HID))
         return;
 
-    /* ... try sending it to the host, if it's successful */
+    /* Try sending it to the host, if it's successful */
     bool succeeded = tud_mouse_report(report.mode, report.buttons, report.x, report.y, report.wheel);
 
     /* ... then we can remove it from the queue */

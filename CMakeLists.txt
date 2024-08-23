@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
 set(VERSION_MAJOR 00)
-set(VERSION_MINOR 156)
+set(VERSION_MINOR 157)
 
 set(PICO_SDK_FETCH_FROM_GIT off)
 set(PICO_BOARD=pico)

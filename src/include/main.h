@@ -49,6 +49,7 @@
 
 #define ABSOLUTE 0
 #define RELATIVE 1
+#define TOUCH 2
 
 #define MOUSE_BOOT_REPORT_LEN 4
 #define MOUSE_ZOOM_SCALING_FACTOR 2
@@ -76,6 +77,7 @@
 #define SERIAL_RX_PIN (global_state.board_role == OUTPUT_A ? BOARD_A_RX : BOARD_B_RX)
 
 #define BOARD_ROLE (global_state.board_role)
+#define OTHER_ROLE (BOARD_ROLE == OUTPUT_A ? OUTPUT_B : OUTPUT_A)
 
 /*********  Serial port definitions  **********/
 #define SERIAL_UART     uart0
@@ -351,7 +353,7 @@ typedef struct TU_ATTR_PACKED {
    multiple desktops (Windows/MacOS) */
 typedef struct {
     uint8_t tip_pressure;
-    uint8_t buttons; // Buttons
+    uint8_t buttons; // Digitizer buttons
     uint16_t x;      // X coordinate (0-32767)
     uint16_t y;      // Y coordinate (0-32767)
 } touch_report_t;
@@ -423,6 +425,7 @@ typedef struct {
     bool onboard_led_state;  // True when LED is ON
     bool relative_mouse;     // True when relative mouse mode is used
     bool config_mode_active; // True when config mode is active
+    bool digitizer_active;   // True when digitizer Win/Mac workaround is active
 
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
     int32_t blinks_left;     // How many blink transitions are left

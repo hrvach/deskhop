@@ -32,7 +32,8 @@
 #define REPORT_ID_SYSTEM   4
 
 // Interface 1
-#define REPORT_ID_RELMOUSE 5
+#define REPORT_ID_RELMOUSE  5
+#define REPORT_ID_DIGITIZER 7
 
 // Interface 2
 #define REPORT_ID_VENDOR 6
@@ -173,7 +174,7 @@ HID_COLLECTION_END \
         HID_REPORT_SIZE ( 3                                      ) ,\
         HID_INPUT       ( HID_CONSTANT                           ) ,\
       HID_USAGE_PAGE  ( HID_USAGE_PAGE_DESKTOP )                   ,\
-        /* X, Y position [-127, 127] */ \
+        /* X, Y position [-32767, 32767] */ \
         HID_USAGE       ( HID_USAGE_DESKTOP_X                    ) ,\
         HID_USAGE       ( HID_USAGE_DESKTOP_Y                    ) ,\
         HID_LOGICAL_MIN_N ( 0x8000, 2                            ) ,\
@@ -194,5 +195,53 @@ HID_COLLECTION_END \
         HID_INPUT       ( HID_CONSTANT                           ), \
     HID_COLLECTION_END                                            , \
   HID_COLLECTION_END \
+
+#define HID_USAGE_DIGITIZER 0x01
+
+#define TUD_HID_REPORT_DESC_DIGITIZER_PEN(...) \
+HID_USAGE_PAGE ( HID_USAGE_PAGE_DIGITIZER )                 ,\
+HID_USAGE ( HID_USAGE_DIGITIZER )                           ,\
+HID_COLLECTION ( HID_COLLECTION_APPLICATION )               ,\
+  /* Report ID if any */\
+  __VA_ARGS__ \
+  HID_USAGE ( HID_USAGE_DIGITIZER )                         ,\
+  HID_COLLECTION ( HID_COLLECTION_PHYSICAL )                ,\
+    HID_USAGE_PAGE ( HID_USAGE_PAGE_DIGITIZER )             ,\
+    /* Tip Pressure */\
+    HID_USAGE      ( 0x30 )                                 ,\
+    HID_LOGICAL_MIN ( 0x00                                )  ,\
+    HID_LOGICAL_MAX ( 0xff                                )  ,\
+    HID_REPORT_COUNT( 1                                      )  ,\
+    HID_REPORT_SIZE ( 8                                      )  ,\
+    HID_INPUT ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE )    ,\
+    \
+    HID_REPORT_COUNT( 5                                      )  ,\
+    HID_REPORT_SIZE ( 1                                      )  ,\
+    /* In range */\
+    HID_USAGE ( 0x32 )                       ,\
+    /* Tip switch */\
+    HID_USAGE ( 0x42 )                       ,\
+    /* Eraser */\
+    HID_USAGE ( 0x45 )                       ,\
+    /* Barrel switch */\
+    HID_USAGE ( 0x44 )                       ,\
+    /* Invert */\
+    HID_USAGE ( 0x3c )                       ,\
+    HID_INPUT ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE )    ,\
+    \
+    HID_REPORT_COUNT( 3                                      ) ,\
+    HID_REPORT_SIZE ( 1                                      ) ,\
+    HID_INPUT ( HID_CONSTANT )    ,\
+    /* X and Y coordinates */\
+    HID_USAGE_PAGE ( HID_USAGE_PAGE_DESKTOP )               ,\
+    HID_USAGE ( HID_USAGE_DESKTOP_X )                       ,\
+    HID_USAGE ( HID_USAGE_DESKTOP_Y )                       ,\
+    HID_LOGICAL_MIN ( 0 )                                   ,\
+    HID_LOGICAL_MAX_N ( 32767, 2 )                          ,\
+    HID_REPORT_SIZE ( 16 )                                  ,\
+    HID_REPORT_COUNT ( 2 )                                  ,\
+    HID_INPUT ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE)     ,\
+  HID_COLLECTION_END                                        ,\
+HID_COLLECTION_END
 
 #endif /* USB_DESCRIPTORS_H_ */

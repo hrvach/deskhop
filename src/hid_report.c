@@ -275,7 +275,6 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
 
 int32_t extract_kbd_data(
     uint8_t *raw_report, int len, uint8_t itf, hid_interface_t *iface, hid_keyboard_report_t *report) {
-    int report_id = raw_report[0];
 
     /* Clear the report to start fresh */
     memset(report, 0, KBD_REPORT_LENGTH);
@@ -285,9 +284,7 @@ int32_t extract_kbd_data(
         return _extract_kbd_boot(raw_report, len, report);
 
     /* NKRO is a special case */
-    if (report_id > 0
-        && report_id == iface->keyboard.nkro.report_id
-        && iface->keyboard.is_nkro)
+    if (iface->keyboard.is_nkro)
         return _extract_kbd_nkro(raw_report, len, iface, report);
 
     /* If we're getting 8 bytes of report, it's safe to assume standard modifier + reserved + keys */
