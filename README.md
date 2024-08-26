@@ -77,7 +77,7 @@ Alternatively, you can use the [pre-built images](https://github.com/hrvach/desk
 
 ## Upgrading firmware
 
-**Option 1** - (firmware 0.6 and later) Put the device in "config mode" by simultaneously pressing **left shift + right shift + c + o**. Device your keyboard is plugged into will reboot and turn into a USB drive called "DESKHOP". All you need to do is copy the .uf2 file to it. Once image is verified, device will flash and reboot, then proceed to upgrade the other board. During this operation the led will blink. Once it's done, it will write flash and reboot, completing the operation.
+**Option 1** - (firmware 0.6 and later) Put the device in "config mode" by simultaneously pressing **left ctrl + right shift + c + o**. Device your keyboard is plugged into will reboot and turn into a USB drive called "DESKHOP". All you need to do is copy the .uf2 file to it. Once image is verified, device will flash and reboot, then proceed to upgrade the other board. During this operation the led will blink. Once it's done, it will write flash and reboot, completing the operation.
 
 _Note_ - This is not an actual generic USB drive, you can't use it to copy files to it.
 
@@ -103,7 +103,7 @@ To make use of this feature, first set up the OS for each output in config (sinc
 
 ### Gaming Mode
 
-If you're gaming, there is a chance your game might not work properly with absolute mouse mode. To address that issue, a **gaming mode** is introduced, toggled by ```LEFT SHIFT + RIGHT SHIFT + G```. When in gaming mode, you are locked to the current screen and your mouse behaves like a standard relative mouse. This should also fix various virtual machine issues, currently unsupported operating systems etc.
+If you're gaming, there is a chance your game might not work properly with absolute mouse mode. To address that issue, a **gaming mode** is introduced, toggled by ```LEFT CTRL + RIGHT SHIFT + G```. When in gaming mode, you are locked to the current screen and your mouse behaves like a standard relative mouse. This should also fix various virtual machine issues, currently unsupported operating systems etc.
 
 ### Screensaver
 
@@ -208,10 +208,10 @@ The standard process to do that is using isopropyl alcohol and an old toothbrush
 
 ## Usage guide
 
-### Keyboard shortcuts - (fw versions 0.6+)
+### Keyboard shortcuts - (fw versions 0.64 +)
 
 _Config_
-- ```Left Shift + Right Shift + C + O``` - enter config mode
+- ~~```Left Shift```~~ ```Left Ctrl + Right Shift + C + O``` - enter config mode
 - ```Right Shift + F12 + D``` - remove flash config
 - ```Right Shift + F12 + Y``` - save screen switch offset
 - ```Right Shift + F12 + S``` - turn on/off screensaver option
@@ -220,8 +220,10 @@ _Usage_
 - ```Right CTRL + Right ALT``` - Toggle slower mouse mode
 - ```Right CTRL + K``` - Lock/Unlock mouse desktop switching
 - ```Right CTRL + L``` - Lock both outputs at once (set output OS before, see shortcuts below)
-- ```Left Shift + Right Shift + G``` - Toggle gaming mode (lock to screen, act as standard mouse)
+- ~~```Left Shift```~~ ```Left Ctrl + Right Shift + G``` - Toggle gaming mode (lock to screen, act as standard mouse)
 - ```Left CTRL + Caps Lock``` - Switch between outputs
+
+Note: some keyboards don't send both shifts at the same time properly, that's why the shortcut was changed - to work for everyone. Apologies for the confusion.
 
 ### Switch cursor height calibration
 
@@ -245,7 +247,7 @@ Your main screens need to be in the middle, and secondary screen(s) on the edges
 
 Starting with fw 0.6, an improved configuration mode is introduced. To configure your device, follow these instructions:
 
-1. Press Left Shift + Right Shift + C + O - your device will reboot and enter configuration mode (on the side your keyboard is plugged into). LED will keep blinking during the configuration session.
+1. Press Left Ctrl + Right Shift + C + O - your device will reboot and enter configuration mode (on the side your keyboard is plugged into). LED will keep blinking during the configuration session.
 2. A new USB drive will appear named "DESKHOP" with a single file, config.htm
 3. Open that file with Chromium / Chrome. Unfortunately FF is not supported right now, since they avoid implementing WebHID.
 4. Click connect and allow deskhop device to pair.
