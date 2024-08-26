@@ -375,14 +375,11 @@ Mouse polling should now work at 1000 Hz (the dips in the graph is my arm hurtin
 ## Sponsor / donate
 
 I'm NOT doing this for profit or any other reason except to try and help people by creating a better working environment for everyone.
+If you want to support the project further, please consider making a small donation towards a charity like **Doctors Without Borders**.
 
-I have, however, decided to accept donations for a single purpose only - to buy some keyboards/mice with media keys, buttons, nkro and other weird stuff people reported issues with in order to fix bugs, improve the state of the project and provide a better user experience overall.
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://donate.doctorswithoutborders.org/secure/donate)
 
-Having said that, if you want to support the project, you can use this link:
-
-[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=4RDC7JY5FNC78)
-
-Please allow me to thank everyone who helped or considering it, this already helped me expand support for a range of devices. Many thanks!
+Please allow me to thank everyone who helped or considering it!
 
 ## Disclaimer
 
