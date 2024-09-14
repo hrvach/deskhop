@@ -56,7 +56,7 @@ hotkey_combo_t hotkeys[] = {
      .keys           = {HID_KEY_G},
      .key_count      = 1,
      .acknowledge    = true,
-     .action_handler = &toggle_relative_mode_handler},
+     .action_handler = &toggle_gaming_mode_handler},
 
     /* Erase stored config */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,

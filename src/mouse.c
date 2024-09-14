@@ -184,8 +184,8 @@ void check_screen_switch(const mouse_values_t *values, device_t *state) {
 
     int direction = jump_left ? LEFT : RIGHT;
 
-    /* No switching allowed if explicitly disabled */
-    if (state->switch_lock)
+    /* No switching allowed if explicitly disabled or in gaming mode */
+    if (state->switch_lock || state->gaming_mode)
         return;
 
     /* No jump condition met == nothing to do, return */
@@ -243,7 +243,7 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
     };
 
     /* Workaround for Windows multiple desktops */
-    if (state->relative_mouse) {
+    if (state->relative_mouse || state->gaming_mode) {
         mouse_report.x = values->move_x;
         mouse_report.y = values->move_y;
         mouse_report.mode = RELATIVE;

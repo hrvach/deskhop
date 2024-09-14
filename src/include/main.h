@@ -124,7 +124,7 @@ enum packet_type_e {
     FLASH_LED_MSG        = 9,
     WIPE_CONFIG_MSG      = 10,
     HEARTBEAT_MSG        = 12,
-    RELATIVE_MODE_MSG    = 13,
+    GAMING_MODE_MSG      = 13,
     CONSUMER_CONTROL_MSG = 14,
     SYSTEM_CONTROL_MSG   = 15,
     SAVE_CONFIG_MSG      = 18,
@@ -185,7 +185,6 @@ typedef struct {
 /*********  Screen  **********/
 #define MIN_SCREEN_COORD 0
 #define MAX_SCREEN_COORD 32767
-#define SCREEN_MIDPOINT  16384
 
 /*********  Configuration storage definitions  **********/
 
@@ -424,6 +423,7 @@ typedef struct {
     bool switch_lock;        // True when device is prevented from switching
     bool onboard_led_state;  // True when LED is ON
     bool relative_mouse;     // True when relative mouse mode is used
+    bool gaming_mode;        // True when gaming mode is on (relative passthru + lock)
     bool config_mode_active; // True when config mode is active
     bool digitizer_active;   // True when digitizer Win/Mac workaround is active
 
@@ -534,7 +534,7 @@ void fw_upgrade_hotkey_handler_B(device_t *, hid_keyboard_report_t *);
 void mouse_zoom_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void all_keys_released_handler(device_t *);
 void switchlock_hotkey_handler(device_t *, hid_keyboard_report_t *);
-void toggle_relative_mode_handler(device_t *, hid_keyboard_report_t *);
+void toggle_gaming_mode_handler(device_t *, hid_keyboard_report_t *);
 void screenlock_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void output_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void wipe_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
@@ -561,7 +561,7 @@ void handle_heartbeat_msg(uart_packet_t *, device_t *);
 void handle_proxy_msg(uart_packet_t *, device_t *);
 void handle_api_msgs(uart_packet_t *, device_t *);
 void handle_api_read_all_msg(uart_packet_t *, device_t *);
-void handle_toggle_relative_msg(uart_packet_t *, device_t *);
+void handle_toggle_gaming_msg(uart_packet_t *, device_t *);
 
 void switch_output(device_t *, uint8_t);
 

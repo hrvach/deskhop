@@ -68,9 +68,9 @@ void switchlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
 }
 
 /* This key combo toggles gaming mode */
-void toggle_relative_mode_handler(device_t *state, hid_keyboard_report_t *report) {
-    state->relative_mouse ^= 1;
-    send_value(state->relative_mouse, RELATIVE_MODE_MSG);
+void toggle_gaming_mode_handler(device_t *state, hid_keyboard_report_t *report) {
+    state->gaming_mode ^= 1;
+    send_value(state->gaming_mode, GAMING_MODE_MSG);
 };
 
 /* This key combo locks both outputs simultaneously */
@@ -229,9 +229,9 @@ void handle_proxy_msg(uart_packet_t *packet, device_t *state) {
     queue_packet(&packet->data[1], (enum packet_type_e)packet->data[0], PACKET_DATA_LENGTH - 1);
 }
 
-/* Process request to reboot the board */
-void handle_toggle_relative_msg(uart_packet_t *packet, device_t *state) {
-    state->relative_mouse = packet->data[0];
+/* Process relative mouse command */
+void handle_toggle_gaming_msg(uart_packet_t *packet, device_t *state) {
+    state->gaming_mode = packet->data[0];
 }
 
 /* Process api communication messages */
