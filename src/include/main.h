@@ -66,7 +66,7 @@
 
 /*********  Pinout definitions  **********/
 #define PIO_USB_DP_PIN 14 // D+ is pin 14, D- is pin 15
-#define GPIO_LED_PIN   25 // LED is connected to pin 25 on a PICO
+#define GPIO_LED_PIN   18 // LED is connected to pin 25 on a PICO
 
 #define BOARD_A_RX 13
 #define BOARD_A_TX 12
