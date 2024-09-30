@@ -1,0 +1,58 @@
+{# templates/form.html #}
+
+{% set key = item.key %}
+
+{% macro input(item, type='text', class='api', name='name') %}
+<input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}"
+  onchange="valueChangedHandler(this)"
+{% endmacro %}
+
+{% macro label(item, class='label-inline', add='') %}
+<label class="{{class}}"> {{ item.name }}{{ add }}</label>
+{% endmacro %}
+
+{% block form_render %}
+  {% if item.get("elem") == "hex_info" %}
+    {{ label(item, add=':') }}
+    {{ input(item, class='content api') }} data-hex readonly />
+
+  {% elif item.get("elem") == "label" %}
+    {{ label(item, class='') }}
+
+  {% elif item.get("elem") == "range" %}
+  <div class="clearfix">
+    <form>
+      {{ label(item, add='=') }}
+
+      {{ input(item, class='input-inline', type='number', name='aInput') }}
+        readonly oninput="this.form.aRange{{ key }}.value=this.value" />
+
+      {{ input(item, class='range api', type='range', name='aRange') }}
+        min="{{ item.values.min }}" max="{{ item.values.max }}" oninput="this.form.aInput{{key}}.value=this.value" />
+    </form>
+
+  </div>
+
+  {% elif item.get("elem") == "checkbox" %}
+  <div class="clearfix">
+    {{ label(item) }}
+    {{ input(item, type="checkbox") }}  />
+
+  </div>
+
+  {% elif item["values"] %}
+    {{ label(item, class='') }}
+    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" required>
+    <option disabled selected value></option>
+
+    {% for k, v in item["values"].items() %}
+    <option value="{{ k }}">{{ v }}</option>
+    {% endfor %}
+    </select><br />
+
+  {% else %}
+      {{ label(item, class='') }}
+      {{ input(item) }}  />
+
+  {% endif %}
+{% endblock %}

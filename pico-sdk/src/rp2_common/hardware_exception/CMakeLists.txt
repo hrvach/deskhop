@@ -1,0 +1,2 @@
+pico_simple_hardware_target(exception)
+pico_mirrored_target_link_libraries(hardware_exception INTERFACE hardware_sync)

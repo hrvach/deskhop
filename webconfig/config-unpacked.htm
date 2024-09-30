@@ -1,0 +1,1912 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /*!
+  * Milligram v1.4.1
+  * https://milligram.io
+  *
+  * Copyright (c) 2020 CJ Patoilo
+  * Licensed under the MIT license
+ */
+
+*,
+*:after,
+*:before {
+  box-sizing: inherit;
+}
+
+:root {
+  --highlight-color: #384955;
+  --font-color: #384955;
+  --highlight-color2: #5e9f41;
+}
+
+html {
+  box-sizing: border-box;
+  font-size: 62.5%;
+}
+
+body {
+  color: var(--font-color);
+  font-family: 'Roboto', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 1.6em;
+  font-weight: 300;
+  letter-spacing: .01em;
+  line-height: 1.6;
+}
+
+blockquote {
+  border-left: 0.3rem solid #384955;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 1rem 1.5rem;
+}
+
+blockquote *:last-child {
+  margin-bottom: 0;
+}
+
+.button,
+button,
+input[type='button'],
+input[type='reset'],
+input[type='submit'] {
+  background-color: var(--highlight-color);
+  border: 0.1rem solid var(--highlight-color);
+  border-radius: .4rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 700;
+  height: 3.8rem;
+  letter-spacing: .1rem;
+  line-height: 3.8rem;
+  padding: 0.0rem 2.0rem;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.button:focus, .button:hover,
+button:focus,
+button:hover,
+input[type='button']:focus,
+input[type='button']:hover,
+input[type='reset']:focus,
+input[type='reset']:hover,
+input[type='submit']:focus,
+input[type='submit']:hover {
+  background-color: var(--highlight-color2);
+  border-color: var(--highlight-color2);
+  color: #fff;
+  outline: 0;
+}
+
+.button[disabled],
+button[disabled],
+input[type='button'][disabled],
+input[type='reset'][disabled],
+input[type='submit'][disabled] {
+  cursor: default;
+  opacity: .5;
+}
+
+.button[disabled]:focus, .button[disabled]:hover,
+button[disabled]:focus,
+button[disabled]:hover,
+input[type='button'][disabled]:focus,
+input[type='button'][disabled]:hover,
+input[type='reset'][disabled]:focus,
+input[type='reset'][disabled]:hover,
+input[type='submit'][disabled]:focus,
+input[type='submit'][disabled]:hover {
+  background-color: var(--highlight-color);
+  border-color: var(--highlight-color);
+}
+
+.button.button-outline,
+button.button-outline,
+input[type='button'].button-outline,
+input[type='reset'].button-outline,
+input[type='submit'].button-outline {
+  background-color: transparent;
+  color: var(--highlight-color);
+}
+
+.button.button-outline:focus, .button.button-outline:hover,
+button.button-outline:focus,
+button.button-outline:hover,
+input[type='button'].button-outline:focus,
+input[type='button'].button-outline:hover,
+input[type='reset'].button-outline:focus,
+input[type='reset'].button-outline:hover,
+input[type='submit'].button-outline:focus,
+input[type='submit'].button-outline:hover {
+  background-color: transparent;
+  border-color: var(--highlight-color2);
+  color: var(--highlight-color2);
+}
+
+.button.button-outline[disabled]:focus, .button.button-outline[disabled]:hover,
+button.button-outline[disabled]:focus,
+button.button-outline[disabled]:hover,
+input[type='button'].button-outline[disabled]:focus,
+input[type='button'].button-outline[disabled]:hover,
+input[type='reset'].button-outline[disabled]:focus,
+input[type='reset'].button-outline[disabled]:hover,
+input[type='submit'].button-outline[disabled]:focus,
+input[type='submit'].button-outline[disabled]:hover {
+  border-color: inherit;
+  color: var(--highlight-color);
+}
+
+.button.button-clear,
+button.button-clear,
+input[type='button'].button-clear,
+input[type='reset'].button-clear,
+input[type='submit'].button-clear {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--highlight-color);
+}
+
+.button.button-clear:focus, .button.button-clear:hover,
+button.button-clear:focus,
+button.button-clear:hover,
+input[type='button'].button-clear:focus,
+input[type='button'].button-clear:hover,
+input[type='reset'].button-clear:focus,
+input[type='reset'].button-clear:hover,
+input[type='submit'].button-clear:focus,
+input[type='submit'].button-clear:hover {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--highlight-color2);
+}
+
+.button.button-clear[disabled]:focus, .button.button-clear[disabled]:hover,
+button.button-clear[disabled]:focus,
+button.button-clear[disabled]:hover,
+input[type='button'].button-clear[disabled]:focus,
+input[type='button'].button-clear[disabled]:hover,
+input[type='reset'].button-clear[disabled]:focus,
+input[type='reset'].button-clear[disabled]:hover,
+input[type='submit'].button-clear[disabled]:focus,
+input[type='submit'].button-clear[disabled]:hover {
+  color: var(--highlight-color);
+}
+
+.button.button-shifted {
+  margin-left: 10%;
+}
+
+code {
+  background: #f4f5f6;
+  border-radius: .4rem;
+  font-size: 86%;
+  margin: 0 .2rem;
+  padding: .2rem .5rem;
+  white-space: nowrap;
+}
+
+pre {
+  background: #f4f5f6;
+  border-left: 0.3rem solid var(--highlight-color);
+  overflow-y: hidden;
+}
+
+pre > code {
+  border-radius: 0;
+  display: block;
+  padding: 1rem 1.5rem;
+  white-space: pre;
+}
+
+hr {
+  border: 0;
+  border-top: 0.1rem dotted lightblue;
+  margin: 1.0rem 3.0rem;
+}
+
+input[type='color'],
+input[type='date'],
+input[type='datetime'],
+input[type='datetime-local'],
+input[type='email'],
+input[type='month'],
+input[type='password'],
+input[type='search'],
+input[type='number'],
+input[type='tel'],
+input[type='text'],
+input[type='url'],
+input[type='week'],
+input:not([type]),
+textarea,
+select {
+  -webkit-appearance: none;
+  background-color: transparent;
+  border: 0.1rem solid #d1d1d1;
+  border-radius: .4rem;
+  box-shadow: none;
+  box-sizing: inherit;
+  height: 3.8rem;
+  padding: .6rem 1.0rem .7rem;
+  width: 100%;
+}
+
+input[type='color']:focus,
+input[type='date']:focus,
+input[type='datetime']:focus,
+input[type='datetime-local']:focus,
+input[type='email']:focus,
+input[type='month']:focus,
+input[type='number']:focus,
+input[type='password']:focus,
+input[type='search']:focus,
+input[type='tel']:focus,
+input[type='text']:focus,
+input[type='url']:focus,
+input[type='week']:focus,
+input:not([type]):focus,
+textarea:focus,
+select:focus {
+  border-color: var(--highlight-color);
+  outline: 0;
+}
+
+select {
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 8" width="30"><path fill="%23d1d1d1" d="M0,0l6,8l6-8"/></svg>') center right no-repeat;
+  padding-right: 3.0rem;
+}
+
+select:focus {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 8" width="30"><path fill="%239b4dca" d="M0,0l6,8l6-8"/></svg>');
+}
+
+select[multiple] {
+  background: none;
+  height: auto;
+}
+
+textarea {
+  min-height: 6.5rem;
+}
+
+label,
+legend {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: .5rem;
+}
+
+fieldset {
+  border-width: 0;
+  padding: 0;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  display: inline;
+}
+
+.label-inline {
+  display: inline-block;
+  font-weight: normal;
+  margin-left: .5rem;
+}
+
+.label-inline-bold {
+  display: inline-block;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+input[type='range'].input-inline,
+input[type='number'].input-inline {
+  display: inline-block;
+  font-weight: normal;
+  border: none;
+  width: 20%;
+}
+
+.range {
+  width: 100%;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 112.0rem;
+  padding: 0 2.0rem;
+  position: relative;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  width: 100%;
+}
+
+.row.row-no-padding {
+  padding: 0;
+}
+
+.row.row-no-padding > .column {
+  padding: 0;
+}
+
+.row.row-wrap {
+  flex-wrap: wrap;
+}
+
+.row.row-top {
+  align-items: flex-start;
+}
+
+.row.row-bottom {
+  align-items: flex-end;
+}
+
+.row.row-center {
+  align-items: center;
+}
+
+.row.row-stretch {
+  align-items: stretch;
+}
+
+.row.row-baseline {
+  align-items: baseline;
+}
+
+.row .column {
+  display: block;
+  flex: 1 1 auto;
+  margin-left: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.row .column.column-offset-10 {
+  margin-left: 10%;
+}
+
+.row .column.column-offset-20 {
+  margin-left: 20%;
+}
+
+.row .column.column-offset-25 {
+  margin-left: 25%;
+}
+
+.row .column.column-offset-33, .row .column.column-offset-34 {
+  margin-left: 33.3333%;
+}
+
+.row .column.column-offset-40 {
+  margin-left: 40%;
+}
+
+.row .column.column-offset-50 {
+  margin-left: 50%;
+}
+
+.row .column.column-offset-60 {
+  margin-left: 60%;
+}
+
+.row .column.column-offset-66, .row .column.column-offset-67 {
+  margin-left: 66.6666%;
+}
+
+.row .column.column-offset-75 {
+  margin-left: 75%;
+}
+
+.row .column.column-offset-80 {
+  margin-left: 80%;
+}
+
+.row .column.column-offset-90 {
+  margin-left: 90%;
+}
+
+.row .column.column-10 {
+  flex: 0 0 10%;
+  max-width: 10%;
+}
+
+.row .column.column-20 {
+  flex: 0 0 20%;
+  max-width: 20%;
+}
+
+.row .column.column-25 {
+  flex: 0 0 25%;
+  max-width: 25%;
+}
+
+.row .column.column-33, .row .column.column-34 {
+  flex: 0 0 33.3333%;
+  max-width: 33.3333%;
+}
+
+.row .column.column-40 {
+  flex: 0 0 40%;
+  max-width: 40%;
+}
+
+.row .column.column-50 {
+  flex: 0 0 50%;
+  max-width: 50%;
+}
+
+.row .column.column-60 {
+  flex: 0 0 60%;
+  max-width: 60%;
+}
+
+.row .column.column-66, .row .column.column-67 {
+  flex: 0 0 66.6666%;
+  max-width: 66.6666%;
+}
+
+.row .column.column-75 {
+  flex: 0 0 75%;
+  max-width: 75%;
+}
+
+.row .column.column-80 {
+  flex: 0 0 80%;
+  max-width: 80%;
+}
+
+.row .column.column-90 {
+  flex: 0 0 90%;
+  max-width: 90%;
+}
+
+.row .column .column-top {
+  align-self: flex-start;
+}
+
+.row .column .column-bottom {
+  align-self: flex-end;
+}
+
+.row .column .column-center {
+  align-self: center;
+}
+
+@media (min-width: 40rem) {
+  .row {
+    flex-direction: row;
+
+    width: calc(100% + 2.0rem);
+  }
+  .row .column {
+    margin-bottom: inherit;
+    padding: 0 1.0rem;
+  }
+}
+
+a {
+  color: var(--highlight-color);
+  text-decoration: none;
+}
+
+a:focus, a:hover {
+  color: var(--highlight-color2);
+}
+
+dl,
+ol,
+ul {
+  list-style: none;
+  margin-top: 0;
+  padding-left: 0;
+}
+
+dl dl,
+dl ol,
+dl ul,
+ol dl,
+ol ol,
+ol ul,
+ul dl,
+ul ol,
+ul ul {
+  font-size: 90%;
+  margin: 1.5rem 0 1.5rem 3.0rem;
+}
+
+ol {
+  list-style: decimal inside;
+}
+
+ul {
+  list-style: circle inside;
+}
+
+.button,
+button,
+dd,
+dt,
+li {
+  margin-bottom: 1.0rem;
+}
+
+fieldset,
+input,
+select,
+textarea {
+  margin-bottom: 1.5rem;
+}
+
+blockquote,
+dl,
+figure,
+form,
+ol,
+p,
+pre,
+table,
+ul {
+  margin-bottom: 2.5rem;
+}
+
+table {
+  border-spacing: 0;
+  display: block;
+  overflow-x: auto;
+  text-align: left;
+  width: 100%;
+}
+
+td,
+th {
+  border-bottom: 0.1rem solid #e1e1e1;
+  padding: 1.2rem 1.5rem;
+}
+
+td:first-child,
+th:first-child {
+  padding-left: 0;
+}
+
+td:last-child,
+th:last-child {
+  padding-right: 0;
+}
+
+@media (min-width: 40rem) {
+  table {
+    display: table;
+    overflow-x: initial;
+  }
+}
+
+b,
+strong {
+  font-weight: bold;
+}
+
+p {
+  margin-top: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 300;
+  letter-spacing: -.1rem;
+  margin-bottom: 2.0rem;
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 4.6rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 3.6rem;
+  line-height: 1.25;
+}
+
+h3 {
+  font-size: 2.8rem;
+  line-height: 1.3;
+}
+
+h4 {
+  font-size: 2.2rem;
+  letter-spacing: -.08rem;
+  line-height: 1.35;
+}
+
+h5 {
+  font-size: 1.8rem;
+  letter-spacing: -.05rem;
+  line-height: 1.5;
+}
+
+h6 {
+  font-size: 1.6rem;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+img {
+  max-width: 100%;
+}
+
+.clearfix:after {
+  clear: both;
+  content: ' ';
+  display: table;
+}
+
+.float-left {
+  float: left;
+}
+
+.float-right {
+  float: right;
+}
+
+.online {
+  opacity: 0.5;
+}
+  </style>
+
+  <title>DeskHop Config</title>
+</head>
+
+<body>
+
+  <main class="wrapper">
+
+    <section class="container">
+
+      <div class="row" id="warning" style="display: none;">
+        <blockquote>
+          <h3> Oh, no! </h3>
+          Unfortunately, your browser does not support WebHID or the Permissions Policy is blocking its usage. Please try Chromium <br />
+          (or Chrome if you have to). Apologies for the inconvenience, hopefully a cross-browser solution happens soon.
+        </blockquote>
+      </div>
+
+      <div class="row">
+
+        <div class="column column-80" style="padding-top: 1%;">
+          <h3>Desk<span style="color: #5e9f41;">Hop</span> Config</h3>
+        </div>
+      </div>
+
+      <div class="column" style="border: 2px solid #d7e5f0; padding-right: 3em;">
+
+
+      <div class="row">
+        <div class="column column-20" style="margin-right: 2em; padding-top: 2em; background-color: #d7e5f0">
+
+          <svg style="width:180px; height:110px; stroke:#384955; stroke-width:1px; fill:white">
+            <g transform="translate(-135, -190) scale (2)">
+              <path d="m 88.742006,98.633938 c -0.12648,0.0838 -0.252994,0.223292 -0.309214,0.320992 -0.0984,0.223308 0.337328,26.23798 0.44977,26.53106 0.0984,0.2512 0.42166,0.41868 0.74493,0.41868 0.309218,0 0.224886,0.0838 3.837102,-3.37742 l 1.672582,-1.56312 0.210828,0.43264 c 0.11244,0.23728 1.236868,2.5261 2.473736,5.09408 1.9818,4.11712 2.27696,4.68934 2.47373,4.81496 0.16868,0.1116 0.28111,0.1396 0.44977,0.1256 0.16868,-0.014 5.34102,-2.42842 6.21245,-2.88898 0.253,-0.1396 0.42166,-0.4187 0.42166,-0.68386 0,-0.1814 -0.59032,-1.4654 -2.44562,-5.28946 -1.33526,-2.77734 -2.43157,-5.06616 -2.40346,-5.09408 0.0281,-0.0278 1.57419,-0.23728 3.4295,-0.47452 1.8553,-0.23724 3.47166,-0.47452 3.5841,-0.5164 0.23894,-0.1116 0.46383,-0.43262 0.46383,-0.6699 0,-0.0838 -0.0562,-0.25122 -0.11244,-0.36286 -0.0703,-0.1256 -1.02604,-0.963 -2.41752,-2.09346 -1.26498,-1.03276 -5.80484,-4.75912 -10.077656,-8.29008 -4.272816,-3.53096 -7.842866,-6.447844 -7.941254,-6.489712 -0.23894,-0.12554 -0.47788,-0.11164 -0.71682,0.0558 z" />
+              <path d="m 112.69484,105.14605 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 17.58204 a 1.8639801,1.8639801 0 0 0 1.86328,-1.86328 1.8639801,1.8639801 0 0 0 -1.86328,-1.86328 z" />
+              <path d="m 136.31594,110.95075 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 2.71874 a 1.8639801,1.8639801 0 0 0 1.8672,-1.86328 1.8639801,1.8639801 0 0 0 -1.8672,-1.86328 z" />
+              <path d="m 121.55422,128.36481 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 2.72266 a 1.8639801,1.8639801 0 0 0 1.86328,-1.86328 1.8639801,1.8639801 0 0 0 -1.86328,-1.86328 z" />
+              <path d="m 121.55812,110.83355 a 1.8639801,1.8639801 0 0 0 -1.86328,1.8672 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 4.15626 a 1.8639801,1.8639801 0 0 0 1.86328,-1.86328 1.8639801,1.8639801 0 0 0 -1.86328,-1.8672 z" />
+              <path d="m 118.64406,116.75543 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.86328 h 24.70704 a 1.8639801,1.8639801 0 0 0 1.86718,-1.86328 1.8639801,1.8639801 0 0 0 -1.86718,-1.86328 z" />
+              <path d="m 129.55812,122.56011 a 1.8639801,1.8639801 0 0 0 -1.86328,1.86328 1.8639801,1.8639801 0 0 0 1.86328,1.8633 h 10.6836 a 1.8639801,1.8639801 0 0 0 1.86328,-1.8633 1.8639801,1.8639801 0 0 0 -1.86328,-1.86328 z" />
+              <path d="m 104.01516,99.341366 a 1.8639801,1.8639801 0 0 0 -1.86329,1.863284 1.8639801,1.8639801 0 0 0 1.86329,1.86328 h 27.4375 a 1.8639801,1.8639801 0 0 0 1.86718,-1.86328 1.8639801,1.8639801 0 0 0 -1.86718,-1.863284 z" />
+            </g>
+          </svg>
+
+          <div id="menu-buttons">
+            <button data-handler="connectHandler" class="button button-clear button-shifted">Connect</button><br />
+            <button data-handler="readHandler" class="button button-clear button-shifted online">Read</button><br />
+            <button data-handler="saveHandler" class="button button-clear button-shifted online">Save</button><br />
+            <button data-handler="rebootHandler" class="button button-clear button-shifted online">Exit</button><br />
+
+            <hr />
+            <button data-handler="blinkHandler" class="button button-clear button-shifted online">Blink</button><br />
+            <button data-handler="blinkBothHandler" class="button button-clear button-shifted online">Blink both</button><br />
+            <button data-handler="enterBootloaderHandler" class="button button-clear button-shifted online">Bootloader</button><br />
+            <button data-handler="wipeConfigHandler" class="button button-clear button-shifted online">Wipe Config</button><br />
+
+          </div>
+
+        </div>
+
+        <div class="column" style="padding-top: 2em;">
+
+          <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="90" height="70" stroke="black" stroke-width="2" fill="#beffa1" rx="10" ry="10" />
+            <line x1="50" y1="90" x2="50" y2="75" stroke="black" stroke-width="2" />
+            <rect x="30" y="90" width="40" height="3" stroke="black" stroke-width="2" fill="#d7e5f0" rx="5" ry="5" />
+          </svg>
+
+            <h3>Output A</h3>
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Screen Count</label>
+
+    <select class="api" data-type="uint32" data-key="11" required>
+    <option disabled selected value></option>
+
+    
+    <option value="1">1</option>
+    
+    <option value="2">2</option>
+    
+    <option value="3">3</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    <form>
+      
+<label class="label-inline"> Speed X=</label>
+
+
+      
+<input class="input-inline" type="number" name="aInput12" data-type="int32" data-key="12"
+  onchange="valueChangedHandler(this)"
+
+        readonly oninput="this.form.aRange12.value=this.value" />
+
+      
+<input class="range api" type="range" name="aRange12" data-type="int32" data-key="12"
+  onchange="valueChangedHandler(this)"
+
+        min="" max="" oninput="this.form.aInput12.value=this.value" />
+    </form>
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    <form>
+      
+<label class="label-inline"> Speed Y=</label>
+
+
+      
+<input class="input-inline" type="number" name="aInput13" data-type="int32" data-key="13"
+  onchange="valueChangedHandler(this)"
+
+        readonly oninput="this.form.aRange13.value=this.value" />
+
+      
+<input class="range api" type="range" name="aRange13" data-type="int32" data-key="13"
+  onchange="valueChangedHandler(this)"
+
+        min="" max="" oninput="this.form.aInput13.value=this.value" />
+    </form>
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+      
+<label class=""> Border Top</label>
+
+      
+<input class="api" type="text" name="name14" data-type="int32" data-key="14"
+  onchange="valueChangedHandler(this)"
+  />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+      
+<label class=""> Border Bottom</label>
+
+      
+<input class="api" type="text" name="name15" data-type="int32" data-key="15"
+  onchange="valueChangedHandler(this)"
+  />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Operating System</label>
+
+    <select class="api" data-type="uint8" data-key="16" required>
+    <option disabled selected value></option>
+
+    
+    <option value="1">Linux</option>
+    
+    <option value="2">MacOS</option>
+    
+    <option value="3">Windows</option>
+    
+    <option value="4">Android</option>
+    
+    <option value="255">Other</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Screen Position</label>
+
+    <select class="api" data-type="uint8" data-key="17" required>
+    <option disabled selected value></option>
+
+    
+    <option value="1">Left</option>
+    
+    <option value="2">Right</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Cursor Park Position</label>
+
+    <select class="api" data-type="uint8" data-key="18" required>
+    <option disabled selected value></option>
+
+    
+    <option value="0">Top</option>
+    
+    <option value="1">Bottom</option>
+    
+    <option value="3">Previous</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Screensaver</label>
+
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Mode</label>
+
+    <select class="api" data-type="uint8" data-key="19" required>
+    <option disabled selected value></option>
+
+    
+    <option value="0">Disabled</option>
+    
+    <option value="1">Pong</option>
+    
+    <option value="2">Jitter</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    
+<label class="label-inline"> Only If Inactive</label>
+
+    
+<input class="api" type="checkbox" name="name20" data-type="uint8" data-key="20"
+  onchange="valueChangedHandler(this)"
+  />
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+      
+<label class=""> Idle Time (μs)</label>
+
+      
+<input class="api" type="text" name="name21" data-type="uint64" data-key="21"
+  onchange="valueChangedHandler(this)"
+  />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+      
+<label class=""> Max Time (μs)</label>
+
+      
+<input class="api" type="text" name="name22" data-type="uint64" data-key="22"
+  onchange="valueChangedHandler(this)"
+  />
+
+  
+
+            
+
+        </div>
+        <div class="column" style="padding-top: 2em;">
+
+          <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="90" height="70" stroke="black" stroke-width="2" fill="#beffa1" rx="10" ry="10" />
+            <line x1="50" y1="90" x2="50" y2="75" stroke="black" stroke-width="2" />
+            <rect x="30" y="90" width="40" height="3" stroke="black" stroke-width="2" fill="#d7e5f0" rx="5" ry="5" />
+          </svg>
+
+            <h3>Output B</h3>
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Screen Count</label>
+
+    <select class="api" data-type="uint32" data-key="41" required>
+    <option disabled selected value></option>
+
+    
+    <option value="1">1</option>
+    
+    <option value="2">2</option>
+    
+    <option value="3">3</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    <form>
+      
+<label class="label-inline"> Speed X=</label>
+
+
+      
+<input class="input-inline" type="number" name="aInput42" data-type="int32" data-key="42"
+  onchange="valueChangedHandler(this)"
+
+        readonly oninput="this.form.aRange42.value=this.value" />
+
+      
+<input class="range api" type="range" name="aRange42" data-type="int32" data-key="42"
+  onchange="valueChangedHandler(this)"
+
+        min="" max="" oninput="this.form.aInput42.value=this.value" />
+    </form>
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    <form>
+      
+<label class="label-inline"> Speed Y=</label>
+
+
+      
+<input class="input-inline" type="number" name="aInput43" data-type="int32" data-key="43"
+  onchange="valueChangedHandler(this)"
+
+        readonly oninput="this.form.aRange43.value=this.value" />
+
+      
+<input class="range api" type="range" name="aRange43" data-type="int32" data-key="43"
+  onchange="valueChangedHandler(this)"
+
+        min="" max="" oninput="this.form.aInput43.value=this.value" />
+    </form>
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+      
+<label class=""> Border Top</label>
+
+      
+<input class="api" type="text" name="name44" data-type="int32" data-key="44"
+  onchange="valueChangedHandler(this)"
+  />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+      
+<label class=""> Border Bottom</label>
+
+      
+<input class="api" type="text" name="name45" data-type="int32" data-key="45"
+  onchange="valueChangedHandler(this)"
+  />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Operating System</label>
+
+    <select class="api" data-type="uint8" data-key="46" required>
+    <option disabled selected value></option>
+
+    
+    <option value="1">Linux</option>
+    
+    <option value="2">MacOS</option>
+    
+    <option value="3">Windows</option>
+    
+    <option value="4">Android</option>
+    
+    <option value="255">Other</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Screen Position</label>
+
+    <select class="api" data-type="uint8" data-key="47" required>
+    <option disabled selected value></option>
+
+    
+    <option value="1">Left</option>
+    
+    <option value="2">Right</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Cursor Park Position</label>
+
+    <select class="api" data-type="uint8" data-key="48" required>
+    <option disabled selected value></option>
+
+    
+    <option value="0">Top</option>
+    
+    <option value="1">Bottom</option>
+    
+    <option value="3">Previous</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Screensaver</label>
+
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Mode</label>
+
+    <select class="api" data-type="uint8" data-key="49" required>
+    <option disabled selected value></option>
+
+    
+    <option value="0">Disabled</option>
+    
+    <option value="1">Pong</option>
+    
+    <option value="2">Jitter</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    
+<label class="label-inline"> Only If Inactive</label>
+
+    
+<input class="api" type="checkbox" name="name50" data-type="uint8" data-key="50"
+  onchange="valueChangedHandler(this)"
+  />
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+      
+<label class=""> Idle Time (μs)</label>
+
+      
+<input class="api" type="text" name="name51" data-type="uint64" data-key="51"
+  onchange="valueChangedHandler(this)"
+  />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+      
+<label class=""> Max Time (μs)</label>
+
+      
+<input class="api" type="text" name="name52" data-type="uint64" data-key="52"
+  onchange="valueChangedHandler(this)"
+  />
+
+  
+
+            
+
+        </div>
+
+      </div>
+
+      <div class="row">
+        <div class="column column-20" style="background-color: #d7e5f0; margin-right: 2em;">
+        </div>
+        <div class="column-20" style="background-color: #d7e5f0;">
+        </div>
+
+        <div class="column">
+
+
+          <h3>Common Config</h3>
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Mouse</label>
+
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    
+<label class="label-inline"> Force Mouse Boot Mode</label>
+
+    
+<input class="api" type="checkbox" name="name71" data-type="uint8" data-key="71"
+  onchange="valueChangedHandler(this)"
+  />
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    
+<label class="label-inline"> Enable Acceleration</label>
+
+    
+<input class="api" type="checkbox" name="name75" data-type="uint8" data-key="75"
+  onchange="valueChangedHandler(this)"
+  />
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    <form>
+      
+<label class="label-inline"> Jump Treshold=</label>
+
+
+      
+<input class="input-inline" type="number" name="aInput77" data-type="uint16" data-key="77"
+  onchange="valueChangedHandler(this)"
+
+        readonly oninput="this.form.aRange77.value=this.value" />
+
+      
+<input class="range api" type="range" name="aRange77" data-type="uint16" data-key="77"
+  onchange="valueChangedHandler(this)"
+
+        min="" max="" oninput="this.form.aInput77.value=this.value" />
+    </form>
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+    
+<label class=""> Keyboard</label>
+
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    
+<label class="label-inline"> Force KBD Boot Protocol</label>
+
+    
+<input class="api" type="checkbox" name="name72" data-type="uint8" data-key="72"
+  onchange="valueChangedHandler(this)"
+  />
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    
+<label class="label-inline"> KBD LED as Indicator</label>
+
+    
+<input class="api" type="checkbox" name="name73" data-type="uint8" data-key="73"
+  onchange="valueChangedHandler(this)"
+  />
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
+    
+<label class="label-inline"> Enforce Ports</label>
+
+    
+<input class="api" type="checkbox" name="name76" data-type="uint8" data-key="76"
+  onchange="valueChangedHandler(this)"
+  />
+
+  </div>
+
+  
+
+            
+
+          <input type="submit" value="Save" id="submitButton">
+        </div>
+
+        <div class="column">
+          <h3>Device Status</h3>
+
+          
+            
+
+
+
+
+
+
+
+
+  
+    
+<label class="label-inline"> Running FW version:</label>
+
+    
+<input class="content api" type="text" name="name78" data-type="uint16" data-key="78"
+  onchange="valueChangedHandler(this)"
+ data-hex readonly />
+
+  
+
+          
+            
+
+
+
+
+
+
+
+
+  
+    
+<label class="label-inline"> Running FW checksum:</label>
+
+    
+<input class="content api" type="text" name="name79" data-type="uint32" data-key="79"
+  onchange="valueChangedHandler(this)"
+ data-hex readonly />
+
+  
+
+          
+
+        </div>
+
+      </div>
+    </div>
+    </section>
+  </main>
+
+  <script>
+  const mgmtReportId = 6;
+var device;
+
+const packetType = {
+  keyboardReportMsg: 1, mouseReportMsg: 2, outputSelectMsg: 3, firmwareUpgradeMsg: 4, switchLockMsg: 7,
+  syncBordersMsg: 8, flashLedMsg: 9, wipeConfigMsg: 10, readConfigMsg: 16, writeConfigMsg: 17, saveConfigMsg: 18,
+  rebootMsg: 19, getValMsg: 20, setValMsg: 21, getValAllMsg: 22, proxyPacketMsg: 23
+};
+
+function calcChecksum(report) {
+  let checksum = 0;
+  for (let i = 3; i < 11; i++)
+    checksum ^= report[i];
+
+  return checksum;
+}
+
+async function sendReport(type, payload = [], sendBoth = false) {
+  if (!device || !device.opened)
+    return;
+
+  /* First send this one, if the first one gets e.g. rebooted */
+  if (sendBoth) {
+    var reportProxy = makeReport(type, payload, true);
+    await device.sendReport(mgmtReportId, reportProxy);
+    }
+
+    var report = makeReport(type, payload, false);
+    await device.sendReport(mgmtReportId, report);
+}
+
+function makeReport(type, payload, proxy=false) {
+  var dataOffset = proxy ? 4 : 3;
+  report = new Uint8Array([0xaa, 0x55, type, ...new Array(9).fill(0)]);
+
+  if (proxy)
+    report = new Uint8Array([0xaa, 0x55, packetType.proxyPacketMsg, type, ...new Array(7).fill(0), type]);
+
+  if (payload) {
+    report.set([...payload], dataOffset);
+    report[report.length - 1] = calcChecksum(report);
+  }
+  return report;
+}
+
+function packValue(element, key, dataType, buffer) {
+  const dataOffset = 1;
+  var buffer = new ArrayBuffer(8);
+  var view = new DataView(buffer);
+
+  const methods = {
+    "uint32": view.setUint32,
+    "uint64": view.setUint32, /* Yes, I know. :-| */
+    "int32": view.setInt32,
+    "uint16": view.setUint16,
+    "uint8": view.setUint8,
+    "int16": view.setInt16,
+    "int8": view.setInt8
+  };
+
+  if (dataType in methods) {
+    const method = methods[dataType];
+    if (element.type === 'checkbox')
+      view.setUint8(dataOffset, element.checked ? 1 : 0, true);
+    else
+      method.call(view, dataOffset, element.value, true);
+  }
+
+  view.setUint8(0, key);
+  return new Uint8Array(buffer);
+}
+
+window.addEventListener('load', function () {
+  if (!("hid" in navigator)) {
+    document.getElementById('warning').style.display = 'block';
+  }
+
+  this.document.getElementById('menu-buttons').addEventListener('click', function (event) {
+    window[event.target.dataset.handler]();
+  })
+});
+
+document.getElementById('submitButton').addEventListener('click', async () => { await saveHandler(); });
+
+async function connectHandler() {
+  if (device && device.opened)
+    return;
+
+  var devices = await navigator.hid.requestDevice({
+    filters: [{ vendorId: 0x1209, productId: 0xc000, usagePage: 0xff00, usage: 0x10 }]
+  });
+
+  device = devices[0];
+  device.open().then(async () => {
+    device.addEventListener('inputreport', handleInputReport);
+    document.querySelectorAll('.online').forEach(element => { element.style.opacity = 1.0; });
+    await readHandler();
+  });
+}
+
+async function blinkHandler() {
+  await sendReport(packetType.flashLedMsg, []);
+}
+
+async function blinkBothHandler() {
+  await sendReport(packetType.flashLedMsg, [], true);
+}
+
+function getValue(element) {
+  if (element.type === 'checkbox')
+    return element.checked ? 1 : 0;
+  else
+    return element.value;
+}
+
+function setValue(element, value) {
+  element.setAttribute('fetched-value', value);
+
+  if (element.type === 'checkbox')
+    element.checked = value;
+  else
+    element.value = value;
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+
+function updateElement(key, event) {
+  var dataOffset = 4;
+  var element = document.querySelector(`[data-key="${key}"]`);
+
+  if (!element)
+    return;
+
+  const methods = {
+    "uint32": event.data.getUint32,
+    "uint64": event.data.getUint32, /* Yes, I know. :-| */
+    "int32": event.data.getInt32,
+    "uint16": event.data.getUint16,
+    "uint8": event.data.getUint8,
+    "int16": event.data.getInt16,
+    "int8": event.data.getInt8
+  };
+
+  dataType = element.getAttribute('data-type');
+
+  if (dataType in methods) {
+    var value = methods[dataType].call(event.data, dataOffset, true);
+    setValue(element, value);
+
+    if (element.hasAttribute('data-hex'))
+      setValue(element, parseInt(value).toString(16));
+  }
+}
+
+async function readHandler() {
+  if (!device || !device.opened)
+    await connectHandler();
+
+  await sendReport(packetType.getValAllMsg);
+}
+
+async function handleInputReport(event) {
+  var data = new Uint8Array(event.data.buffer);
+  var key = data[3];
+
+  updateElement(key, event);
+}
+
+async function rebootHandler() {
+  await sendReport(packetType.rebootMsg);
+}
+
+async function enterBootloaderHandler() {
+  await sendReport(packetType.firmwareUpgradeMsg, true, true);
+}
+
+async function valueChangedHandler(element) {
+  var key = element.getAttribute('data-key');
+  var dataType = element.getAttribute('data-type');
+
+  var origValue = element.getAttribute('fetched-value');
+  var newValue = getValue(element);
+
+  if (origValue != newValue) {
+    uintBuffer = packValue(element, key, dataType);
+
+    /* Send to both devices */
+    await sendReport(packetType.setValMsg, uintBuffer, true);
+
+    /* Set this as the current value */
+    element.setAttribute('fetched-value', newValue);
+  }
+}
+
+async function saveHandler() {
+  const elements = document.querySelectorAll('.api');
+
+  if (!device || !device.opened)
+    return;
+
+  for (const element of elements) {
+    var origValue = element.getAttribute('fetched-value')
+
+    if (element.hasAttribute('readonly'))
+      continue;
+
+    if (origValue != getValue(element))
+      await valueChangedHandler(element);
+  }
+  await sendReport(packetType.saveConfigMsg, [], true);
+}
+
+async function wipeConfigHandler() {
+  await sendReport(packetType.wipeConfigMsg, [], true);
+}
+  </script>
+</body>
+
+</html>
