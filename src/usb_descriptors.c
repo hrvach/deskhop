@@ -102,12 +102,12 @@ bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_
 // array of pointer to string descriptors
 char const *string_desc_arr[] = {
     (const char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
-    "Hrvoje Cavrak",            // 1: Manufacturer
-    "DeskHop Switch",           // 2: Product
+    "LoopMotion",            // 1: Manufacturer
+    "LoopMotion Switch",           // 2: Product
     "0",                        // 3: Serials, should use chip ID
-    "DeskHop Helper",           // 4: Mouse Helper Interface
-    "DeskHop Config",           // 5: Vendor Interface
-    "DeskHop Disk",             // 6: Disk Interface
+    "LoopMotion Helper",           // 4: Mouse Helper Interface
+    "LoopMotion Dashboard",           // 5: Vendor Interface
+    "LoopMotion Disk",             // 6: Disk Interface
 #ifdef DH_DEBUG
     "DeskHop Debug",            // 7: Debug Interface
 #endif
