@@ -219,6 +219,7 @@ void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t 
         values->move_x  = mouse_report->x;
         values->move_y  = mouse_report->y;
         values->wheel   = mouse_report->wheel;
+        values->pan     = mouse_report->pan;
         values->buttons = mouse_report->buttons;
         return;
     }
@@ -230,6 +231,7 @@ void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t 
     values->move_x  = get_report_value(raw_report, &iface->mouse.move_x);
     values->move_y  = get_report_value(raw_report, &iface->mouse.move_y);
     values->wheel   = get_report_value(raw_report, &iface->mouse.wheel);
+    values->pan     = get_report_value(raw_report, &iface->mouse.pan);
     values->buttons = get_report_value(raw_report, &iface->mouse.buttons);
 }
 
@@ -239,6 +241,7 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
         .x       = state->pointer_x,
         .y       = state->pointer_y,
         .wheel   = values->wheel,
+        .pan     = values->pan,
         .mode    = ABSOLUTE,
     };
 
@@ -296,7 +299,8 @@ void process_mouse_queue_task(device_t *state) {
         return;
 
     /* Try sending it to the host, if it's successful */
-    bool succeeded = tud_mouse_report(report.mode, report.buttons, report.x, report.y, report.wheel);
+    bool succeeded
+        = tud_mouse_report(report.mode, report.buttons, report.x, report.y, report.wheel, report.pan);
 
     /* ... then we can remove it from the queue */
     if (succeeded)

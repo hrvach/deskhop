@@ -98,6 +98,15 @@ HID_COLLECTION ( HID_COLLECTION_APPLICATION  )                   ,\
       HID_REPORT_SIZE ( 8                                      )  ,\
       HID_INPUT       ( HID_DATA | HID_VARIABLE | HID_RELATIVE )  ,\
       \
+      /* Horizontal wheel (AC Pan) */ \
+      HID_USAGE_PAGE  ( HID_USAGE_PAGE_CONSUMER               )   ,\
+      HID_LOGICAL_MIN ( 0x81                                   )   ,\
+      HID_LOGICAL_MAX ( 0x7f                                   )   ,\
+      HID_REPORT_COUNT( 1                                      )   ,\
+      HID_REPORT_SIZE ( 8                                      )   ,\
+      HID_USAGE_N     ( HID_USAGE_CONSUMER_AC_PAN, 2          )   ,\
+      HID_INPUT       ( HID_DATA | HID_VARIABLE | HID_RELATIVE )  ,\
+      \
       /* Mouse mode (0 = absolute, 1 = relative) */ \
       HID_REPORT_COUNT( 1                                      ), \
       HID_REPORT_SIZE ( 8                                      ), \

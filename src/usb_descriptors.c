@@ -81,10 +81,10 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
     }
 }
 
-bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel) {
-    mouse_report_t report = {.buttons = buttons, .wheel = wheel, .x = x, .y = y, .mode = mode};
     uint8_t instance = ITF_NUM_HID;
     uint8_t report_id = REPORT_ID_MOUSE;
+bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan) {
+    mouse_report_t report = {.buttons = buttons, .wheel = wheel, .x = x, .y = y, .mode = mode, .pan = pan};
 
     if (mode == RELATIVE) {
         instance = ITF_NUM_HID_REL_M;

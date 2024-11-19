@@ -177,7 +177,7 @@ typedef struct {
 #define KEYARRAY_BIT_OFFSET     16
 #define KEYS_IN_USB_REPORT      6
 #define KBD_REPORT_LENGTH       8
-#define MOUSE_REPORT_LENGTH     7
+#define MOUSE_REPORT_LENGTH     8
 #define CONSUMER_CONTROL_LENGTH 4
 #define SYSTEM_CONTROL_LENGTH   1
 #define MODIFIER_BIT_LENGTH     8
@@ -345,6 +345,7 @@ typedef struct TU_ATTR_PACKED {
     int16_t x;
     int16_t y;
     int8_t wheel;
+    int8_t pan;
     uint8_t mode;
 } mouse_report_t;
 
@@ -460,7 +461,7 @@ int32_t extract_bit_variable(uint32_t, uint32_t, uint8_t *, int, uint8_t *);
 int32_t extract_kbd_data(uint8_t *, int, uint8_t, hid_interface_t *, hid_keyboard_report_t *);
 
 /*********  Mouse  **********/
-bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel);
+bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan);
 
 void process_mouse_report(uint8_t *, int, uint8_t, hid_interface_t *);
 void parse_report_descriptor(hid_interface_t *, uint8_t const *, int);
