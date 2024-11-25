@@ -10,7 +10,7 @@ All I wanted was a way to use a keyboard shortcut to quickly switch outputs, pai
 
 ## Features
 
-- Completely **free and open source**
+- Completely **[free and open source](https://certification.oshwa.org/de000149.html)**
 - No noticeable delay when switching
 - Simply drag the mouse pointer between computers
 - No software installed
@@ -19,7 +19,7 @@ All I wanted was a way to use a keyboard shortcut to quickly switch outputs, pai
 - Full Galvanic isolation between your outputs
 - Works with Linux, macOS and Windows
 
-[Proudly certified](https://certification.oshwa.org/de000149.html) by the Open Source Hardware Association (oshwa.org)
+[User Manual](user-manual.pdf) is now available
 
 ![Image](img/oshw.svg)
 ------
@@ -52,9 +52,6 @@ To have a visual indication which output you are using at any given moment, you 
 It also remembers the LED state for each computer, so you can pick up exactly how you left it. 
 
 ![Image](img/demo-typing.gif)
-
-## User Manual
-To help you set up, configure and program the board available [read the manual provided here](user-manual.pdf).
 
 ## How to build
 
