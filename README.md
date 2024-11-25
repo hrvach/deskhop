@@ -19,9 +19,9 @@ All I wanted was a way to use a keyboard shortcut to quickly switch outputs, pai
 - Full Galvanic isolation between your outputs
 - Works with Linux, macOS and Windows
 
-![Image](img/oshw.svg)
 [Proudly certified](https://certification.oshwa.org/de000149.html) by the Open Source Hardware Association (oshwa.org)
 
+![Image](img/oshw.svg)
 ------
 
 ## How it works
