@@ -58,6 +58,20 @@ hotkey_combo_t hotkeys[] = {
      .acknowledge    = true,
      .action_handler = &toggle_gaming_mode_handler},
 
+    /* Enable screensaver for active output */
+    {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
+     .keys           = {HID_KEY_S},
+     .key_count      = 1,
+     .acknowledge    = true,
+     .action_handler = &enable_screensaver_hotkey_handler},
+
+    /* Disable screensaver for active output */
+    {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
+     .keys           = {HID_KEY_X},
+     .key_count      = 1,
+     .acknowledge    = true,
+     .action_handler = &disable_screensaver_hotkey_handler},
+
     /* Erase stored config */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
      .keys           = {HID_KEY_F12, HID_KEY_D},

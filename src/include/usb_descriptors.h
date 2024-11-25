@@ -70,15 +70,11 @@
         HID_LOGICAL_MIN ( 0                                      ) ,\
         HID_LOGICAL_MAX ( 1                                      ) ,\
         \
-        /* Left, Right, Middle, Backward, Forward buttons */ \
-        HID_REPORT_COUNT( 5                                      ) ,\
+        /* Left, Right, Mid, Back, Forward buttons + 3 extra */     \
+        HID_REPORT_COUNT( 8                                      ) ,\
         HID_REPORT_SIZE ( 1                                      ) ,\
         HID_INPUT       ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE ) ,\
         \
-        /* 3 bit padding */ \
-        HID_REPORT_COUNT( 1                                      ) ,\
-        HID_REPORT_SIZE ( 3                                      ) ,\
-        HID_INPUT       ( HID_CONSTANT                           ) ,\
       HID_USAGE_PAGE  ( HID_USAGE_PAGE_DESKTOP )                   ,\
         \
         /* X, Y position [MOUSE_MIN, 32767] */ \

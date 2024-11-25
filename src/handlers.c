@@ -39,6 +39,12 @@ void _get_border_position(device_t *state, border_size_t *border) {
         border->top = state->pointer_y;
 }
 
+void _screensaver_set(device_t *state, bool value) {
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT)
+        state->config.output[BOARD_ROLE].screensaver.mode = value;
+    else
+        send_value(value, SCREENSAVER_MSG);
+};
 
 /* This key combo records switch y top coordinate for different-size monitors  */
 void screen_border_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
@@ -115,6 +121,15 @@ void mouse_zoom_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     send_value(state->mouse_zoom, MOUSE_ZOOM_MSG);
 };
 
+/* When pressed, enables the screensaver on active output */
+void enable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
+    _screensaver_set(state, true);
+}
+
+/* When pressed, disables the screensaver on active output */
+void disable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
+    _screensaver_set(state, false);
+}
 
 /* Put the device into a special configuration mode */
 void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
@@ -209,6 +224,11 @@ void handle_wipe_config_msg(uart_packet_t *packet, device_t *state) {
     load_config(state);
 }
 
+/* Update screensaver state after received message */
+void handle_screensaver_msg(uart_packet_t *packet, device_t *state) {
+    state->config.output[BOARD_ROLE].screensaver.mode = packet->data[0];
+}
+
 /* Process consumer control message */
 void handle_consumer_control_msg(uart_packet_t *packet, device_t *state) {
     queue_cc_packet(packet->data, state);
@@ -254,9 +274,9 @@ void handle_api_msgs(uart_packet_t *packet, device_t *state) {
         memcpy(ptr, &packet->data[1], map->len);
     }
     else if (packet->type == GET_VAL_MSG) {
-	uart_packet_t response = {.type=GET_VAL_MSG, .data={[0] = value_idx}};
-	memcpy(&response.data[1], ptr, map->len);
-	queue_cfg_packet(&response, state);
+        uart_packet_t response = {.type=GET_VAL_MSG, .data={[0] = value_idx}};
+        memcpy(&response.data[1], ptr, map->len);
+        queue_cfg_packet(&response, state);
     }
 
     /* With each GET/SET message, we reset the configuration mode timeout */
