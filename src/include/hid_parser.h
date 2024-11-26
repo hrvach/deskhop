@@ -98,6 +98,7 @@ typedef struct {
     report_val_t move_x;
     report_val_t move_y;
     report_val_t wheel;
+    report_val_t pan;
 
     uint8_t report_id;
 

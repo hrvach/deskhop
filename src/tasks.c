@@ -133,9 +133,11 @@ void heartbeat_output_task(device_t *state) {
         blink_led(state);
     }
 
+#ifdef DH_DEBUG
     /* Holding the button invokes bootsel firmware upgrade */
     if (is_bootsel_pressed())
         reset_usb_boot(1 << PICO_DEFAULT_LED_PIN, 0);
+#endif
 
     uart_packet_t packet = {
         .type = HEARTBEAT_MSG,

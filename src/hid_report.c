@@ -166,6 +166,14 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
          .dst          = &iface->mouse.wheel,
          .id           = &iface->mouse.report_id},
 
+        {.usage_page   = HID_USAGE_PAGE_CONSUMER,
+         .global_usage = HID_USAGE_DESKTOP_MOUSE,
+         .usage        = HID_USAGE_CONSUMER_AC_PAN,
+         .handler      = _store,
+         .receiver     = process_mouse_report,
+         .dst          = &iface->mouse.pan,
+         .id           = &iface->mouse.report_id},
+
         {.usage_page   = HID_USAGE_PAGE_KEYBOARD,
          .global_usage = HID_USAGE_DESKTOP_KEYBOARD,
          .handler      = handle_keyboard_descriptor_values,

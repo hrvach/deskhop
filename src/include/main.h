@@ -123,6 +123,7 @@ enum packet_type_e {
     SYNC_BORDERS_MSG     = 8,
     FLASH_LED_MSG        = 9,
     WIPE_CONFIG_MSG      = 10,
+    SCREENSAVER_MSG      = 11,
     HEARTBEAT_MSG        = 12,
     GAMING_MODE_MSG      = 13,
     CONSUMER_CONTROL_MSG = 14,
@@ -177,7 +178,7 @@ typedef struct {
 #define KEYARRAY_BIT_OFFSET     16
 #define KEYS_IN_USB_REPORT      6
 #define KBD_REPORT_LENGTH       8
-#define MOUSE_REPORT_LENGTH     7
+#define MOUSE_REPORT_LENGTH     8
 #define CONSUMER_CONTROL_LENGTH 4
 #define SYSTEM_CONTROL_LENGTH   1
 #define MODIFIER_BIT_LENGTH     8
@@ -345,6 +346,7 @@ typedef struct TU_ATTR_PACKED {
     int16_t x;
     int16_t y;
     int8_t wheel;
+    int8_t pan;
     uint8_t mode;
 } mouse_report_t;
 
@@ -460,7 +462,7 @@ int32_t extract_bit_variable(uint32_t, uint32_t, uint8_t *, int, uint8_t *);
 int32_t extract_kbd_data(uint8_t *, int, uint8_t, hid_interface_t *, hid_keyboard_report_t *);
 
 /*********  Mouse  **********/
-bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel);
+bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan);
 
 void process_mouse_report(uint8_t *, int, uint8_t, hid_interface_t *);
 void parse_report_descriptor(hid_interface_t *, uint8_t const *, int);
@@ -539,6 +541,8 @@ void screenlock_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void output_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void wipe_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void config_enable_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void enable_screensaver_hotkey_handler(device_t *, hid_keyboard_report_t *);
+void disable_screensaver_hotkey_handler(device_t *, hid_keyboard_report_t *);
 
 void handle_keyboard_uart_msg(uart_packet_t *, device_t *);
 void handle_mouse_abs_uart_msg(uart_packet_t *, device_t *);
@@ -562,6 +566,7 @@ void handle_proxy_msg(uart_packet_t *, device_t *);
 void handle_api_msgs(uart_packet_t *, device_t *);
 void handle_api_read_all_msg(uart_packet_t *, device_t *);
 void handle_toggle_gaming_msg(uart_packet_t *, device_t *);
+void handle_screensaver_msg(uart_packet_t *, device_t *);
 
 void switch_output(device_t *, uint8_t);
 
