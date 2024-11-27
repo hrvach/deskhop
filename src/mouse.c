@@ -140,9 +140,6 @@ void switch_screen(
     state->pointer_y = scale_y_coordinate(output->number, 1 - output->number, state);
 }
 
-#define MACOS_SWITCH_MOVE_X 10
-#define MACOS_SWITCH_MOVE_COUNT 5
-
 void switch_desktop_macos(device_t *state, int direction) {
     /* Fix for MACOS: Send relative mouse movement here, one or two pixels in the
        direction of movement, BEFORE absolute report sets X to 0 */
