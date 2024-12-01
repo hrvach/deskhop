@@ -63,12 +63,27 @@ On a Debian/Ubuntu systems, make sure to install these:
 sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
 ```
 
-You should be able to build by running:
+1. Install CMake (at least version 3.6), and GCC cross compiler:
 
-```
-cmake -S . -B build
-cmake --build build
-```
+   ```
+   sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib g++
+   ```
+
+2. Generate project files:
+
+   ```
+   cmake -S . -B build
+   ```
+
+3. Compile code:
+
+   ```
+   cmake --build build
+   ```
+
+#### Windows compilation
+
+It is recommended to use the Windows Subsystem for Linux (WSL): https://learn.microsoft.com/en-us/windows/wsl/install. Once installed you can use the same steps above.
 
 additionally, to rebuild web UI check webconfig/ and execute ```./render.py```, you'll need jinja2 installed.
 
