@@ -39,7 +39,7 @@ void _get_border_position(device_t *state, border_size_t *border) {
         border->top = state->pointer_y;
 }
 
-void _screensaver_set(device_t *state, bool value) {
+void _screensaver_set(device_t *state, uint8_t value) {
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT)
         state->config.output[BOARD_ROLE].screensaver.mode = value;
     else
@@ -123,12 +123,18 @@ void mouse_zoom_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
 
 /* When pressed, enables the screensaver on active output */
 void enable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    _screensaver_set(state, true);
+    uint8_t desired_mode = state->config.output[BOARD_ROLE].screensaver.mode;
+
+    /* If the user explicitly asks for screensaver to be active, ignore config and turn it on */
+    if (desired_mode == DISABLED)
+        desired_mode = PONG;
+
+    _screensaver_set(state, desired_mode);
 }
 
 /* When pressed, disables the screensaver on active output */
 void disable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    _screensaver_set(state, false);
+    _screensaver_set(state, DISABLED);
 }
 
 /* Put the device into a special configuration mode */

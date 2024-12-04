@@ -79,12 +79,9 @@ mouse_report_t *screensaver_pong(device_t *state) {
 mouse_report_t *screensaver_jitter(device_t *state) {
     const int16_t jitter_distance = 2;
     static mouse_report_t report = {
-        .x = jitter_distance,
         .y = jitter_distance,
         .mode = RELATIVE,
     };
-
-    report.x = -report.x;
     report.y = -report.y;
 
     return &report;
@@ -92,7 +89,11 @@ mouse_report_t *screensaver_jitter(device_t *state) {
 
 /* Have something fun and entertaining when idle. */
 void screensaver_task(device_t *state) {
-    const int mouse_move_delay = 5000;
+    const uint32_t delays[] = {
+        0,        /* DISABLED, unused index 0 */
+        5000,     /* PONG, move mouse every 5 ms for a high framerate */
+        10000000, /* JITTER, once every 10 sec is more than enough */
+    };
     static int last_pointer_move = 0;
     screensaver_t *screensaver = &state->config.output[BOARD_ROLE].screensaver;
     uint64_t inactivity_period = time_us_64() - state->last_activity[BOARD_ROLE];
@@ -101,8 +102,8 @@ void screensaver_task(device_t *state) {
     if (screensaver->mode == DISABLED)
         return;
 
-    /* System is still not idle for long enough to activate or we've been running for too long */
-    if (inactivity_period < screensaver->idle_time_us)
+    /* System is still not idle for long enough to activate or screensaver mode is not supported */
+    if (inactivity_period < screensaver->idle_time_us || screensaver->mode > MAX_SS_VAL)
         return;
 
     /* We exceeded the maximum permitted screensaver runtime */
@@ -115,7 +116,7 @@ void screensaver_task(device_t *state) {
         return;
 
     /* We're active! Now check if it's time to move the cursor yet. */
-    if ((time_us_32()) - last_pointer_move < mouse_move_delay)
+    if (time_us_32() - last_pointer_move < delays[screensaver->mode])
         return;
 
     mouse_report_t *report;

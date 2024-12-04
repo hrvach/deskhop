@@ -206,9 +206,10 @@ enum screen_pos_e {
 };
 
 enum screensaver_mode_e {
-    DISABLED = 0,
-    PONG     = 1,
-    JITTER   = 2,
+    DISABLED   = 0,
+    PONG       = 1,
+    JITTER     = 2,
+    MAX_SS_VAL = JITTER,
 };
 
 #define ITF_NUM_HID        0

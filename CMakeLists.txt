@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 ## Version Configuration
 set(VERSION_MAJOR 00)
-set(VERSION_MINOR 161)
+set(VERSION_MINOR 162)
 
 ## Release Type Selection
 option(DH_DEBUG "Build a debug version" OFF)
