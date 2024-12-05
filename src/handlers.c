@@ -28,7 +28,7 @@ void output_toggle_hotkey_handler(device_t *state, hid_keyboard_report_t *report
         return;
 
     state->active_output ^= 1;
-    switch_output(state, state->active_output);
+    set_active_output(state, state->active_output);
 };
 
 void _get_border_position(device_t *state, border_size_t *border) {
@@ -368,7 +368,7 @@ void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
  * ==================================================== */
 
 /* Update output variable, set LED on/off and notify the other board so they are in sync. */
-void switch_output(device_t *state, uint8_t new_output) {
+void set_active_output(device_t *state, uint8_t new_output) {
     state->active_output = new_output;
     restore_leds(state);
     send_value(new_output, OUTPUT_SELECT_MSG);

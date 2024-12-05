@@ -569,7 +569,7 @@ void handle_api_read_all_msg(uart_packet_t *, device_t *);
 void handle_toggle_gaming_msg(uart_packet_t *, device_t *);
 void handle_screensaver_msg(uart_packet_t *, device_t *);
 
-void switch_output(device_t *, uint8_t);
+void set_active_output(device_t *, uint8_t);
 
 /*********  Global variables (don't judge)  **********/
 extern device_t global_state;
