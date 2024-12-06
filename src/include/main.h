@@ -200,6 +200,7 @@ enum os_type_e {
 };
 
 enum screen_pos_e {
+    NONE   = 0,
     LEFT   = 1,
     RIGHT  = 2,
     MIDDLE = 3,
