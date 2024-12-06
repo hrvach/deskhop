@@ -183,11 +183,10 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
           )___(          )___(     |     )___(          )___(          )___(
 */
 void check_screen_switch(const mouse_values_t *values, device_t *state) {
-    int new_x        = state->pointer_x + values->move_x;
     output_t *output = &state->config.output[state->active_output];
 
-    bool jump_left  = new_x < MIN_SCREEN_COORD - state->config.jump_treshold;
-    bool jump_right = new_x > MAX_SCREEN_COORD + state->config.jump_treshold;
+    bool jump_left  = state->pointer_x <= MIN_SCREEN_COORD + state->config.jump_treshold;
+    bool jump_right = state->pointer_x >= MAX_SCREEN_COORD - state->config.jump_treshold;
 
     int direction = jump_left ? LEFT : RIGHT;
 
