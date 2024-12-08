@@ -200,15 +200,17 @@ enum os_type_e {
 };
 
 enum screen_pos_e {
+    NONE   = 0,
     LEFT   = 1,
     RIGHT  = 2,
     MIDDLE = 3,
 };
 
 enum screensaver_mode_e {
-    DISABLED = 0,
-    PONG     = 1,
-    JITTER   = 2,
+    DISABLED   = 0,
+    PONG       = 1,
+    JITTER     = 2,
+    MAX_SS_VAL = JITTER,
 };
 
 #define ITF_NUM_HID        0
@@ -568,7 +570,7 @@ void handle_api_read_all_msg(uart_packet_t *, device_t *);
 void handle_toggle_gaming_msg(uart_packet_t *, device_t *);
 void handle_screensaver_msg(uart_packet_t *, device_t *);
 
-void switch_output(device_t *, uint8_t);
+void set_active_output(device_t *, uint8_t);
 
 /*********  Global variables (don't judge)  **********/
 extern device_t global_state;

@@ -17,6 +17,20 @@
 
 #include "main.h"
 
+#define MACOS_SWITCH_MOVE_X 10
+#define MACOS_SWITCH_MOVE_COUNT 5
+
+/* Check if our upcoming mouse movement would result in having to switch outputs */
+enum screen_pos_e is_screen_switch_needed(int position, int offset) {
+    if (position + offset < MIN_SCREEN_COORD - global_state.config.jump_treshold)
+        return LEFT;
+
+    if (position + offset > MAX_SCREEN_COORD + global_state.config.jump_treshold)
+        return RIGHT;
+
+    return NONE;
+}
+
 /* Move mouse coordinate 'position' by 'offset', but don't fall off the screen */
 int32_t move_and_keep_on_screen(int position, int offset) {
     /* Lowest we can go is 0 */
@@ -60,7 +74,8 @@ int32_t accelerate(int32_t offset) {
     return offset * acceleration[6].factor;
 }
 
-void update_mouse_position(device_t *state, mouse_values_t *values) {
+/* Returns LEFT if need to jump left, RIGHT if right, NONE otherwise */
+enum screen_pos_e update_mouse_position(device_t *state, mouse_values_t *values) {
     output_t *current    = &state->config.output[state->active_output];
     uint8_t reduce_speed = 0;
 
@@ -72,12 +87,17 @@ void update_mouse_position(device_t *state, mouse_values_t *values) {
     int offset_x = accelerate(values->move_x) * (current->speed_x >> reduce_speed);
     int offset_y = accelerate(values->move_y) * (current->speed_y >> reduce_speed);
 
+    /* Determine if our upcoming movement would stay within the screen */
+    enum screen_pos_e switch_direction = is_screen_switch_needed(state->pointer_x, offset_x);
+
     /* Update movement */
     state->pointer_x = move_and_keep_on_screen(state->pointer_x, offset_x);
     state->pointer_y = move_and_keep_on_screen(state->pointer_y, offset_y);
 
     /* Update buttons state */
     state->mouse_buttons = values->buttons;
+
+    return switch_direction;
 }
 
 /* If we are active output, queue packet to mouse queue, else send them through UART */
@@ -121,8 +141,8 @@ int16_t scale_y_coordinate(int screen_from, int screen_to, device_t *state) {
     return ((state->pointer_y - from->border.top) * MAX_SCREEN_COORD) / size_from;
 }
 
-void switch_screen(
-    device_t *state, output_t *output, int new_x, int output_from, int output_to, int direction) {
+void switch_to_another_pc(
+    device_t *state, output_t *output, int output_to, int direction) {
     uint8_t *mouse_park_pos = &state->config.output[state->active_output].mouse_park_pos;
 
     int16_t mouse_y = (*mouse_park_pos == 0) ? MIN_SCREEN_COORD : /* Top */
@@ -132,22 +152,26 @@ void switch_screen(
     mouse_report_t hidden_pointer = {.y = mouse_y, .x = MAX_SCREEN_COORD};
 
     output_mouse_report(&hidden_pointer, state);
-    switch_output(state, output_to);
+    set_active_output(state, output_to);
     state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
     state->pointer_y = scale_y_coordinate(output->number, 1 - output->number, state);
 }
 
-void switch_desktop(device_t *state, output_t *output, int new_index, int direction) {
+void switch_virtual_desktop_macos(device_t *state, int direction) {
     /* Fix for MACOS: Send relative mouse movement here, one or two pixels in the
        direction of movement, BEFORE absolute report sets X to 0 */
-    mouse_report_t move_relative_one
-        = {.x = (direction == LEFT) ? -5 : 5, .mode = RELATIVE};
+    uint16_t move = (direction == LEFT) ? -MACOS_SWITCH_MOVE_X : MACOS_SWITCH_MOVE_X;
+    mouse_report_t move_relative_one = {.x = move, .mode = RELATIVE};
 
+    /* Once doesn't seem reliable enough, do it a few times */
+    for (int i = 0; i < MACOS_SWITCH_MOVE_COUNT; i++)
+        output_mouse_report(&move_relative_one, state);
+}
+
+void switch_virtual_desktop(device_t *state, output_t *output, int new_index, int direction) {
     switch (output->os) {
         case MACOS:
-            /* Once doesn't seem reliable enough, do it a few times */
-            for (int i = 0; i < 5; i++)
-                output_mouse_report(&move_relative_one, state);
+            switch_virtual_desktop_macos(state, direction);
             break;
 
         case WINDOWS:
@@ -175,21 +199,11 @@ void switch_desktop(device_t *state, output_t *output, int new_index, int direct
        '---------'    '---------'  |  '---------'    '---------'    '---------'
           )___(          )___(     |     )___(          )___(          )___(
 */
-void check_screen_switch(const mouse_values_t *values, device_t *state) {
-    int new_x        = state->pointer_x + values->move_x;
+void do_screen_switch(device_t *state, int direction) {
     output_t *output = &state->config.output[state->active_output];
-
-    bool jump_left  = new_x < MIN_SCREEN_COORD - state->config.jump_treshold;
-    bool jump_right = new_x > MAX_SCREEN_COORD + state->config.jump_treshold;
-
-    int direction = jump_left ? LEFT : RIGHT;
 
     /* No switching allowed if explicitly disabled or in gaming mode */
     if (state->switch_lock || state->gaming_mode)
-        return;
-
-    /* No jump condition met == nothing to do, return */
-    if (!jump_left && !jump_right)
         return;
 
     /* We want to jump in the direction of the other computer */
@@ -199,16 +213,16 @@ void check_screen_switch(const mouse_values_t *values, device_t *state) {
             if (state->mouse_buttons)
                 return;
 
-            switch_screen(state, output, new_x, state->active_output, 1 - state->active_output, direction);
+            switch_to_another_pc(state, output, 1 - state->active_output, direction);
         }
         /* If here, this output has multiple desktops and we are not on the main one */
         else
-            switch_desktop(state, output, output->screen_index - 1, direction);
+            switch_virtual_desktop(state, output, output->screen_index - 1, direction);
     }
 
     /* We want to jump away from the other computer, only possible if there is another screen to jump to */
     else if (output->screen_index < output->screen_count)
-        switch_desktop(state, output, output->screen_index + 1, direction);
+        switch_virtual_desktop(state, output, output->screen_index + 1, direction);
 }
 
 void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t *values, hid_interface_t *iface) {
@@ -263,7 +277,7 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     extract_report_values(raw_report, state, &values, iface);
 
     /* Calculate and update mouse pointer movement. */
-    update_mouse_position(state, &values);
+    enum screen_pos_e switch_direction = update_mouse_position(state, &values);
 
     /* Create the report for the output PC based on the updated values */
     mouse_report_t report = create_mouse_report(state, &values);
@@ -271,8 +285,9 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     /* Move the mouse, depending where the output is supposed to go */
     output_mouse_report(&report, state);
 
-    /* We use the mouse to switch outputs, the logic is in check_screen_switch() */
-    check_screen_switch(&values, state);
+    /* We use the mouse to switch outputs, if switch_direction is LEFT or RIGHT */
+    if (switch_direction != NONE)
+        do_screen_switch(state, switch_direction);
 }
 
 /* ==================================================== *
