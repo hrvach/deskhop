@@ -136,7 +136,6 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
     const usage_map_t map[] = {
         {.usage_page   = HID_USAGE_PAGE_BUTTON,
          .global_usage = HID_USAGE_DESKTOP_MOUSE,
-         .usage        = HID_USAGE_DESKTOP_POINTER,
          .handler      = handle_buttons,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.buttons,
