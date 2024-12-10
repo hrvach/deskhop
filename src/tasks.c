@@ -119,6 +119,11 @@ void screensaver_task(device_t *state) {
     if (time_us_32() - last_pointer_move < delays[screensaver->mode])
         return;
 
+    /* Return, if we're not connected or the host is suspended */
+    if(!tud_ready()) {
+        return;
+    }
+
     mouse_report_t *report;
     switch (screensaver->mode) {
         case PONG:
