@@ -194,7 +194,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     if (instance >= MAX_INTERFACES)
         return;
 
-    if (itf_protocol == HID_ITF_PROTOCOL_NONE) {
+    if (iface->uses_report_id || itf_protocol == HID_ITF_PROTOCOL_NONE) {
         uint8_t report_id = 0;
 
         if (iface->uses_report_id)

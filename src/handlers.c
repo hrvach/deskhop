@@ -28,7 +28,7 @@ void output_toggle_hotkey_handler(device_t *state, hid_keyboard_report_t *report
         return;
 
     state->active_output ^= 1;
-    switch_output(state, state->active_output);
+    set_active_output(state, state->active_output);
 };
 
 void _get_border_position(device_t *state, border_size_t *border) {
@@ -39,6 +39,12 @@ void _get_border_position(device_t *state, border_size_t *border) {
         border->top = state->pointer_y;
 }
 
+void _screensaver_set(device_t *state, uint8_t value) {
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT)
+        state->config.output[BOARD_ROLE].screensaver.mode = value;
+    else
+        send_value(value, SCREENSAVER_MSG);
+};
 
 /* This key combo records switch y top coordinate for different-size monitors  */
 void screen_border_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
@@ -115,6 +121,21 @@ void mouse_zoom_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     send_value(state->mouse_zoom, MOUSE_ZOOM_MSG);
 };
 
+/* When pressed, enables the screensaver on active output */
+void enable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
+    uint8_t desired_mode = state->config.output[BOARD_ROLE].screensaver.mode;
+
+    /* If the user explicitly asks for screensaver to be active, ignore config and turn it on */
+    if (desired_mode == DISABLED)
+        desired_mode = PONG;
+
+    _screensaver_set(state, desired_mode);
+}
+
+/* When pressed, disables the screensaver on active output */
+void disable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
+    _screensaver_set(state, DISABLED);
+}
 
 /* Put the device into a special configuration mode */
 void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
@@ -209,6 +230,11 @@ void handle_wipe_config_msg(uart_packet_t *packet, device_t *state) {
     load_config(state);
 }
 
+/* Update screensaver state after received message */
+void handle_screensaver_msg(uart_packet_t *packet, device_t *state) {
+    state->config.output[BOARD_ROLE].screensaver.mode = packet->data[0];
+}
+
 /* Process consumer control message */
 void handle_consumer_control_msg(uart_packet_t *packet, device_t *state) {
     queue_cc_packet(packet->data, state);
@@ -254,9 +280,9 @@ void handle_api_msgs(uart_packet_t *packet, device_t *state) {
         memcpy(ptr, &packet->data[1], map->len);
     }
     else if (packet->type == GET_VAL_MSG) {
-	uart_packet_t response = {.type=GET_VAL_MSG, .data={[0] = value_idx}};
-	memcpy(&response.data[1], ptr, map->len);
-	queue_cfg_packet(&response, state);
+        uart_packet_t response = {.type=GET_VAL_MSG, .data={[0] = value_idx}};
+        memcpy(&response.data[1], ptr, map->len);
+        queue_cfg_packet(&response, state);
     }
 
     /* With each GET/SET message, we reset the configuration mode timeout */
@@ -342,7 +368,7 @@ void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
  * ==================================================== */
 
 /* Update output variable, set LED on/off and notify the other board so they are in sync. */
-void switch_output(device_t *state, uint8_t new_output) {
+void set_active_output(device_t *state, uint8_t new_output) {
     state->active_output = new_output;
     restore_leds(state);
     send_value(new_output, OUTPUT_SELECT_MSG);

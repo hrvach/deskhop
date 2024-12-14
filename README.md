@@ -10,7 +10,7 @@ All I wanted was a way to use a keyboard shortcut to quickly switch outputs, pai
 
 ## Features
 
-- Completely **free and open source**
+- Completely **[free and open source](https://certification.oshwa.org/de000149.html)**
 - No noticeable delay when switching
 - Simply drag the mouse pointer between computers
 - No software installed
@@ -19,6 +19,9 @@ All I wanted was a way to use a keyboard shortcut to quickly switch outputs, pai
 - Full Galvanic isolation between your outputs
 - Works with Linux, macOS and Windows
 
+[User Manual](user-manual.pdf) is now available
+
+![Image](img/oshw.svg)
 ------
 
 ## How it works
@@ -208,19 +211,20 @@ The standard process to do that is using isopropyl alcohol and an old toothbrush
 
 ## Usage guide
 
-### Keyboard shortcuts - (fw versions 0.64 +)
+### Keyboard shortcuts - (fw versions 0.68+)
 
 _Config_
 - ~~```Left Shift```~~ ```Left Ctrl + Right Shift + C + O``` - enter config mode
 - ```Right Shift + F12 + D``` - remove flash config
 - ```Right Shift + F12 + Y``` - save screen switch offset
-- ```Right Shift + F12 + S``` - turn on/off screensaver option
 
 _Usage_
 - ```Right CTRL + Right ALT``` - Toggle slower mouse mode
 - ```Right CTRL + K``` - Lock/Unlock mouse desktop switching
 - ```Right CTRL + L``` - Lock both outputs at once (set output OS before, see shortcuts below)
-- ~~```Left Shift```~~ ```Left Ctrl + Right Shift + G``` - Toggle gaming mode (lock to screen, act as standard mouse)
+- ~~```Left Shift```~~ ```Left CTRL + Right Shift + G``` - Toggle gaming mode (lock to screen, act as standard mouse)
+- ```Left CTRL + Right Shift + S``` - Enable screensaver
+- ```Left CTRL + Right Shift + X``` - Disable screensaver
 - ```Left CTRL + Caps Lock``` - Switch between outputs
 
 Note: some keyboards don't send both shifts at the same time properly, that's why the shortcut was changed - to work for everyone. Apologies for the confusion.
@@ -316,6 +320,7 @@ This still doesn't guarantee anything, but I believe it makes a reasonable set o
 *I'm not selling anything, this is just a personal, non-commercial hobby project.*
 
 [UPDATE] It seems you can order it in QTY of 1 (for either PCB, assembled PCB or a fully assembled device) from [Elecrow if you follow this link](https://www.elecrow.com/deskhop-fast-desktop-switching.html)
+As reported by users, your **board will arrive blank** and you have to write the firmware yourself.
 
 [UPDATE2] - I never asked Elecrow for anything, but a couple of days ago they offered to sponsor the project with a small budget that will be used for future board prototyping. Since my goal is to create a better board with more than 2 outputs etc, I believe prototyping services might be beneficial to the project.
 
