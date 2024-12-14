@@ -3,12 +3,12 @@
 {% set key = item.key %}
 
 {% macro input(item, type='text', class='api', name='name') %}
-<input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}"
+<input class="{{ class }} {{item.style}}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}"
   onchange="valueChangedHandler(this)"
 {% endmacro %}
 
 {% macro label(item, class='label-inline', add='') %}
-<label class="{{class}}"> {{ item.name }}{{ add }}</label>
+<label class="{{class}} {{item.style}}"> {{ item.name }}{{ add }}</label>
 {% endmacro %}
 
 {% block form_render %}
