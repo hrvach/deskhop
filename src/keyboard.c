@@ -18,6 +18,38 @@
 #include "main.h"
 
 /* ==================================================== *
+ * Map hotkeys to alternative layouts
+ * { QWERTY, Dvorak, Colemak, ... }
+ * ==================================================== */
+
+const uint8_t MAPPED_KEY_A[NUM_LAYOUTS] = {HID_KEY_A, HID_KEY_A,         HID_KEY_A};
+const uint8_t MAPPED_KEY_B[NUM_LAYOUTS] = {HID_KEY_B, HID_KEY_N,         HID_KEY_B};
+const uint8_t MAPPED_KEY_C[NUM_LAYOUTS] = {HID_KEY_C, HID_KEY_I,         HID_KEY_C};
+const uint8_t MAPPED_KEY_D[NUM_LAYOUTS] = {HID_KEY_D, HID_KEY_H,         HID_KEY_G};
+const uint8_t MAPPED_KEY_E[NUM_LAYOUTS] = {HID_KEY_E, HID_KEY_D,         HID_KEY_K};
+const uint8_t MAPPED_KEY_F[NUM_LAYOUTS] = {HID_KEY_F, HID_KEY_Y,         HID_KEY_E};
+const uint8_t MAPPED_KEY_G[NUM_LAYOUTS] = {HID_KEY_G, HID_KEY_U,         HID_KEY_T};
+const uint8_t MAPPED_KEY_H[NUM_LAYOUTS] = {HID_KEY_H, HID_KEY_J,         HID_KEY_H};
+const uint8_t MAPPED_KEY_I[NUM_LAYOUTS] = {HID_KEY_I, HID_KEY_G,         HID_KEY_L};
+const uint8_t MAPPED_KEY_J[NUM_LAYOUTS] = {HID_KEY_J, HID_KEY_C,         HID_KEY_Y};
+const uint8_t MAPPED_KEY_K[NUM_LAYOUTS] = {HID_KEY_K, HID_KEY_V,         HID_KEY_N};
+const uint8_t MAPPED_KEY_L[NUM_LAYOUTS] = {HID_KEY_L, HID_KEY_P,         HID_KEY_U};
+const uint8_t MAPPED_KEY_M[NUM_LAYOUTS] = {HID_KEY_M, HID_KEY_M,         HID_KEY_M};
+const uint8_t MAPPED_KEY_N[NUM_LAYOUTS] = {HID_KEY_N, HID_KEY_L,         HID_KEY_J};
+const uint8_t MAPPED_KEY_O[NUM_LAYOUTS] = {HID_KEY_O, HID_KEY_S,         HID_KEY_SEMICOLON};
+const uint8_t MAPPED_KEY_P[NUM_LAYOUTS] = {HID_KEY_P, HID_KEY_R,         HID_KEY_R};
+const uint8_t MAPPED_KEY_Q[NUM_LAYOUTS] = {HID_KEY_Q, HID_KEY_X,         HID_KEY_Q};
+const uint8_t MAPPED_KEY_R[NUM_LAYOUTS] = {HID_KEY_R, HID_KEY_O,         HID_KEY_S};
+const uint8_t MAPPED_KEY_S[NUM_LAYOUTS] = {HID_KEY_S, HID_KEY_SEMICOLON, HID_KEY_D};
+const uint8_t MAPPED_KEY_T[NUM_LAYOUTS] = {HID_KEY_T, HID_KEY_K,         HID_KEY_F};
+const uint8_t MAPPED_KEY_U[NUM_LAYOUTS] = {HID_KEY_U, HID_KEY_F,         HID_KEY_I};
+const uint8_t MAPPED_KEY_V[NUM_LAYOUTS] = {HID_KEY_V, HID_KEY_PERIOD,    HID_KEY_V};
+const uint8_t MAPPED_KEY_W[NUM_LAYOUTS] = {HID_KEY_W, HID_KEY_COMMA,     HID_KEY_W};
+const uint8_t MAPPED_KEY_X[NUM_LAYOUTS] = {HID_KEY_X, HID_KEY_B,         HID_KEY_X};
+const uint8_t MAPPED_KEY_Y[NUM_LAYOUTS] = {HID_KEY_Y, HID_KEY_T,         HID_KEY_O};
+const uint8_t MAPPED_KEY_Z[NUM_LAYOUTS] = {HID_KEY_Z, HID_KEY_SLASH,     HID_KEY_Z};
+
+/* ==================================================== *
  * Hotkeys to trigger actions via the keyboard.
  * ==================================================== */
 
@@ -39,70 +71,70 @@ hotkey_combo_t hotkeys[] = {
 
     /* Switch lock */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTCTRL,
-     .keys           = {HID_KEY_K},
+     .keys           = {MAPPED_KEY_K[KEYBOARD_LAYOUT]},
      .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &switchlock_hotkey_handler},
 
     /* Screen lock */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTCTRL,
-     .keys           = {HID_KEY_L},
+     .keys           = {MAPPED_KEY_L[KEYBOARD_LAYOUT]},
      .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &screenlock_hotkey_handler},
 
     /* Toggle gaming mode */
     {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys           = {HID_KEY_G},
+     .keys           = {MAPPED_KEY_G[KEYBOARD_LAYOUT]},
      .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &toggle_gaming_mode_handler},
 
     /* Enable screensaver for active output */
     {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys           = {HID_KEY_S},
+     .keys           = {MAPPED_KEY_S[KEYBOARD_LAYOUT]},
      .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &enable_screensaver_hotkey_handler},
 
     /* Disable screensaver for active output */
     {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys           = {HID_KEY_X},
+     .keys           = {MAPPED_KEY_X[KEYBOARD_LAYOUT]},
      .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &disable_screensaver_hotkey_handler},
 
     /* Erase stored config */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys           = {HID_KEY_F12, HID_KEY_D},
+     .keys           = {HID_KEY_F12, MAPPED_KEY_D[KEYBOARD_LAYOUT]},
      .key_count      = 2,
      .acknowledge    = true,
      .action_handler = &wipe_config_hotkey_handler},
 
     /* Record switch y coordinate  */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys           = {HID_KEY_F12, HID_KEY_Y},
+     .keys           = {HID_KEY_F12, MAPPED_KEY_Y[KEYBOARD_LAYOUT]},
      .key_count      = 2,
      .acknowledge    = true,
      .action_handler = &screen_border_hotkey_handler},
 
     /* Switch to configuration mode  */
     {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
-     .keys           = {HID_KEY_C, HID_KEY_O},
+     .keys           = {MAPPED_KEY_C[KEYBOARD_LAYOUT], MAPPED_KEY_O[KEYBOARD_LAYOUT]},
      .key_count      = 2,
      .acknowledge    = true,
      .action_handler = &config_enable_hotkey_handler},
 
     /* Hold down left shift + right shift + F12 + A ==> firmware upgrade mode for board A (kbd) */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
-     .keys           = {HID_KEY_A},
+     .keys           = {MAPPED_KEY_A[KEYBOARD_LAYOUT]},
      .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &fw_upgrade_hotkey_handler_A},
 
     /* Hold down left shift + right shift + F12 + B ==> firmware upgrade mode for board B (mouse) */
     {.modifier       = KEYBOARD_MODIFIER_RIGHTSHIFT | KEYBOARD_MODIFIER_LEFTSHIFT,
-     .keys           = {HID_KEY_B},
+     .keys           = {MAPPED_KEY_B[KEYBOARD_LAYOUT]},
      .key_count      = 1,
      .acknowledge    = true,
      .action_handler = &fw_upgrade_hotkey_handler_B}};

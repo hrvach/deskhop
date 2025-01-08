@@ -56,6 +56,8 @@
 #define NUM_SCREENS               2   // Will be more in the future
 #define CONFIG_MODE_TIMEOUT 300000000 // 5 minutes into the future
 
+#define NUM_LAYOUTS 3 // number of supported layouts in keyboard.c
+
 #define ARRAY_SIZE(arr)                (sizeof(arr) / sizeof((arr)[0]))
 #define CURRENT_BOARD_IS_ACTIVE_OUTPUT (global_state.active_output == global_state.board_role)
 

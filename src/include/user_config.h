@@ -194,3 +194,15 @@
  * */
 
 #define ENFORCE_KEYBOARD_BOOT_PROTOCOL 0
+
+/**================================================== *
+ * =============  Keyboard Layout =================== *
+ * ================================================== *
+ *
+ * KEYBOARD_LAYOUT: [0, 1] - 0 QWERTY
+ *                           1 Dvorak
+ *                           2 Colemak
+ *
+ * */
+
+#define KEYBOARD_LAYOUT 0
