@@ -40,7 +40,7 @@
 
 /**================================================== *
  * ==============  Mouse Speed Factor  ============== *
- * ==================================================
+ * ================================================== *
  *
  * This affects how fast the mouse moves.
  *
@@ -104,14 +104,14 @@
  * but will only activate on an output that is not currently
  * active.
  *
- **/
+ * */
 
 /**================================================== *
  *
  * SCREENSAVER_{A|B}_ENABLED: [0 or 1] 0 means screensaver is
  * disabled, 1 means it is enabled.
  *
- **/
+ * */
 
 #define SCREENSAVER_A_MODE DISABLED
 #define SCREENSAVER_B_MODE DISABLED
@@ -121,7 +121,7 @@
  * SCREENSAVER_{A|B}_IDLE_TIME_SEC: Number of seconds that an output
  * must be inactive before the screensaver mode will be activated.
  *
- **/
+ * */
 
 #define SCREENSAVER_A_IDLE_TIME_SEC 240
 #define SCREENSAVER_B_IDLE_TIME_SEC 240
@@ -131,7 +131,7 @@
  * SCREENSAVER_{A|B}_MAX_TIME_SEC: Number of seconds that the screensaver
  * will run on an output before being deactivated. 0 for indefinitely.
  *
- **/
+ * */
 
 #define SCREENSAVER_A_MAX_TIME_SEC 0
 #define SCREENSAVER_B_MAX_TIME_SEC 0
@@ -141,14 +141,14 @@
  * SCREENSAVER_{A|B}_ONLY_IF_INACTIVE: [0 or 1] 1 means the
  * screensaver will activate only if the output is inactive.
  *
- **/
+ * */
 
 #define SCREENSAVER_A_ONLY_IF_INACTIVE 0
 #define SCREENSAVER_B_ONLY_IF_INACTIVE 0
 
 /**================================================== *
  * ================  Output OS Config =============== *
- * ==================================================
+ * ================================================== *
  *
  * Defines OS an output connects to. You will need to worry about this only if you have
  * multiple desktops and one of your outputs is MacOS or Windows.
@@ -166,7 +166,7 @@
 
 /**================================================== *
  * =================  Enforce Ports ================= *
- * ==================================================
+ * ================================================== *
  *
  * If enabled, fixes some device incompatibilities by
  * enforcing keyboard has to be in port A and mouse in port B.
@@ -181,7 +181,7 @@
 
 /**================================================== *
  * =============  Enforce Boot Protocol ============= *
- * ==================================================
+ * ================================================== *
  *
  * If enabled, fixes some device incompatibilities by
  * enforcing the boot protocol (which is simpler to parse
