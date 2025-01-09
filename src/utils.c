@@ -42,13 +42,13 @@ uint32_t crc32_iter(uint32_t crc, const uint8_t byte) {
 
 /* TODO - use DMA sniffer's built-in CRC32 */
 uint32_t calc_crc32(const uint8_t *s, size_t n) {
-	uint32_t crc = 0xffffffff;
+    uint32_t crc = 0xffffffff;
 
-	for(size_t i=0; i < n; i++) {
+    for(size_t i=0; i < n; i++) {
         crc = crc32_iter(crc, s[i]);
-	}
+    }
 
-	return ~crc;
+    return ~crc;
 }
 
 uint32_t calculate_firmware_crc32(void) {
@@ -195,7 +195,7 @@ bool validate_packet(uart_packet_t *packet) {
     const enum packet_type_e ALLOWED_PACKETS[] = {
         FLASH_LED_MSG,
         GET_VAL_MSG,
-	GET_ALL_VALS_MSG,
+        GET_ALL_VALS_MSG,
         SET_VAL_MSG,
         WIPE_CONFIG_MSG,
         SAVE_CONFIG_MSG,
