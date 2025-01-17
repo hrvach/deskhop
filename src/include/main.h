@@ -64,7 +64,18 @@
 #define _SEC(x) (x * 1000000)
 #define _HZ(x) ((uint64_t)((1000000) / (x)))
 
-/*********  Pinout definitions  **********/
+/*********  Feather pinout  **********/
+#ifdef ADAFRUIT_FEATHER_RP2040_USB_HOST
+#define PIO_USB_DP_PIN 16 // D+ is pin 16, D- is pin 17
+#define GPIO_USB_PWR_PIN 18
+#define GPIO_LED_PIN   13 // LED is connected to pin 13 on a Feather RP2040 USB Host
+
+#define BOARD_A_RX 01
+#define BOARD_A_TX 00
+#define BOARD_B_RX 29
+#define BOARD_B_TX 28
+/*********  PICO pinout  **********/
+#else
 #define PIO_USB_DP_PIN 14 // D+ is pin 14, D- is pin 15
 #define GPIO_LED_PIN   25 // LED is connected to pin 25 on a PICO
 
@@ -72,6 +83,7 @@
 #define BOARD_A_TX 12
 #define BOARD_B_RX 17
 #define BOARD_B_TX 16
+#endif
 
 #define SERIAL_TX_PIN (global_state.board_role == OUTPUT_A ? BOARD_A_TX : BOARD_B_TX)
 #define SERIAL_RX_PIN (global_state.board_role == OUTPUT_A ? BOARD_A_RX : BOARD_B_RX)

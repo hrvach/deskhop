@@ -223,6 +223,12 @@ void initial_setup(device_t *state) {
     /* Init and enable the on-board LED GPIO as output */
     gpio_init(GPIO_LED_PIN);
     gpio_set_dir(GPIO_LED_PIN, GPIO_OUT);
+    /* Init and enable USB host 5V power via GPIO*/
+    #ifdef GPIO_USB_PWR_PIN
+        gpio_init(GPIO_USB_PWR_PIN);
+        gpio_set_dir(GPIO_USB_PWR_PIN, GPIO_OUT);
+        gpio_put(GPIO_USB_PWR_PIN, 1);
+    #endif
 
     /* Check if we should boot in configuration mode or not */
     state->config_mode_active = is_config_mode_active(state);

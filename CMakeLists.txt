@@ -7,10 +7,16 @@ set(VERSION_MINOR 162)
 ## Release Type Selection
 option(DH_DEBUG "Build a debug version" OFF)
 
-## Hardware Configuration
-set(DP_PIN_DEFAULT 14 CACHE STRING "Default USB D+ Pin Number")
+## Hardware Configuration for PICO
+#set(DP_PIN_DEFAULT 14 CACHE STRING "Default USB D+ Pin Number")
+#set(PICO_BOARD pico CACHE STRING "Board type")
+
+## Hardware Configuration for Feather RP2040 USB Host
+set(DP_PIN_DEFAULT 16 CACHE STRING "Default USB D+ Pin Number")
+set(PICO_BOARD adafruit_feather_rp2040_usb_host CACHE STRING "Board type")
+
+## PIO USB Configuration
 set(PIO_USE_TINYUSB 1 CACHE STRING "Make TinyUSB Manage the PIO USB Port")
-set(PICO_BOARD "pico")
 
 ## Pico SDK Configuration
 set(PICO_SDK_FETCH_FROM_GIT off)
