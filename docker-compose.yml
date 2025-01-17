@@ -1,0 +1,7 @@
+services:
+  build_container:
+    image: deskhop-build-env
+    build:
+      context: .
+    volumes:
+      - .:/project

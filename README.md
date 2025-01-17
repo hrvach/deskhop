@@ -70,6 +70,11 @@ cmake -S . -B build
 cmake --build build
 ```
 
+Alternatively, you may use Docker to build by simply running:
+```
+docker compose run --rm build_container
+```
+
 additionally, to rebuild web UI check webconfig/ and execute ```./render.py```, you'll need jinja2 installed.
 
 To rebuild the disk, check disk/ folder and run ```./create.sh```, tweak to your system if needed. You'll need **dosfstools** (to provide mkdosfs),   
