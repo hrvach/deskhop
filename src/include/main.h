@@ -31,6 +31,7 @@
 #include "protocol.h"
 #include <hardware/structs/ioqspi.h>
 #include <hardware/structs/sio.h>
+#include <hardware/clocks.h>
 #include <hardware/dma.h>
 #include <hardware/flash.h>
 #include <hardware/sync.h>
