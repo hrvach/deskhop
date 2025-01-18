@@ -44,6 +44,26 @@ void kick_watchdog_task(device_t *state) {
     /* If core1 stops updating the timestamp, we'll stop kicking the watchog and reboot */
     if (current_time - core1_last_loop_pass < CORE1_HANG_TIMEOUT_US)
         watchdog_update();
+
+    /* If the other board timed out temporarly lock output to this board */
+    if (current_time - state->last_heartbeat > 2000000) { // TODO: timeout should be configurable
+        if (!state->timeout) {
+            state->timeout_output = state->active_output;
+            state->timeout = true;
+            if (!CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+                state->timeout_output = state->active_output;
+                state->active_output = state->board_role;
+                set_active_output(state, state->active_output);
+            }
+        }
+    } else if (state->timeout) {
+        state->timeout = false;
+        if (state->active_output != state->timeout_output) {
+            state->active_output = state->timeout_output;
+            set_active_output(state, state->active_output);
+        }
+    }
+    
 }
 
 /**================================================== *

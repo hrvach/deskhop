@@ -402,6 +402,7 @@ typedef struct {
     uint64_t last_activity[NUM_SCREENS]; // Timestamp of the last input activity (-||-)
     uint64_t core1_last_loop_pass;       // Timestamp of last core1 loop execution
     uint8_t active_output;               // Currently selected output (0 = A, 1 = B)
+    uint8_t timeout_output;              // Selected output before timeount (0 = A, 1 = B, etc.)
     uint8_t board_role;                  // Which board are we running on? (0 = A, 1 = B, etc.)
 
     int16_t pointer_x; // Store and update the location of our mouse pointer
@@ -428,6 +429,7 @@ typedef struct {
     firmware_metadata_t _running_fw; // RAM copy of running fw metadata
     bool reboot_requested;           // If set, stop updating watchdog
     uint64_t config_mode_timer;      // Counts how long are we to remain in config mode
+    uint64_t last_heartbeat;         // Timestamp of the last heartbeat
 
     uint8_t page_buffer[FLASH_PAGE_SIZE]; // For firmware-over-serial upgrades
 
@@ -438,6 +440,7 @@ typedef struct {
     /* Feature flags */
     bool mouse_zoom;         // True when "mouse zoom" is enabled
     bool switch_lock;        // True when device is prevented from switching
+    bool timeout;            // True when other board timed out
     bool onboard_led_state;  // True when LED is ON
     bool relative_mouse;     // True when relative mouse mode is used
     bool gaming_mode;        // True when gaming mode is on (relative passthru + lock)

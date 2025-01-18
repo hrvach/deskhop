@@ -24,7 +24,7 @@
 /* This is the main hotkey for switching outputs */
 void output_toggle_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     /* If switching explicitly disabled, return immediately */
-    if (state->switch_lock)
+    if (state->switch_lock || state->timeout)
         return;
 
     state->active_output ^= 1;
@@ -345,6 +345,8 @@ void handle_response_byte_msg(uart_packet_t *packet, device_t *state) {
 /* Process a request to read a firmware package from flash */
 void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
     uint16_t other_running_version = packet->data16[0];
+
+    state->last_heartbeat = time_us_64();
 
     if (state->fw.upgrade_in_progress)
         return;

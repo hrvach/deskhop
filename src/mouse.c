@@ -203,7 +203,7 @@ void do_screen_switch(device_t *state, int direction) {
     output_t *output = &state->config.output[state->active_output];
 
     /* No switching allowed if explicitly disabled or in gaming mode */
-    if (state->switch_lock || state->gaming_mode)
+    if (state->switch_lock || state->gaming_mode || state->timeout)
         return;
 
     /* We want to jump in the direction of the other computer */
