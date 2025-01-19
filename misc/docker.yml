@@ -4,4 +4,4 @@ services:
     build:
       context: .
     volumes:
-      - .:/deskhop:z
+      - ..:/deskhop:z

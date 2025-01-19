@@ -19,7 +19,7 @@ All I wanted was a way to use a keyboard shortcut to quickly switch outputs, pai
 - Full Galvanic isolation between your outputs
 - Works with Linux, macOS and Windows
 
-[User Manual](user-manual.pdf) is now available
+[User Manual](misc/user-manual.pdf) is now available
 
 ![Open Source Hardware Logo](img/oshw.svg)
 
@@ -80,7 +80,7 @@ additionally, to rebuild web UI check webconfig/ and execute ```./render.py```, 
 
 An alternative can be to use docker via 'docker compose' or 'docker-compose':
 ```
-docker compose run --rm build_container
+docker-compose -f misc/docker.yml run --rm build_container
 ```
 This ensures reproducible builds.
 
