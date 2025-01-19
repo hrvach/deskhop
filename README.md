@@ -1,12 +1,12 @@
-#  DeskHop - Fast Desktop Switching
+# DeskHop - Fast Desktop Switching
 
 Did you ever notice how, in the crazy world of tech, there's always that one quirky little project trying to solve a problem so niche that its only competitors might be a left-handed screwdriver and a self-hiding alarm clock?
 
-I use two different computers in my daily workflow and share a single keyboard/mouse pair between them. Trying several USB switching boxes found on Amazon made me realize they all suffer from similar issues - it takes a while to switch, the process is quite clumsy when trying to find the button and frankly, it just doesn't get any better with time. 
+I use two different computers in my daily workflow and share a single keyboard/mouse pair between them. Trying several USB switching boxes found on Amazon made me realize they all suffer from similar issues - it takes a while to switch, the process is quite clumsy when trying to find the button and frankly, it just doesn't get any better with time.
 
 All I wanted was a way to use a keyboard shortcut to quickly switch outputs, paired with the ability to do the same by magically moving the mouse pointer between monitors. This project enables you to do both, even if your computers run different operating systems!
 
-![Image](img/case_and_board_s.png)
+![DeskHop case and board](img/case_and_board_s.png)
 
 ## Features
 
@@ -21,37 +21,37 @@ All I wanted was a way to use a keyboard shortcut to quickly switch outputs, pai
 
 [User Manual](user-manual.pdf) is now available
 
-![Image](img/oshw.svg)
+![Open Source Hardware Logo](img/oshw.svg)
+
 ------
 
 ## How it works
 
 The device acts as an intermediary between your keyboard/mouse and the computer, establishing and maintaining connections with both computers at once. Then it chooses where to forward your mouse and keystrokes to, depending on your selection. Keyboard follows the mouse and vice versa, so just dragging the mouse to the other desktop will switch both.
 
-## Mouse 
+## Mouse
 
-To get the mouse cursor to magically jump across, the mouse hid report descriptor was changed to use absolute coordinates and then the mouse reports (that still come in relative movements) accumulate internally, keeping the accurate tally on the position. 
+To get the mouse cursor to magically jump across, the mouse hid report descriptor was changed to use absolute coordinates and then the mouse reports (that still come in relative movements) accumulate internally, keeping the accurate tally on the position.
 
 When you try to leave the monitor area in the direction of the other monitor, it keeps the Y coordinate and swaps the maximum X for a minimum X, then flips the outputs. This ensures that the cursor seamlessly appears at the same height on the other monitor, enhancing the perception of a smooth transition.
 
-![Image](img/deskhop-demo.gif)
+![DeskHop Mouse Demo](img/deskhop-demo.gif)
 
- <p align="center"> Dragging the mouse from Mac to Linux automatically switches outputs. 
- </p>
+<p align="center"> Dragging the mouse from Mac to Linux automatically switches outputs. </p>
 
------
- 
+------
+
 The actual switch happens at the very moment when one arrow stops moving and the other one starts.
 
 ## Keyboard
 
 Acting as a USB Host and querying your keyboard periodically, it looks for a preconfigured hotkey in the hid report (usually Ctrl + Caps Lock for me). When found, it will forward all subsequent characters to the other output.
 
-To have a visual indication which output you are using at any given moment, you can repurpose keyboard LEDs and have them provide the necessary feedback. 
+To have a visual indication which output you are using at any given moment, you can repurpose keyboard LEDs and have them provide the necessary feedback.
 
-It also remembers the LED state for each computer, so you can pick up exactly how you left it. 
+It also remembers the LED state for each computer, so you can pick up exactly how you left it.
 
-![Image](img/demo-typing.gif)
+![DeskHop Typing Demo](img/demo-typing.gif)
 
 ## How to build
 
@@ -59,20 +59,26 @@ To avoid version mismatch and reported path issues when building, as well as to 
 
 On a Debian/Ubuntu systems, make sure to install these:
 
-```
-sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
+```shell
+apt update
+apt install \
+    build-essential \
+    cmake \
+    gcc-arm-none-eabi \
+    libnewlib-arm-none-eabi \
+    python3
 ```
 
 You should be able to build by running:
 
-```
+```shell
 cmake -S . -B build
 cmake --build build
 ```
 
 additionally, to rebuild web UI check webconfig/ and execute ```./render.py```, you'll need jinja2 installed.
 
-To rebuild the disk, check disk/ folder and run ```./create.sh```, tweak to your system if needed. You'll need **dosfstools** (to provide mkdosfs),   
+To rebuild the disk, check disk/ folder and run ```./create.sh```, tweak to your system if needed. You'll need **dosfstools** (to provide mkdosfs),
 
 ## Using a pre-built image
 
@@ -101,7 +107,7 @@ This will make sure you won't accidentally leave your current screen. To turn of
 
 ### Lock Both Screens
 
-You can lock both computers at once by using ```RIGHT CTRL + L```. 
+You can lock both computers at once by using ```RIGHT CTRL + L```.
 To make use of this feature, first set up the OS for each output in config (since the shortcuts are different).
 
 ### Gaming Mode
@@ -110,23 +116,23 @@ If you're gaming, there is a chance your game might not work properly with absol
 
 ### Screensaver
 
-Supposedly built in to prevent computer from entering standby, but truth be told - it is just fun to watch. **Off by default**, will make your mouse pointer bounce around the screen like a Pong ball. When enabled, it activates after a period of inactivity defined in user config header and automatically switches off as soon as you send any output towards that screen. 
+Supposedly built in to prevent computer from entering standby, but truth be told - it is just fun to watch. **Off by default**, will make your mouse pointer bounce around the screen like a Pong ball. When enabled, it activates after a period of inactivity defined in user config header and automatically switches off as soon as you send any output towards that screen.
 
-Potential usage example - I have a buggy USB dock that won't resume video from standby, so not allowing it to sleep can be a handy workaround. 
+Potential usage example - I have a buggy USB dock that won't resume video from standby, so not allowing it to sleep can be a handy workaround.
 
 ## Hardware
 
 [The circuit](schematics/DeskHop_v1.1.pdf) is based on two Raspberry Pi Pico boards, chosen because they are cheap (4.10 € / pc), can be hand soldered and most suppliers have them in stock.
 
-The Picos are connected using UART and separated by an Analog Devices ADuM1201 dual-channel digital isolator (~3€) or a much cheaper, faster and pin-compatible TI ISO7721DR (~1.5€) which is the preferred choice. 
+The Picos are connected using UART and separated by an Analog Devices ADuM1201 dual-channel digital isolator (~3€) or a much cheaper, faster and pin-compatible TI ISO7721DR (~1.5€) which is the preferred choice.
 
-While they normally don't have support for dual USB, thanks to an [amazing project](https://github.com/sekigon-gonnoc/Pico-PIO-USB) where USB is implemented using the programmable IO wizardry found in RP2040, there is support for it to act both as an USB host and device.  
+While they normally don't have support for dual USB, thanks to an [amazing project](https://github.com/sekigon-gonnoc/Pico-PIO-USB) where USB is implemented using the programmable IO wizardry found in RP2040, there is support for it to act both as an USB host and device.
 
 ## PCB [updated]
 
 To keep things as simple as possible for DIY builds, the traces were kept on one side and the number of parts kept to a minimum.
 
-![Image](img/plocica2.png)
+![PCB Image](img/plocica2.png)
 
 USB D+/D- differential lines should be identical in length, but they are slightly asymmetrical on purpose to counter the length difference on the corresponding GPIO traces PICO PCB itself, so the overall lengths should match.
 
@@ -135,12 +141,13 @@ Zd (differential impedance) is aimed as 90 ohm (managed to get ~107, close enoug
 The thickness is designed to be 1.6 mm for snap-fit to work as expected.
 
 There are 2 versions of the PCB (no major differences for the user). Original (v1.0) is easier to solder and assemble, while v1.1 offers some upgrades like:
- - added ESD protection (TPD4E1U06DBVR)
- - added VBUS capacitor for the keyboard/mouse connectors
- - silkscreen orientation markings
- - holes for clone boards with headers pre-soldered and easier alignment
- - USB 27 ohm resistors
- 
+
+- added ESD protection (TPD4E1U06DBVR)
+- added VBUS capacitor for the keyboard/mouse connectors
+- silkscreen orientation markings
+- holes for clone boards with headers pre-soldered and easier alignment
+- USB 27 ohm resistors
+
   This version is slightly more difficult to hand solder due to the small transient voltage suppressor IC and 0805 resistors, but it's totally doable. TVS can in theory be omitted (not advised) and it will still work.
 
 Upcoming - board with bare rp2040s that doesn't need Picos, is smaller and more convenient.
@@ -151,13 +158,13 @@ Since I'm not very good with 3d, the case is [simple and basic](case/) but does 
 
 Horizontal PCB movements are countered by pegs sliding through holes and vertical movements by snap-fit lugs on the sides - no screws required. The case was given a slight redesign to feature the logo and two additional snap-fit lugs, so it provides a better seal.
 
-Micro USB connectors on both boards are offset from the side of the case, so slightly larger holes should allow for cables to reach in. 
+Micro USB connectors on both boards are offset from the side of the case, so slightly larger holes should allow for cables to reach in.
 
 The lid is of a snap-fit design, with a screwdriver slot for opening. The markings on top are recessed and can be finished with e.g. crayons to give better contrast (or simply left as-is).
 
-![Image](img/deskhop-case.gif)
+![DeskHop with 3D Printed Case](img/deskhop-case.gif)
 
-## Bill of materials 
+## Bill of materials
 
 <details closed>
   <summary>Click here to view original PCB v1.0 BOM</summary>
@@ -176,7 +183,7 @@ TI ISO7721DR can be used instead of the ADuM - it's pin-compatible, much cheaper
 
 </details>
 
-#### PCB v1.1
+### PCB v1.1
 
 | Component      | Part                | Qty | Unit Price / € | Price / €|
 |----------------|---------------------|-----|----------------|----------|
@@ -196,29 +203,31 @@ USB-A connector can be Molex MX-67643-0910 or a cheaper/budget one that shares t
 
 Additional steps:
 
- - making the PCB ([Gerber provided](pcb/), choose 1.6 mm thickness)
- - 3d printing the case ([stl files provided](case/), ~33g filament)
+- making the PCB ([Gerber provided](pcb/), choose 1.6 mm thickness)
+- 3d printing the case ([stl files provided](case/), ~33g filament)
 
 ## Assembly guide
 
-If you have some experience with electronics, you don't need this. However, some of you might not, and in that case this video might help guide you through the process. Please note, after soldering you should clean the flux from the PCB to prevent corrosion. 
+If you have some experience with electronics, you don't need this. However, some of you might not, and in that case this video might help guide you through the process. Please note, after soldering you should clean the flux from the PCB to prevent corrosion.
 
 The standard process to do that is using isopropyl alcohol and an old toothbrush. But guess what? I'm not putting my old toothbrush online, so you'll just have to improvise that part :)
 
 [![PCB Assembly Guide](img/yt-video-s.jpg)](https://www.youtube.com/watch?v=LxI9NYi_oOU)
 
-[NOTE] The video assembly guide covers pcb v1.0. The revised version is very similar and the procedure is basically the same. 
+[NOTE] The video assembly guide covers pcb v1.0. The revised version is very similar and the procedure is basically the same.
 
 ## Usage guide
 
 ### Keyboard shortcuts - (fw versions 0.68+)
 
-_Config_
+_Config_:
+
 - ~~```Left Shift```~~ ```Left Ctrl + Right Shift + C + O``` - enter config mode
 - ```Right Shift + F12 + D``` - remove flash config
 - ```Right Shift + F12 + Y``` - save screen switch offset
 
-_Usage_
+_Usage_:
+
 - ```Right CTRL + Right ALT``` - Toggle slower mouse mode
 - ```Right CTRL + K``` - Lock/Unlock mouse desktop switching
 - ```Right CTRL + L``` - Lock both outputs at once (set output OS before, see shortcuts below)
@@ -233,7 +242,7 @@ Note: some keyboards don't send both shifts at the same time properly, that's wh
 
 This step is not required, but it can be handy if your screens are not perfectly aligned or differ in size. The objective is to have the mouse pointer come out at exactly the same height.
 
-![Image](img/border_top_s.png)
+![Border height difference](img/border_top_s.png)
 
 Just park your mouse on the LARGER screen at the height of the smaller/lower screen (illustrated) and press ```Right Shift + F12 + Y```. Your LED (and caps lock) should flash in confirmation.
 
@@ -245,38 +254,46 @@ Windows and Mac have issues with multiple screens and absolute positioning, so w
 
 Your main screens need to be in the middle, and secondary screen(s) on the edges. To configure the actual options, open the web configuration page for your device.
 
-![Image](img/deskhop-scr.png)
+![Multiple screens per output](img/deskhop-scr.png)
 
 ### Web configuration mode
 
 Starting with fw 0.6, an improved configuration mode is introduced. To configure your device, follow these instructions:
 
 1. Press Left Ctrl + Right Shift + C + O - your device will reboot and enter configuration mode (on the side your keyboard is plugged into). LED will keep blinking during the configuration session.
-2. A new USB drive will appear named "DESKHOP" with a single file, config.htm
-3. Open that file with Chromium / Chrome. Unfortunately FF is not supported right now, since they avoid implementing WebHID.
-4. Click connect and allow deskhop device to pair.
 
-![Image](img/connect-dialog.png)
+1. A new USB drive will appear named "DESKHOP" with a single file, config.htm
 
-5. Configure the options as you wish and click save to write to device.
-6. Click "exit" in the menu to leave configuration mode for added safety.
+1. Open that file with Chromium / Chrome. Unfortunately FF is not supported right now, since they avoid implementing WebHID.
 
-![Image](img/config-page-big.png)
+1. Click connect and allow deskhop device to pair.
 
-Q: Why not simply create a nice online web page like Via instead of dealing with this weird USB drive thing? 
-A: Loading javascript from a random online location that interacts with your input devices is a potential security risk. The configuration web page is local only and nothing is ever loaded externally.
+   ![Web Browser with URL](img/connect-dialog.png)
+
+1. Configure the options as you wish and click save to write to device.
+
+1. Click "exit" in the menu to leave configuration mode for added safety.
+
+   ![Web Config](img/config-page-big.png)
 
 <details closed>
   <summary>Linux doesn't see device? Click here.</summary>
 
-Q: Chromium on Linux doesn't work. 
-A: You probably need to tweak /dev permissions or create a corresponding udev rules file and make sure your user is in the right group, like so:
+**Q**: Chromium on Linux doesn't work.
+
+**A**: You probably need to tweak /dev permissions or create a corresponding udev rules file and make sure your user is in the right group, like so:
 
 /etc/udev/rules.d/99-deskhop.rules
+
+```plain
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="c000", GROUP="plugdev", MODE="0660"
 ```
-KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="c000", GROUP="plugdev", MODE="0660" 
-```
+
 </details><br />
+
+**Q**: Why not simply create a nice online web page like Via instead of dealing with this weird USB drive thing?
+
+**A**: Loading javascript from a random online location that interacts with your input devices is a potential security risk. The configuration web page is local only and nothing is ever loaded externally.
 
 Please note the config web page is not "weird" because of deliberate obfuscation - it's self-decompressing due to very limited storage. Entire source is 100% open and a part of this repo. You are encouraged to rebuild everything yourself.
 
@@ -290,7 +307,7 @@ Do this test by first plugging the keyboard on one side and then on the other. I
 
 Some features are missing on purpose, despite the fact it would make the device easier to use or simpler to configure. Here is a quick breakdown of these decisions:
 
-- There is no copy-paste or *any* information sharing between systems. This prevents information leakage.
+- There is no copy-paste or _any_ information sharing between systems. This prevents information leakage.
 - No webhid device management without explicit user consent. No inbound connectivity from the output computers, with the only exception of standard keyboard LED on/off messages and hard limited to 1 byte of data.
 - No FW upgrade triggering from the outputs. Only explicit and deliberate user action through a special keyboard shortcut may do that.
 - No plugged-in keyboard/mouse custom endpoints are exposed or information forwarded towards these devices. Their potential vulnerabilities are effectively firewalled from the computer.
@@ -309,52 +326,52 @@ This still doesn't guarantee anything, but I believe it makes a reasonable set o
 
 1. I just have two Picos, can I do without a PCB and isolator?
 
-*Sure. Having an isolator is recommended but it should work without it.*
+   _Sure. Having an isolator is recommended but it should work without it._
 
-2. What happens if I have two different resolutions on my monitors?
+1. What happens if I have two different resolutions on my monitors?
 
-*The mouse movement is done in abstract coordinate space and your computer figures out how that corresponds with the physical screen, so it should just work.*
+   _The mouse movement is done in abstract coordinate space and your computer figures out how that corresponds with the physical screen, so it should just work._
 
-3. Where can I buy it?
+1. Where can I buy it?
 
-*I'm not selling anything, this is just a personal, non-commercial hobby project.*
+   _I'm not selling anything, this is just a personal, non-commercial hobby project._
 
-[UPDATE] It seems you can order it in QTY of 1 (for either PCB, assembled PCB or a fully assembled device) from [Elecrow if you follow this link](https://www.elecrow.com/deskhop-fast-desktop-switching.html)
-As reported by users, your **board will arrive blank** and you have to write the firmware yourself.
+   _**UPDATE 1**: It seems you can order it in QTY of 1 (for either PCB, assembled PCB or a fully assembled device) from [Elecrow if you follow this link](https://www.elecrow.com/deskhop-fast-desktop-switching.html)_
+   _As reported by users, your **board will arrive blank** and you have to write the firmware yourself._
 
-[UPDATE2] - I never asked Elecrow for anything, but a couple of days ago they offered to sponsor the project with a small budget that will be used for future board prototyping. Since my goal is to create a better board with more than 2 outputs etc, I believe prototyping services might be beneficial to the project.
+   _**UPDATE 2**: I never asked Elecrow for anything, but a couple of days ago they offered to sponsor the project with a small budget that will be used for future board prototyping. Since my goal is to create a better board with more than 2 outputs etc, I believe prototyping services might be beneficial to the project._
 
-4. When the active screen is changed via the mouse, does the keyboard follow (and vice versa)?
+1. When the active screen is changed via the mouse, does the keyboard follow (and vice versa)?
 
-*Yes, the idea was to make it behave like it was one single computer.*
+   _Yes, the idea was to make it behave like it was one single computer._
 
-5. Will this work with keyboard/mouse combo dongles, like the Logitech Unifying receiver?
+1. Will this work with keyboard/mouse combo dongles, like the Logitech Unifying receiver?
 
-It should work. After a recent FW update, support for combo receivers should be much better.
+   _It should work. After a recent FW update, support for combo receivers should be much better._
 
-6. Will this work with wireless mice and keyboards that have separate wireless receivers (one for the mouse, another for the keyboard)?
+1. Will this work with wireless mice and keyboards that have separate wireless receivers (one for the mouse, another for the keyboard)?
 
-*It should work - tried an Anker wireless mouse with a separate receiver and that worked just fine.*
+   _It should work - tried an Anker wireless mouse with a separate receiver and that worked just fine._
 
-7. I have issues with build or compilation
+1. I have issues with build or compilation
 
-*Check out the [Troubleshooting Wiki](https://github.com/hrvach/deskhop/wiki/Troubleshooting) that might have some answers.*
+   _Check out the [Troubleshooting Wiki](https://github.com/hrvach/deskhop/wiki/Troubleshooting) that might have some answers._
 
 ## Software Alternatives
 
 There are several software alternatives you can use if that works in your particular situation.
 
 1. [Barrier](https://github.com/debauchee/barrier) - Free, Open Source
-2. [Input Leap](https://github.com/input-leap/input-leap) - Free, Open Source
-3. [Synergy](https://symless.com/synergy) - Commercial
-4. [Mouse Without Borders](https://www.microsoft.com/en-us/garage/wall-of-fame/mouse-without-borders/) - Free, Windows only
-5. [Universal Control](https://support.apple.com/en-my/HT212757) - Free, Apple thing
+1. [Input Leap](https://github.com/input-leap/input-leap) - Free, Open Source
+1. [Synergy](https://symless.com/synergy) - Commercial
+1. [Mouse Without Borders](https://www.microsoft.com/en-us/garage/wall-of-fame/mouse-without-borders/) - Free, Windows only
+1. [Universal Control](https://support.apple.com/en-my/HT212757) - Free, Apple thing
 
 ## Shortcomings
 
 - Windows 10 broke HID absolute coordinates behavior in KB5003637, so you can't use more than 1 screen on Windows (mouse will stay on the main screen). There is an experimental workaround with a better one on the way.
 - Code needs cleanup, some refactoring etc.
-- Not tested with a wide variety of devices, I don't know how it will work with your hardware. There is a reasonable chance things might not work out-of-the-box. 
+- Not tested with a wide variety of devices, I don't know how it will work with your hardware. There is a reasonable chance things might not work out-of-the-box.
 - Advanced keyboards (with knobs, extra buttons or sliders) will probably face issues where this additional hardware doesn't work.
 - Super-modern mice with 300 buttons might see some buttons not work as expected.
 - NOTE: **Both computers need to be connected and provide power to the USB for this to work** (as each board gets powered by the computer it plugs into). Many desktops and laptops will provide power even when shut down nowadays. If you need to run with one board fully disconnected, you should be able to use a USB hub to plug both keyboard and mouse to a single port.
@@ -365,13 +382,14 @@ There are several software alternatives you can use if that works in your partic
 So, what's the deal with all the enthusiasm? I can't believe it - please allow me to thank you all! I've never expected this kind of interest in a simple personal project, so the initial features are pretty basic (just like my cooking skills) and mostly cover my own usecase. Stay tuned for firmware updates that should bring wider device compatibility, more features and less bugs. As this is a hobby project, I appreciate your understanding for being time-constrained and promise to do the best I can.
 
 Planned features:
+
 - Better workarounds for multiscreen windows and macos
 - Transparent / Gaming mode
 - Support for more than 2 outputs
 - Improvements on the configuration UI
 - ... and more!
 
-Working on a *lite* version which provides basic functionality with just a single Pico W board, lowering the cost even further and enabling you to try it out even with no added hardware or PCB.
+Working on a _lite_ version which provides basic functionality with just a single Pico W board, lowering the cost even further and enabling you to try it out even with no added hardware or PCB.
 
 Mouse polling should now work at 1000 Hz (the dips in the graph is my arm hurting from all the movement :-)):
 
@@ -382,12 +400,12 @@ Mouse polling should now work at 1000 Hz (the dips in the graph is my arm hurtin
 I'm NOT doing this for profit or any other reason except to try and help people by creating a better working environment for everyone.
 If you want to support the project further, please consider making a small donation towards a charity like **Doctors Without Borders**.
 
-[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://donate.doctorswithoutborders.org/secure/donate)
+[![Donate to Doctors Without Borders, with PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://donate.doctorswithoutborders.org/secure/donate)
 
 Please allow me to thank everyone who helped or considering it!
 
 ## Disclaimer
 
-I kindly request that anyone attempting to build this project understands and acknowledges that I am not liable for any injuries, damages, or other consequences. Your safety is important, and I encourage you to approach this project carefully, taking necessary precautions and assuming personal responsibility for your well-being throughout the process. Please don't get electrocuted, burned, stressed or angry. Have fun and enjoy! 
+I kindly request that anyone attempting to build this project understands and acknowledges that I am not liable for any injuries, damages, or other consequences. Your safety is important, and I encourage you to approach this project carefully, taking necessary precautions and assuming personal responsibility for your well-being throughout the process. Please don't get electrocuted, burned, stressed or angry. Have fun and enjoy!
 
 Happy switchin'!
