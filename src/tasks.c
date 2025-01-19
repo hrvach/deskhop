@@ -27,7 +27,7 @@ void task_scheduler(device_t *state, task_t *task) {
     task->exec(state);
 }
 
-/**================================================== *
+/* ================================================== *
  * ==============  Watchdog Functions  ============== *
  * ================================================== */
 
@@ -46,7 +46,7 @@ void kick_watchdog_task(device_t *state) {
         watchdog_update();
 }
 
-/**================================================== *
+/* ================================================== *
  * ===============  USB Device / Host  ============== *
  * ================================================== */
 
@@ -193,7 +193,7 @@ void process_hid_queue_task(device_t *state) {
 
     /* ... then we can remove it from the queue. Race conditions shouldn't happen [tm] */
     if (succeeded)
-	queue_try_remove(&state->hid_queue_out, &packet);
+        queue_try_remove(&state->hid_queue_out, &packet);
 }
 
 /* Task that handles copying firmware from the other device to ours */
