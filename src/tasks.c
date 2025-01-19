@@ -77,9 +77,8 @@ mouse_report_t *screensaver_pong(device_t *state) {
 }
 
 mouse_report_t *screensaver_jitter(device_t *state) {
-    const int16_t jitter_distance = 2;
     static mouse_report_t report = {
-        .y = jitter_distance,
+        .y = JITTER_DISTANCE,
         .mode = RELATIVE,
     };
     report.y = -report.y;
