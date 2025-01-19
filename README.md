@@ -78,6 +78,12 @@ cmake --build build
 
 additionally, to rebuild web UI check webconfig/ and execute ```./render.py```, you'll need jinja2 installed.
 
+An alternative can be to use docker via 'docker compose' or 'docker-compose':
+```
+docker compose run --rm build_container
+```
+This ensures reproducible builds.
+
 To rebuild the disk, check disk/ folder and run ```./create.sh```, tweak to your system if needed. You'll need **dosfstools** (to provide mkdosfs),
 
 ## Using a pre-built image
