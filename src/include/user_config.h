@@ -108,8 +108,9 @@
 
 /**================================================== *
  *
- * SCREENSAVER_{A|B}_ENABLED: [0 or 1] 0 means screensaver is
- * disabled, 1 means it is enabled.
+ * SCREENSAVER_{A|B}_MODE: DISABLED
+ *                         PONG
+ *                         JITTER
  *
  **/
 
