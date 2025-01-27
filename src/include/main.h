@@ -39,6 +39,7 @@
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
+#include <pico/unique_id.h>
 
 /*********  Misc definitions for better readability **********/
 #define OUTPUT_A 0

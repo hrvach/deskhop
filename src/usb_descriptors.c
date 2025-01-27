@@ -135,6 +135,13 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
 
     uint8_t chr_count;
 
+    // 2 (hex) characters for every byte + 1 '\0' for string end
+    static char serial_number[PICO_UNIQUE_BOARD_ID_SIZE_BYTES * 2 + 1] = {0};
+
+    if (!serial_number[0]) {
+       pico_get_unique_board_id_string(serial_number, sizeof(serial_number));
+    }
+
     if (index == 0) {
         memcpy(&_desc_str[1], string_desc_arr[0], 2);
         chr_count = 1;
@@ -145,7 +152,7 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
         if (!(index < sizeof(string_desc_arr) / sizeof(string_desc_arr[0])))
             return NULL;
 
-        const char *str = string_desc_arr[index];
+        const char *str = (index == STRID_SERIAL) ? serial_number : string_desc_arr[index];
 
         // Cap at max char
         chr_count = strlen(str);
