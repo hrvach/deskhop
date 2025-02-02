@@ -68,8 +68,11 @@ void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t da
 }
 
 void handle_global_item(parser_state_t *parser, item_t *item) {
-    if (item->hdr.tag == RI_GLOBAL_REPORT_ID)
+    if (item->hdr.tag == RI_GLOBAL_REPORT_ID) {
+        // reset offset for a new page
+        parser->offset_in_bits = 0;
         parser->report_id = item->val;
+    }
 
     parser->globals[item->hdr.tag] = *item;
 }
