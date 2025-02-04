@@ -39,6 +39,7 @@
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
+#include <pico/unique_id.h>
 
 /*********  Misc definitions for better readability **********/
 #define OUTPUT_A 0
@@ -212,6 +213,8 @@ enum screensaver_mode_e {
     JITTER     = 2,
     MAX_SS_VAL = JITTER,
 };
+
+#define JITTER_DISTANCE    2
 
 #define ITF_NUM_HID        0
 #define ITF_NUM_HID_REL_M  1

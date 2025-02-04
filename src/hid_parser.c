@@ -148,7 +148,7 @@ void handle_main_item(parser_state_t *parser, item_t *item, hid_interface_t *ifa
 /* This method is sub-optimal and far from a generalized HID descriptor parsing, but should
  * hopefully work well enough to find the basic values we care about to move the mouse around.
  * Your descriptor for a mouse with 2 wheels and 264 buttons might not parse correctly.
- **/
+ * */
 parser_state_t parser_state = {0};  // Avoid placing it on the stack, it's large
 
 void parse_report_descriptor(hid_interface_t *iface,

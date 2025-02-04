@@ -16,7 +16,7 @@ set(PICO_BOARD "pico")
 set(PICO_SDK_FETCH_FROM_GIT off)
 set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/pico-sdk)
 set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
-include(pico_sdk_import.cmake)
+include(${PICO_SDK_PATH}/pico_sdk_import.cmake)
 
 project(loopmotion C CXX ASM)
 set(CMAKE_C_STANDARD 11)
@@ -89,6 +89,7 @@ set(COMMON_LINK_LIBRARIES
   tinyusb_device 
   tinyusb_host
   pico_multicore
+  pico_unique_id
   Pico-PIO-USB
 )
 
@@ -123,7 +124,7 @@ target_link_libraries(${binary} PUBLIC ${COMMON_LINK_LIBRARIES})
 ## Configure Pico Library
 pico_enable_stdio_usb(${binary} 0)
 pico_enable_stdio_uart(${binary} 0)
-pico_set_linker_script(${binary} ${CMAKE_SOURCE_DIR}/memory_map.ld)
+pico_set_linker_script(${binary} ${CMAKE_SOURCE_DIR}/misc/memory_map.ld)
 
 ## Build other file formats as well
 pico_add_extra_outputs(${binary})
@@ -131,7 +132,7 @@ pico_add_extra_outputs(${binary})
 ## Post-Build Commands
 add_custom_command(
     TARGET ${binary} POST_BUILD
-    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/crc32.py ${binary}.bin ${binary}.crc ${VERSION_MAJOR}${VERSION_MINOR}
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/misc/crc32.py ${binary}.bin ${binary}.crc ${VERSION_MAJOR}${VERSION_MINOR}
     COMMAND ${CMAKE_OBJCOPY} --update-section .section_metadata=${binary}.crc ${binary}.elf
     COMMAND ${CMAKE_OBJCOPY} -O binary ${binary}.elf ${binary}.bin
     COMMAND ${CMAKE_BINARY_DIR}/elf2uf2/elf2uf2 ${binary}.elf ${binary}.uf2
