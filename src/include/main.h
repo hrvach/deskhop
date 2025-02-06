@@ -472,7 +472,7 @@ bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_
 void process_mouse_report(uint8_t *, int, uint8_t, hid_interface_t *);
 void parse_report_descriptor(hid_interface_t *, uint8_t const *, int);
 void extract_data(hid_interface_t *, report_val_t *);
-int32_t get_report_value(uint8_t *report, report_val_t *val);
+int32_t get_report_value(uint8_t *report, int len, report_val_t *val);
 void queue_mouse_report(mouse_report_t *, device_t *);
 void output_mouse_report(mouse_report_t *, device_t *);
 

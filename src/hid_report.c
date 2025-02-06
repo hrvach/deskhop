@@ -19,7 +19,7 @@
 #include "main.h"
 
 /* Given a value struct with size and offset in bits, find and return a value from the HID report */
-int32_t get_report_value(uint8_t *report, report_val_t *val) {
+int32_t get_report_value(uint8_t *report, int len, report_val_t *val) {
     /* Calculate the bit offset within the byte */
     uint16_t offset_in_bits = val->offset % 8;
 
@@ -28,6 +28,9 @@ int32_t get_report_value(uint8_t *report, report_val_t *val) {
 
     /* Calculate the byte offset in the array */
     uint16_t byte_offset = val->offset >> 3;
+    
+    if (byte_offset >= len)
+        return 0;
 
     /* Create a mask for the specified number of bits */
     uint32_t mask = (1u << val->size) - 1;
