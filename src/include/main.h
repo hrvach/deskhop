@@ -463,7 +463,7 @@ void queue_system_packet(uint8_t *, device_t *);
 void send_key(hid_keyboard_report_t *, device_t *);
 void send_consumer_control(uint8_t *, device_t *);
 bool key_in_report(uint8_t, const hid_keyboard_report_t *);
-int32_t extract_bit_variable(uint32_t, uint32_t, uint8_t *, int, uint8_t *);
+int32_t extract_bit_variable(report_val_t *, uint8_t *, int, uint8_t *);
 int32_t extract_kbd_data(uint8_t *, int, uint8_t, hid_interface_t *, hid_keyboard_report_t *);
 
 /*********  Mouse  **********/

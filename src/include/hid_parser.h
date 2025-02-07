@@ -71,7 +71,7 @@ typedef struct {
     int32_t move_y;
     int32_t wheel;
     int32_t pan;
-    uint32_t buttons;
+    int32_t buttons;
 } mouse_values_t;
 
 /* Describes where can we find a value in a HID report */
@@ -99,7 +99,6 @@ typedef struct {
     report_val_t move_y;
     report_val_t wheel;
     report_val_t pan;
-
     uint8_t report_id;
 
     bool is_found;

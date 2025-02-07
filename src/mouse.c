@@ -225,6 +225,14 @@ void do_screen_switch(device_t *state, int direction) {
         switch_virtual_desktop(state, output, output->screen_index + 1, direction);
 }
 
+inline void extract_value(bool uses_id, int32_t *dst, report_val_t *src, uint8_t *raw_report, int len) {
+    /* If HID Report ID is used, the report is prefixed by the report ID so we have to move by 1 byte */
+    if (uses_id && (*raw_report++ != src->report_id))
+        return;
+
+    *dst = get_report_value(raw_report, len, src);
+}
+
 void extract_report_values(uint8_t *raw_report, int len, device_t *state, mouse_values_t *values, hid_interface_t *iface) {
     /* Interpret values depending on the current protocol used. */
     if (iface->protocol == HID_PROTOCOL_BOOT) {
@@ -237,34 +245,14 @@ void extract_report_values(uint8_t *raw_report, int len, device_t *state, mouse_
         values->buttons = mouse_report->buttons;
         return;
     }
+    mouse_t *mouse = &iface->mouse;
+    bool uses_id = iface->uses_report_id;
 
-    /* If HID Report ID is used, the report is prefixed by the report ID so we have to move by 1 byte */
-    if (iface->uses_report_id) {
-        uint8_t report_id = raw_report[0];
-        raw_report++;
-        if (report_id == iface->mouse.move_x.report_id)
-            values->move_x = get_report_value(raw_report, len, &iface->mouse.move_x);
-
-        if (report_id == iface->mouse.move_y.report_id)
-            values->move_y = get_report_value(raw_report, len, &iface->mouse.move_y);
-
-        if (report_id == iface->mouse.wheel.report_id)
-            values->wheel = get_report_value(raw_report, len, &iface->mouse.wheel);
-
-        if (report_id == iface->mouse.pan.report_id)
-            values->pan = get_report_value(raw_report, len, &iface->mouse.pan);
-
-        if (report_id == iface->mouse.buttons.report_id)
-            values->buttons = get_report_value(raw_report, len, &iface->mouse.buttons);
-        else
-            values->buttons = state->mouse_buttons;
-    } else {
-        values->move_x = get_report_value(raw_report, len, &iface->mouse.move_x);
-        values->move_y = get_report_value(raw_report, len, &iface->mouse.move_y);
-        values->wheel = get_report_value(raw_report, len, &iface->mouse.wheel);
-        values->pan = get_report_value(raw_report, len, &iface->mouse.pan);
-        values->buttons = get_report_value(raw_report, len, &iface->mouse.buttons);
-    }
+    extract_value(uses_id, &values->move_x, &mouse->move_x, raw_report, len);
+    extract_value(uses_id, &values->move_y, &mouse->move_y, raw_report, len);
+    extract_value(uses_id, &values->wheel, &mouse->wheel, raw_report, len);
+    extract_value(uses_id, &values->pan, &mouse->pan, raw_report, len);
+    extract_value(uses_id, &values->buttons, &mouse->buttons, raw_report, len);
 }
 
 mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
