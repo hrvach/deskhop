@@ -1,0 +1,48 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: 
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Install build deps
+      shell: bash
+      run: |
+        sudo apt-get install -y \
+          gcc-arm-none-eabi \
+          libnewlib-arm-none-eabi \
+          dosfstools
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Render webconfig
+      shell: bash
+      working-directory: webconfig
+      run: make
+    
+    - name: Build disk image
+      shell: bash
+      working-directory: disk
+      run: ./create.sh
+
+    - name: Build firmware
+      shell: bash
+      run: |
+        cmake -S . -B build
+        cmake --build build
+
+    - name: Publish artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: deskhop-gha-${{ github.run_number }}
+        path: build/deskhop.uf2
