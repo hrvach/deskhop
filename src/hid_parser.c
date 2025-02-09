@@ -1,6 +1,6 @@
 /*
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
- * Copyright (c) 2024 Hrvoje Cavrak
+ * Copyright (c) 2025 Hrvoje Cavrak
  *
  * Based on the TinyUSB HID parser routine and the amazing USB2N64
  * adapter (https://github.com/pdaxrom/usb2n64-adapter)
@@ -9,15 +9,8 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * See the file LICENSE for the full license text.
  */
-
 #include "main.h"
 
 #define IS_BLOCK_END (parser->collection.start == parser->collection.end)

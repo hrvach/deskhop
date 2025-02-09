@@ -10,24 +10,20 @@
  */
 #pragma once
 
-#include "main.h"
+#include "structs.h"
+#include "hid_parser.h"
 
 /*==============================================================================
- *  Function Pointer Definitions
+ *  Data Extraction
  *==============================================================================*/
-
-typedef void (*value_handler_f)(report_val_t *, report_val_t *, hid_interface_t *);
+void      extract_data(hid_interface_t *, report_val_t *);
+int32_t   get_report_value(uint8_t *, int, report_val_t *);
+void      parse_report_descriptor(hid_interface_t *, uint8_t const *, int);
 
 /*==============================================================================
- *  Data Structures
+ *  Mouse Report Handling
  *==============================================================================*/
-
-typedef struct {
-    int global_usage;
-    int usage_page;
-    int usage;
-    uint8_t *id;
-    report_val_t *dst;
-    value_handler_f handler;
-    process_report_f receiver;
-} usage_map_t;
+void process_mouse_report(uint8_t *, int, uint8_t, hid_interface_t *);
+void queue_mouse_report(mouse_report_t *, device_t *);
+bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan);
+void output_mouse_report(mouse_report_t *, device_t *);

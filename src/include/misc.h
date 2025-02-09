@@ -10,24 +10,28 @@
  */
 #pragma once
 
-#include "main.h"
+#include <stdint.h>
+#include "structs.h"
 
 /*==============================================================================
- *  Function Pointer Definitions
+ *  Checksum Functions
  *==============================================================================*/
 
-typedef void (*value_handler_f)(report_val_t *, report_val_t *, hid_interface_t *);
+uint8_t  calc_checksum(const uint8_t *, int);
+uint32_t crc32(const uint8_t *, size_t);
+uint32_t crc32_iter(uint32_t, const uint8_t);
+bool     verify_checksum(const uart_packet_t *);
 
 /*==============================================================================
- *  Data Structures
+ *  Global State
  *==============================================================================*/
 
-typedef struct {
-    int global_usage;
-    int usage_page;
-    int usage;
-    uint8_t *id;
-    report_val_t *dst;
-    value_handler_f handler;
-    process_report_f receiver;
-} usage_map_t;
+extern device_t global_state;
+
+/*==============================================================================
+ *  LED Control
+ *==============================================================================*/
+
+void    blink_led(device_t *);
+void    restore_leds(device_t *);
+uint8_t toggle_led(void);
