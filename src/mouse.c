@@ -219,12 +219,13 @@ void do_screen_switch(device_t *state, int direction) {
         switch_virtual_desktop(state, output, output->screen_index + 1, direction);
 }
 
-inline void extract_value(bool uses_id, int32_t *dst, report_val_t *src, uint8_t *raw_report, int len) {
+static inline bool extract_value(bool uses_id, int32_t *dst, report_val_t *src, uint8_t *raw_report, int len) {
     /* If HID Report ID is used, the report is prefixed by the report ID so we have to move by 1 byte */
     if (uses_id && (*raw_report++ != src->report_id))
-        return;
+        return false;
 
     *dst = get_report_value(raw_report, len, src);
+    return true;
 }
 
 void extract_report_values(uint8_t *raw_report, int len, device_t *state, mouse_values_t *values, hid_interface_t *iface) {
@@ -246,7 +247,10 @@ void extract_report_values(uint8_t *raw_report, int len, device_t *state, mouse_
     extract_value(uses_id, &values->move_y, &mouse->move_y, raw_report, len);
     extract_value(uses_id, &values->wheel, &mouse->wheel, raw_report, len);
     extract_value(uses_id, &values->pan, &mouse->pan, raw_report, len);
-    extract_value(uses_id, &values->buttons, &mouse->buttons, raw_report, len);
+
+    if (!extract_value(uses_id, &values->buttons, &mouse->buttons, raw_report, len)) {
+        values->buttons = state->mouse_buttons;
+    }
 }
 
 mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
