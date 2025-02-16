@@ -1,17 +1,3 @@
-# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
-if(WIN32)
-    set(USERHOME $ENV{USERPROFILE})
-else()
-    set(USERHOME $ENV{HOME})
-endif()
-set(sdkVersion 2.1.0)
-set(toolchainVersion 13_3_Rel1)
-set(picotoolVersion 2.1.0)
-set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
-if (EXISTS ${picoVscode})
-    include(${picoVscode})
-endif()
-# ====================================================================================
 cmake_minimum_required(VERSION 3.6)
 
 ## Version Configuration
@@ -22,12 +8,12 @@ set(VERSION_MINOR 170)
 option(DH_DEBUG "Build a debug version" OFF)
 
 ## Hardware Configuration for PICO
-#set(DP_PIN_DEFAULT 14 CACHE STRING "Default USB D+ Pin Number")
-#set(PICO_BOARD pico CACHE STRING "Board type")
+set(DP_PIN_DEFAULT 14 CACHE STRING "Default USB D+ Pin Number")
+set(PICO_BOARD pico CACHE STRING "Board type")
 
 ## Hardware Configuration for Feather RP2040 USB Host
-set(DP_PIN_DEFAULT 16 CACHE STRING "Default USB D+ Pin Number")
-set(PICO_BOARD adafruit_feather_rp2040_usb_host CACHE STRING "Board type")
+#set(DP_PIN_DEFAULT 16 CACHE STRING "Default USB D+ Pin Number")
+#set(PICO_BOARD adafruit_feather_rp2040_usb_host CACHE STRING "Board type")
 
 ## Pico SDK Configuration
 set(PICO_SDK_FETCH_FROM_GIT off)
@@ -46,10 +32,6 @@ set(CMAKE_C_FLAGS "-Ofast -Wall -mcpu=cortex-m0plus -mtune=cortex-m0plus -fstack
 
 ## Initialize Pico SDK
 pico_sdk_init()
-
-## TinyUSB Library Setup
-set(PIO_USE_TINYUSB 1 CACHE STRING "Make TinyUSB Manage the PIO USB Port")
-set(PICO_TINYUSB_PATH ${PICO_SDK_PATH}/lib/tinyusb)
 
 ## PIO USB Library Setup
 set(PICO_PIO_USB_DIR ${CMAKE_CURRENT_LIST_DIR}/lib/Pico-PIO-USB)
