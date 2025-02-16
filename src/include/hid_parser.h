@@ -2,34 +2,33 @@
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
  * Copyright (c) 2024 Hrvoje Cavrak
  *
- * Based on the TinyUSB HID parser routine and the amazing USB2N64
- * adapter (https://github.com/pdaxrom/usb2n64-adapter)
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * See the file LICENSE for the full license text.
  */
 #pragma once
 
 #include "main.h"
 #include "tusb.h"
 
-#define MAX_REPORTS                 24
+/*==============================================================================
+ *  Constants
+ *==============================================================================*/
+
+#define HID_DEFAULT_NUM_COLLECTIONS 16
+#define HID_MAX_USAGES              128
+#define MAX_CC_BUTTONS              16
 #define MAX_DEVICES                 3
 #define MAX_INTERFACES              6
-#define HID_MAX_USAGES              128
-#define HID_DEFAULT_NUM_COLLECTIONS 16
-#define MAX_CC_BUTTONS              16
-#define MAX_SYS_BUTTONS             8
 #define MAX_KEYS                    32
+#define MAX_REPORTS                 24
+#define MAX_SYS_BUTTONS             8
+
+/*==============================================================================
+ *  Data Structures
+ *==============================================================================*/
 
 /* Counts how many collection starts and ends we've seen, when they equalize
    (and not zero), we are at the end of a block */
@@ -71,7 +70,7 @@ typedef struct {
     int32_t move_y;
     int32_t wheel;
     int32_t pan;
-    uint32_t buttons;
+    int32_t buttons;
 } mouse_values_t;
 
 /* Describes where can we find a value in a HID report */

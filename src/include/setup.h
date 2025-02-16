@@ -10,24 +10,12 @@
  */
 #pragma once
 
-#include "main.h"
+#include "structs.h"
 
 /*==============================================================================
- *  Function Pointer Definitions
+ *  Initialization Functions
  *==============================================================================*/
 
-typedef void (*value_handler_f)(report_val_t *, report_val_t *, hid_interface_t *);
-
-/*==============================================================================
- *  Data Structures
- *==============================================================================*/
-
-typedef struct {
-    int global_usage;
-    int usage_page;
-    int usage;
-    uint8_t *id;
-    report_val_t *dst;
-    value_handler_f handler;
-    process_report_f receiver;
-} usage_map_t;
+void initial_setup(device_t *);
+void serial_init(void);
+void core1_main(void);

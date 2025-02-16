@@ -1,23 +1,17 @@
 /*
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
- * Copyright (c) 2024 Hrvoje Cavrak
+ * Copyright (c) 2025 Hrvoje Cavrak
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * See the file LICENSE for the full license text.
  */
 
 #include "main.h"
 
-/**=================================================== *
+/* =================================================== *
  * ============  Hotkey Handler Routines  ============ *
  * =================================================== */
 
@@ -150,7 +144,7 @@ void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report
 };
 
 
-/**==================================================== *
+/* ==================================================== *
  * ==========  UART Message Handling Routines  ======== *
  * ==================================================== */
 
@@ -365,7 +359,7 @@ void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
 }
 
 
-/**==================================================== *
+/* ==================================================== *
  * ==============  Output Switch Routines  ============ *
  * ==================================================== */
 

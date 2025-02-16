@@ -1,18 +1,12 @@
 /*
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
- * Copyright (c) 2024 Hrvoje Cavrak
+ * Copyright (c) 2025 Hrvoje Cavrak
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * See the file LICENSE for the full license text.
  */
 
 #include "main.h"
@@ -27,7 +21,7 @@ void task_scheduler(device_t *state, task_t *task) {
     task->exec(state);
 }
 
-/**================================================== *
+/* ================================================== *
  * ==============  Watchdog Functions  ============== *
  * ================================================== */
 
@@ -66,7 +60,7 @@ void kick_watchdog_task(device_t *state) {
     
 }
 
-/**================================================== *
+/* ================================================== *
  * ===============  USB Device / Host  ============== *
  * ================================================== */
 
@@ -97,9 +91,8 @@ mouse_report_t *screensaver_pong(device_t *state) {
 }
 
 mouse_report_t *screensaver_jitter(device_t *state) {
-    const int16_t jitter_distance = 2;
     static mouse_report_t report = {
-        .y = jitter_distance,
+        .y = JITTER_DISTANCE,
         .mode = RELATIVE,
     };
     report.y = -report.y;
@@ -213,7 +206,7 @@ void process_hid_queue_task(device_t *state) {
 
     /* ... then we can remove it from the queue. Race conditions shouldn't happen [tm] */
     if (succeeded)
-	queue_try_remove(&state->hid_queue_out, &packet);
+        queue_try_remove(&state->hid_queue_out, &packet);
 }
 
 /* Task that handles copying firmware from the other device to ours */

@@ -22,7 +22,7 @@ SHORTCUTS = {
     }
 
 STATUS_ = [
-    FormField(78, "Running FW version", None, {}, "uint16", elem="hex_info"),
+    FormField(78, "Running FW version", None, {}, "uint16", elem="uint16"),
     FormField(79, "Running FW checksum", None, {}, "uint32", elem="hex_info"),
 ]
 
@@ -30,7 +30,7 @@ CONFIG_ = [
     FormField(1001, "Mouse", elem="label"),
     FormField(71, "Force Mouse Boot Mode", None, {}, "uint8", "checkbox"),
     FormField(75, "Enable Acceleration", None, {}, "uint8", "checkbox"),
-    FormField(77, "Jump Treshold", 0, {"min": 0, "max": 1024}, "uint16", "range"),
+    FormField(77, "Jump Threshold", 0, {"min": 0, "max": 3000}, "uint16", "range"),
 
     FormField(1002, "Keyboard", elem="label"),
     FormField(72, "Force KBD Boot Protocol", None, {}, "uint8", "checkbox"),
