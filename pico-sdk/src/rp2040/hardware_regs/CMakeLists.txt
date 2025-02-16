@@ -1,4 +1,0 @@
-add_library(hardware_regs INTERFACE)
-add_library(hardware_regs_headers INTERFACE)
-target_include_directories(hardware_regs_headers INTERFACE include)
-pico_mirrored_target_link_libraries(hardware_regs INTERFACE hardware_base)
