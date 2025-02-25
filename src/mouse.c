@@ -15,12 +15,18 @@
 #define MACOS_SWITCH_MOVE_COUNT 5
 
 /* Check if our upcoming mouse movement would result in having to switch outputs */
-enum screen_pos_e is_screen_switch_needed(int position, int offset) {
-    if (position + offset < MIN_SCREEN_COORD - global_state.config.jump_threshold)
+enum screen_pos_e is_screen_switch_needed(int position_x, int offset_x, int position_y, int offset_y) {
+    if (position_x + offset_x < MIN_SCREEN_COORD - global_state.config.jump_threshold)
         return LEFT;
 
-    if (position + offset > MAX_SCREEN_COORD + global_state.config.jump_threshold)
+    if (position_x + offset_x > MAX_SCREEN_COORD + global_state.config.jump_threshold)
         return RIGHT;
+
+    if (position_y + offset_y < MIN_SCREEN_COORD - global_state.config.jump_threshold)
+        return TOP;
+
+    if (position_y + offset_y > MAX_SCREEN_COORD + global_state.config.jump_threshold)
+        return BOTTOM;
 
     return NONE;
 }
@@ -82,7 +88,7 @@ enum screen_pos_e update_mouse_position(device_t *state, mouse_values_t *values)
     int offset_y = accelerate(values->move_y) * (current->speed_y >> reduce_speed);
 
     /* Determine if our upcoming movement would stay within the screen */
-    enum screen_pos_e switch_direction = is_screen_switch_needed(state->pointer_x, offset_x);
+    enum screen_pos_e switch_direction = is_screen_switch_needed(state->pointer_x, offset_x, state->pointer_y, offset_y);
 
     /* Update movement */
     state->pointer_x = move_and_keep_on_screen(state->pointer_x, offset_x);

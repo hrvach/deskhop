@@ -167,6 +167,8 @@ enum screen_pos_e {
     LEFT   = 1,
     RIGHT  = 2,
     MIDDLE = 3,
+    TOP = 4,
+    BOTTOM = 5,
 };
 
 enum screensaver_mode_e {
