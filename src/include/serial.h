@@ -21,7 +21,7 @@
 #define SERIAL_DATA_BITS  8
 #define SERIAL_PARITY     UART_PARITY_NONE
 #define SERIAL_STOP_BITS  1
-#define SERIAL_UART       uart0
+#define SERIAL_UART       uart1
 
 /*==============================================================================
  *  Serial Communication Functions
