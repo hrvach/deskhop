@@ -206,6 +206,10 @@ void do_screen_switch(device_t *state, int direction) {
     if (state->switch_lock || state->gaming_mode)
         return;
 
+    /* ignore top and bottem switches to match the default left/right linear configuration */
+    if (direction == TOP || direction == BOTTOM)
+        return;
+
     /* We want to jump in the direction of the other computer */
     if (output->pos != direction) {
         if (output->screen_index == 1) { /* We are at the border -> switch outputs */
