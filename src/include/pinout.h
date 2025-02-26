@@ -21,20 +21,20 @@
  *  GPIO Pins (LED, USB)
  *==============================================================================*/
 
-#define GPIO_LED_PIN   25 // LED is connected to pin 25 on a PICO
-#define PIO_USB_DP_PIN 14 // D+ is pin 14, D- is pin 15
+#define GPIO_LED_PIN   16 // LED is connected to pin 25 on a PICO
+#define PIO_USB_DP_PIN 0 // D+ is pin 14, D- is pin 15
 
 /*==============================================================================
  *  Serial Pins
  *==============================================================================*/
 
 /* GP12 / GP13, Pins 16 (TX), 17 (RX) on the Pico board */
-#define BOARD_A_RX 13
-#define BOARD_A_TX 12
+#define BOARD_A_RX 5
+#define BOARD_A_TX 4
 
 /* GP16 / GP17, Pins 21 (TX), 22 (RX) on the Pico board */
-#define BOARD_B_RX 17
-#define BOARD_B_TX 16
+#define BOARD_B_RX 9
+#define BOARD_B_TX 8
 
 #define SERIAL_RX_PIN (global_state.board_role == OUTPUT_A ? BOARD_A_RX : BOARD_B_RX)
 #define SERIAL_TX_PIN (global_state.board_role == OUTPUT_A ? BOARD_A_TX : BOARD_B_TX)
