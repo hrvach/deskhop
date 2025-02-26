@@ -153,8 +153,15 @@ void switch_to_another_pc(
 
     output_mouse_report(&hidden_pointer, state);
     set_active_output(state, output_to);
-    state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
-    state->pointer_y = scale_y_coordinate(output->number, 1 - output->number, state);
+
+    if (direction == LEFT || direction == RIGHT) {
+        state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
+        state->pointer_y = scale_y_coordinate(output->number, 1 - output->number, state);
+    }
+    else {
+        state->pointer_y = (direction == TOP) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
+        /* x scaling not currently supported */
+    }
 }
 
 void switch_virtual_desktop_macos(device_t *state, int direction) {
