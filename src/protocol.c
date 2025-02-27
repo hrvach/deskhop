@@ -1,3 +1,13 @@
+/*
+ * This file is part of DeskHop (https://github.com/hrvach/deskhop).
+ * Copyright (c) 2025 Hrvoje Cavrak
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * See the file LICENSE for the full license text.
+ */
 #include "main.h"
 
 const field_map_t api_field_map[] = {
@@ -47,7 +57,7 @@ const field_map_t api_field_map[] = {
     { 74, false, UINT8,  1, offsetof(device_t, config.hotkey_toggle) },
     { 75, false, UINT8,  1, offsetof(device_t, config.enable_acceleration) },
     { 76, false, UINT8,  1, offsetof(device_t, config.enforce_ports) },
-    { 77, false, UINT16, 2, offsetof(device_t, config.jump_treshold) },
+    { 77, false, UINT16, 2, offsetof(device_t, config.jump_threshold) },
 
     /* Firmware */
     { 78, true,  UINT16, 2, offsetof(device_t, _running_fw.version) },

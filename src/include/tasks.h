@@ -10,24 +10,27 @@
  */
 #pragma once
 
-#include "main.h"
+#include "structs.h"
 
 /*==============================================================================
- *  Function Pointer Definitions
+ *  Core Task Scheduling
  *==============================================================================*/
 
-typedef void (*value_handler_f)(report_val_t *, report_val_t *, hid_interface_t *);
+ void task_scheduler(device_t *, task_t *);
 
 /*==============================================================================
- *  Data Structures
+ *  Individual Task Functions
  *==============================================================================*/
 
-typedef struct {
-    int global_usage;
-    int usage_page;
-    int usage;
-    uint8_t *id;
-    report_val_t *dst;
-    value_handler_f handler;
-    process_report_f receiver;
-} usage_map_t;
+void firmware_upgrade_task(device_t *);
+void heartbeat_output_task(device_t *);
+void kick_watchdog_task(device_t *);
+void led_blinking_task(device_t *);
+void packet_receiver_task(device_t *);
+void process_hid_queue_task(device_t *);
+void process_kbd_queue_task(device_t *);
+void process_mouse_queue_task(device_t *);
+void process_uart_tx_task(device_t *);
+void screensaver_task(device_t *);
+void usb_device_task(device_t *);
+void usb_host_task(device_t *);

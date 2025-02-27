@@ -10,24 +10,25 @@
  */
 #pragma once
 
-#include "main.h"
+#include <hardware/uart.h>
+#include "structs.h"
 
 /*==============================================================================
- *  Function Pointer Definitions
+ *  Constants
  *==============================================================================*/
 
-typedef void (*value_handler_f)(report_val_t *, report_val_t *, hid_interface_t *);
+#define SERIAL_BAUDRATE   3686400
+#define SERIAL_DATA_BITS  8
+#define SERIAL_PARITY     UART_PARITY_NONE
+#define SERIAL_STOP_BITS  1
+#define SERIAL_UART       uart0
 
 /*==============================================================================
- *  Data Structures
+ *  Serial Communication Functions
  *==============================================================================*/
 
-typedef struct {
-    int global_usage;
-    int usage_page;
-    int usage;
-    uint8_t *id;
-    report_val_t *dst;
-    value_handler_f handler;
-    process_report_f receiver;
-} usage_map_t;
+bool get_packet_from_buffer(device_t *);
+void process_packet(uart_packet_t *, device_t *);
+void queue_packet(const uint8_t *, enum packet_type_e, int);
+void send_value(const uint8_t, enum packet_type_e);
+void write_raw_packet(uint8_t *, uart_packet_t *);

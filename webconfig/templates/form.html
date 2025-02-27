@@ -28,7 +28,7 @@
         readonly oninput="this.form.aRange{{ key }}.value=this.value" />
 
       {{ input(item, class='range api', type='range', name='aRange') }}
-        min="{{ item.values.min }}" max="{{ item.values.max }}" oninput="this.form.aInput{{key}}.value=this.value" />
+        min="{{ item['values'].min }}" max="{{ item['values'].max }}" oninput="this.form.aInput{{key}}.value=this.value" />
     </form>
 
   </div>

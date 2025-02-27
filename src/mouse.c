@@ -1,18 +1,12 @@
 /*
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
- * Copyright (c) 2024 Hrvoje Cavrak
+ * Copyright (c) 2025 Hrvoje Cavrak
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * See the file LICENSE for the full license text.
  */
 
 #include "main.h"
@@ -22,10 +16,10 @@
 
 /* Check if our upcoming mouse movement would result in having to switch outputs */
 enum screen_pos_e is_screen_switch_needed(int position, int offset) {
-    if (position + offset < MIN_SCREEN_COORD - global_state.config.jump_treshold)
+    if (position + offset < MIN_SCREEN_COORD - global_state.config.jump_threshold)
         return LEFT;
 
-    if (position + offset > MAX_SCREEN_COORD + global_state.config.jump_treshold)
+    if (position + offset > MAX_SCREEN_COORD + global_state.config.jump_threshold)
         return RIGHT;
 
     return NONE;
@@ -225,7 +219,15 @@ void do_screen_switch(device_t *state, int direction) {
         switch_virtual_desktop(state, output, output->screen_index + 1, direction);
 }
 
-void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t *values, hid_interface_t *iface) {
+inline void extract_value(bool uses_id, int32_t *dst, report_val_t *src, uint8_t *raw_report, int len) {
+    /* If HID Report ID is used, the report is prefixed by the report ID so we have to move by 1 byte */
+    if (uses_id && (*raw_report++ != src->report_id))
+        return;
+
+    *dst = get_report_value(raw_report, len, src);
+}
+
+void extract_report_values(uint8_t *raw_report, int len, device_t *state, mouse_values_t *values, hid_interface_t *iface) {
     /* Interpret values depending on the current protocol used. */
     if (iface->protocol == HID_PROTOCOL_BOOT) {
         hid_mouse_report_t *mouse_report = (hid_mouse_report_t *)raw_report;
@@ -237,16 +239,14 @@ void extract_report_values(uint8_t *raw_report, device_t *state, mouse_values_t 
         values->buttons = mouse_report->buttons;
         return;
     }
+    mouse_t *mouse = &iface->mouse;
+    bool uses_id = iface->uses_report_id;
 
-    /* If HID Report ID is used, the report is prefixed by the report ID so we have to move by 1 byte */
-    if (iface->mouse.report_id)
-        raw_report++;
-
-    values->move_x  = get_report_value(raw_report, &iface->mouse.move_x);
-    values->move_y  = get_report_value(raw_report, &iface->mouse.move_y);
-    values->wheel   = get_report_value(raw_report, &iface->mouse.wheel);
-    values->pan     = get_report_value(raw_report, &iface->mouse.pan);
-    values->buttons = get_report_value(raw_report, &iface->mouse.buttons);
+    extract_value(uses_id, &values->move_x, &mouse->move_x, raw_report, len);
+    extract_value(uses_id, &values->move_y, &mouse->move_y, raw_report, len);
+    extract_value(uses_id, &values->wheel, &mouse->wheel, raw_report, len);
+    extract_value(uses_id, &values->pan, &mouse->pan, raw_report, len);
+    extract_value(uses_id, &values->buttons, &mouse->buttons, raw_report, len);
 }
 
 mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
@@ -274,7 +274,7 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     device_t *state = &global_state;
 
     /* Interpret the mouse HID report, extract and save values we need. */
-    extract_report_values(raw_report, state, &values, iface);
+    extract_report_values(raw_report, len, state, &values, iface);
 
     /* Calculate and update mouse pointer movement. */
     enum screen_pos_e switch_direction = update_mouse_position(state, &values);

@@ -1,25 +1,18 @@
 /*
  * This file is part of DeskHop (https://github.com/hrvach/deskhop).
- * Copyright (c) 2024 Hrvoje Cavrak
+ * Copyright (c) 2025 Hrvoje Cavrak
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * See the file LICENSE for the full license text.
  */
-
 #include "hid_report.h"
 #include "main.h"
 
 /* Given a value struct with size and offset in bits, find and return a value from the HID report */
-int32_t get_report_value(uint8_t *report, report_val_t *val) {
+int32_t get_report_value(uint8_t *report, int len, report_val_t *val) {
     /* Calculate the bit offset within the byte */
     uint16_t offset_in_bits = val->offset % 8;
 
@@ -28,6 +21,9 @@ int32_t get_report_value(uint8_t *report, report_val_t *val) {
 
     /* Calculate the byte offset in the array */
     uint16_t byte_offset = val->offset >> 3;
+
+    if (byte_offset >= len)
+        return 0;
 
     /* Create a mask for the specified number of bits */
     uint32_t mask = (1u << val->size) - 1;
@@ -213,10 +209,11 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
     }
 }
 
-int32_t extract_bit_variable(uint32_t min_val, uint32_t max_val, uint8_t *raw_report, int len, uint8_t *dst) {
+int32_t extract_bit_variable(report_val_t *kbd, uint8_t *raw_report, int len, uint8_t *dst) {
     int key_count = 0;
+    int bit_offset = kbd->offset & 0b111;
 
-    for (int i = min_val, j = 0; i <= max_val && key_count < len; i++, j++) {
+    for (int i = kbd->usage_min, j = bit_offset; i <= kbd->usage_max && key_count < len; i++, j++) {
         int byte_index = j >> 3;
         int bit_index  = j & 0b111;
 
@@ -276,8 +273,7 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
     /* Move the pointer to the nkro offset's byte index */
     ptr = &ptr[kb->nkro.offset_idx];
 
-    return extract_bit_variable(
-        kb->nkro.usage_min, kb->nkro.usage_max, ptr, KEYS_IN_USB_REPORT, report->keycode);
+    return extract_bit_variable(&kb->nkro, ptr, KEYS_IN_USB_REPORT, report->keycode);
 }
 
 int32_t extract_kbd_data(

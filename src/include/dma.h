@@ -10,24 +10,24 @@
  */
 #pragma once
 
-#include "main.h"
+#include <hardware/dma.h>
 
 /*==============================================================================
- *  Function Pointer Definitions
+ *  DMA Buffer Sizes
  *==============================================================================*/
 
-typedef void (*value_handler_f)(report_val_t *, report_val_t *, hid_interface_t *);
+#define DMA_RX_BUFFER_SIZE 1024
+#define DMA_TX_BUFFER_SIZE 32
 
 /*==============================================================================
- *  Data Structures
+ *  DMA Buffers
  *==============================================================================*/
 
-typedef struct {
-    int global_usage;
-    int usage_page;
-    int usage;
-    uint8_t *id;
-    report_val_t *dst;
-    value_handler_f handler;
-    process_report_f receiver;
-} usage_map_t;
+extern uint8_t uart_rxbuf[DMA_RX_BUFFER_SIZE] __attribute__((aligned(DMA_RX_BUFFER_SIZE)));
+extern uint8_t uart_txbuf[DMA_TX_BUFFER_SIZE] __attribute__((aligned(DMA_TX_BUFFER_SIZE)));
+
+/*==============================================================================
+ *  Ring Buffer Macro
+ *==============================================================================*/
+
+#define NEXT_RING_IDX(x) ((x + 1) & 0x3FF)

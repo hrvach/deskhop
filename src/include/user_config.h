@@ -1,4 +1,14 @@
-/**===================================================== *
+/*
+ * This file is part of DeskHop (https://github.com/hrvach/deskhop).
+ * Copyright (c) 2025 Hrvoje Cavrak
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * See the file LICENSE for the full license text.
+ *
+ **===================================================== *
  * ==========  Keyboard LED Output Indicator  ========== *
  * ===================================================== *
  *
@@ -23,20 +33,22 @@
  *
  * defined as HID_KEY_<something>
  *
- * In addition, keyboard.c defines right ctrl as a modifier key required to
- * activate this. So, the current shortcut is RIGHT CTRL + whatever is defined
- * here.
+ * In addition, there is an optional modifier you can use for the hotkey
+ * switching. Currently, it's set to LEFT CTRL, you can change it by
+ * redefining HOTKEY_MODIFIER here from KEYBOARD_MODIFIER_LEFTCTRL to something
+ * else (check file referenced below) or HID_KEY_NONE.
  *
  * If you do not want to use a key for switching outputs, you may be tempted
- * to select HID_KEY_NONE here; don't do that! That code appears in many HID
- * messages and the result will be a non-functional keyboard. Instead, choose
+ * to select HID_KEY_NONE here as well; don't do that! That code appears in many
+ * HID messages and the result will be a non-functional keyboard. Instead, choose
  * a key that is unlikely to ever appear on a keyboard that you will use.
  * HID_KEY_F24 is probably a good choice as keyboards with 24 function keys
  * are rare.
  *
  * */
 
-#define HOTKEY_TOGGLE HID_KEY_CAPS_LOCK
+#define HOTKEY_MODIFIER  KEYBOARD_MODIFIER_LEFTCTRL
+#define HOTKEY_TOGGLE    HID_KEY_CAPS_LOCK
 
 /**================================================== *
  * ==============  Mouse Speed Factor  ============== *
