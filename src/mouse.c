@@ -10,9 +10,11 @@
  */
 
 #include "main.h"
+#include <math.h>
 
 #define MACOS_SWITCH_MOVE_X 10
 #define MACOS_SWITCH_MOVE_COUNT 5
+#define ACCEL_POINTS 7
 
 /* Check if our upcoming mouse movement would result in having to switch outputs */
 enum screen_pos_e is_screen_switch_needed(int position, int offset) {
@@ -39,13 +41,13 @@ int32_t move_and_keep_on_screen(int position, int offset) {
     return position + offset;
 }
 
-/* Implement basic mouse acceleration and define your own curve.
-   This one is probably sub-optimal, so let me know if you have a better one. */
-int32_t accelerate(int32_t offset) {
+/* Implement basic mouse acceleration based on actual 2D movement magnitude.
+   Returns the acceleration factor to apply to both x and y components. */
+float calculate_mouse_acceleration_factor(int32_t offset_x, int32_t offset_y) {
     const struct curve {
         int value;
         float factor;
-    } acceleration[7] = {
+    } acceleration[ACCEL_POINTS] = {
                    // 4 |                                        *
         {2, 1},    //   |                                  *
         {5, 1.1},  // 3 |
@@ -56,16 +58,40 @@ int32_t accelerate(int32_t offset) {
         {70, 4.0}, //    -------------------------------------------
     };             //        10    20    30    40    50    60    70
 
-    if (!global_state.config.enable_acceleration)
-        return offset;
+    if (offset_x == 0 && offset_y == 0)
+        return 1.0;
 
-    for (int i = 0; i < 7; i++) {
-        if (abs(offset) < acceleration[i].value) {
-            return offset * acceleration[i].factor;
+    if (!global_state.config.enable_acceleration)
+        return 1.0;
+
+    // Calculate the 2D movement magnitude
+    const float movement_magnitude = sqrtf((float)(offset_x * offset_x) + (float)(offset_y * offset_y));
+
+    if (movement_magnitude <= acceleration[0].value)
+        return acceleration[0].factor;
+
+    if (movement_magnitude >= acceleration[ACCEL_POINTS-1].value)
+        return acceleration[ACCEL_POINTS-1].factor;
+
+    const struct curve *lower = NULL;
+    const struct curve *upper = NULL;
+
+    for (int i = 0; i < ACCEL_POINTS-1; i++) {
+        if (movement_magnitude < acceleration[i + 1].value) {
+            lower = &acceleration[i];
+            upper = &acceleration[i + 1];
+            break;
         }
     }
 
-    return offset * acceleration[6].factor;
+    // Should never happen, but just in case
+    if (lower == NULL || upper == NULL)
+        return 1.0;
+
+    const float interpolation_pos = (movement_magnitude - lower->value) /
+                                  (upper->value - lower->value);
+
+    return lower->factor + interpolation_pos * (upper->factor - lower->factor);
 }
 
 /* Returns LEFT if need to jump left, RIGHT if right, NONE otherwise */
@@ -78,8 +104,9 @@ enum screen_pos_e update_mouse_position(device_t *state, mouse_values_t *values)
         reduce_speed = MOUSE_ZOOM_SCALING_FACTOR;
 
     /* Calculate movement */
-    int offset_x = accelerate(values->move_x) * (current->speed_x >> reduce_speed);
-    int offset_y = accelerate(values->move_y) * (current->speed_y >> reduce_speed);
+    float acceleration_factor = calculate_mouse_acceleration_factor(values->move_x, values->move_y);
+    int offset_x = round(values->move_x * acceleration_factor * (current->speed_x >> reduce_speed));
+    int offset_y = round(values->move_y * acceleration_factor * (current->speed_y >> reduce_speed));
 
     /* Determine if our upcoming movement would stay within the screen */
     enum screen_pos_e switch_direction = is_screen_switch_needed(state->pointer_x, offset_x);
