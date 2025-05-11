@@ -144,6 +144,55 @@ hotkey_combo_t *check_all_hotkeys(hid_keyboard_report_t *report, device_t *state
 }
 
 /* ==================================================== *
+ * Keyboard State Management
+ * ==================================================== */
+
+/* Update the keyboard state for a specific device */
+void update_kbd_state(device_t *state, hid_keyboard_report_t *report, uint8_t device_idx) {
+    /* Ensure device_idx is within bounds */
+    if (device_idx >= MAX_DEVICES)
+        return;
+
+    /* Ensure local devices never use the last slot, which is reserved for the remote device */
+    if (device_idx == MAX_DEVICES-1 && device_idx != 0) {
+        /* Use the previous slot instead */
+        device_idx = MAX_DEVICES-2;
+    }
+
+    /* Update the keyboard state for this device */
+    memcpy(&state->kbd_states[device_idx], report, sizeof(hid_keyboard_report_t));
+
+    /* Ensure kbd_device_count is at least device_idx + 1 */
+    if (state->kbd_device_count <= device_idx)
+        state->kbd_device_count = device_idx + 1;
+}
+
+/* Combine keyboard states from all devices into a single report */
+void combine_kbd_states(device_t *state, hid_keyboard_report_t *combined_report) {
+    /* Initialize combined report */
+    memset(combined_report, 0, sizeof(hid_keyboard_report_t));
+
+    /* Combine modifiers and keys from all devices */
+    for (uint8_t i = 0; i < state->kbd_device_count; i++) {
+        /* Combine modifiers with OR operation */
+        combined_report->modifier |= state->kbd_states[i].modifier;
+
+        /* Add keys from this device to the combined report */
+        for (uint8_t j = 0; j < KEYS_IN_USB_REPORT; j++) {
+            if (state->kbd_states[i].keycode[j] != 0) {
+                /* Find an empty slot in the combined report */
+                for (uint8_t k = 0; k < KEYS_IN_USB_REPORT; k++) {
+                    if (combined_report->keycode[k] == 0) {
+                        combined_report->keycode[k] = state->kbd_states[i].keycode[j];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* ==================================================== *
  * Keyboard Queue Section
  * ==================================================== */
 
@@ -184,16 +233,29 @@ void queue_kbd_report(hid_keyboard_report_t *report, device_t *state) {
 
 void release_all_keys(device_t *state) {
     static hid_keyboard_report_t no_keys_pressed_report = {0, 0, {0}};
+
+    /* Clear keyboard states for all devices */
+    for (uint8_t i = 0; i < state->kbd_device_count; i++) {
+        memset(&state->kbd_states[i], 0, sizeof(hid_keyboard_report_t));
+    }
+
+    /* Send a report with no keys pressed */
     queue_try_add(&state->kbd_queue, &no_keys_pressed_report);
 }
 
 /* If keys need to go locally, queue packet to kbd queue, else send them through UART */
 void send_key(hid_keyboard_report_t *report, device_t *state) {
+    /* Create a combined report from all device states */
+    hid_keyboard_report_t combined_report;
+    combine_kbd_states(state, &combined_report);
+
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
-        queue_kbd_report(report, state);
+        /* Queue the combined report */
+        queue_kbd_report(&combined_report, state);
         state->last_activity[BOARD_ROLE] = time_us_64();
     } else {
-        queue_packet((uint8_t *)report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
+        /* Send the combined report to ensure all keys are included */
+        queue_packet((uint8_t *)&combined_report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
     }
 }
 
@@ -235,6 +297,9 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 
     extract_kbd_data(raw_report, length, itf, iface, &new_report);
 
+    /* Update the keyboard state for this device */
+    update_kbd_state(state, &new_report, itf);
+
     /* Check if any hotkey was pressed */
     hotkey = check_all_hotkeys(&new_report, state);
 
@@ -259,6 +324,7 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
     uint8_t new_report[CONSUMER_CONTROL_LENGTH] = {0};
     uint16_t *report_ptr = (uint16_t *)new_report;
+    device_t *state = &global_state;
 
     /* If consumer control is variable, read the values from cc_array and send as array. */
     if (iface->consumer.is_variable) {
@@ -276,12 +342,21 @@ void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
             new_report[i] = raw_report[i + 1];
     }
 
-    send_consumer_control(new_report, &global_state);
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+        send_consumer_control(new_report, state);
+    } else {
+        queue_packet((uint8_t *)new_report, CONSUMER_CONTROL_MSG, CONSUMER_CONTROL_LENGTH);
+    }
 }
 
 void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
     uint16_t new_report = raw_report[1];
     uint8_t *report_ptr = (uint8_t *)&new_report;
+    device_t *state = &global_state;
 
-    send_system_control(report_ptr, &global_state);
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+        send_system_control(report_ptr, state);
+    } else {
+        queue_packet(report_ptr, SYSTEM_CONTROL_MSG, SYSTEM_CONTROL_LENGTH);
+    }
 }

@@ -28,6 +28,12 @@ int32_t  extract_kbd_data(uint8_t *, int, uint8_t, hid_interface_t *, hid_keyboa
 bool check_specific_hotkey(hotkey_combo_t, const hid_keyboard_report_t *);
 
 /*==============================================================================
+ *  Keyboard State Management
+ *==============================================================================*/
+void     update_kbd_state(device_t *, hid_keyboard_report_t *, uint8_t);
+void     combine_kbd_states(device_t *, hid_keyboard_report_t *);
+
+/*==============================================================================
  *  Keyboard Report Processing
  *==============================================================================*/
 bool     key_in_report(uint8_t, const hid_keyboard_report_t *);
