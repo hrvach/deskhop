@@ -10,9 +10,11 @@
  */
 
 #include "main.h"
+#include <math.h>
 
 #define MACOS_SWITCH_MOVE_X 10
 #define MACOS_SWITCH_MOVE_COUNT 5
+#define ACCEL_POINTS 7
 
 /* Check if our upcoming mouse movement would result in having to switch outputs */
 enum screen_pos_e is_screen_switch_needed(int position, int offset) {
@@ -39,13 +41,13 @@ int32_t move_and_keep_on_screen(int position, int offset) {
     return position + offset;
 }
 
-/* Implement basic mouse acceleration and define your own curve.
-   This one is probably sub-optimal, so let me know if you have a better one. */
-int32_t accelerate(int32_t offset) {
+/* Implement basic mouse acceleration based on actual 2D movement magnitude.
+   Returns the acceleration factor to apply to both x and y components. */
+float calculate_mouse_acceleration_factor(int32_t offset_x, int32_t offset_y) {
     const struct curve {
         int value;
         float factor;
-    } acceleration[7] = {
+    } acceleration[ACCEL_POINTS] = {
                    // 4 |                                        *
         {2, 1},    //   |                                  *
         {5, 1.1},  // 3 |
@@ -56,16 +58,40 @@ int32_t accelerate(int32_t offset) {
         {70, 4.0}, //    -------------------------------------------
     };             //        10    20    30    40    50    60    70
 
-    if (!global_state.config.enable_acceleration)
-        return offset;
+    if (offset_x == 0 && offset_y == 0)
+        return 1.0;
 
-    for (int i = 0; i < 7; i++) {
-        if (abs(offset) < acceleration[i].value) {
-            return offset * acceleration[i].factor;
+    if (!global_state.config.enable_acceleration)
+        return 1.0;
+
+    // Calculate the 2D movement magnitude
+    const float movement_magnitude = sqrtf((float)(offset_x * offset_x) + (float)(offset_y * offset_y));
+
+    if (movement_magnitude <= acceleration[0].value)
+        return acceleration[0].factor;
+
+    if (movement_magnitude >= acceleration[ACCEL_POINTS-1].value)
+        return acceleration[ACCEL_POINTS-1].factor;
+
+    const struct curve *lower = NULL;
+    const struct curve *upper = NULL;
+
+    for (int i = 0; i < ACCEL_POINTS-1; i++) {
+        if (movement_magnitude < acceleration[i + 1].value) {
+            lower = &acceleration[i];
+            upper = &acceleration[i + 1];
+            break;
         }
     }
 
-    return offset * acceleration[6].factor;
+    // Should never happen, but just in case
+    if (lower == NULL || upper == NULL)
+        return 1.0;
+
+    const float interpolation_pos = (movement_magnitude - lower->value) /
+                                  (upper->value - lower->value);
+
+    return lower->factor + interpolation_pos * (upper->factor - lower->factor);
 }
 
 /* Returns LEFT if need to jump left, RIGHT if right, NONE otherwise */
@@ -78,8 +104,9 @@ enum screen_pos_e update_mouse_position(device_t *state, mouse_values_t *values)
         reduce_speed = MOUSE_ZOOM_SCALING_FACTOR;
 
     /* Calculate movement */
-    int offset_x = accelerate(values->move_x) * (current->speed_x >> reduce_speed);
-    int offset_y = accelerate(values->move_y) * (current->speed_y >> reduce_speed);
+    float acceleration_factor = calculate_mouse_acceleration_factor(values->move_x, values->move_y);
+    int offset_x = round(values->move_x * acceleration_factor * (current->speed_x >> reduce_speed));
+    int offset_y = round(values->move_y * acceleration_factor * (current->speed_y >> reduce_speed));
 
     /* Determine if our upcoming movement would stay within the screen */
     enum screen_pos_e switch_direction = is_screen_switch_needed(state->pointer_x, offset_x);
@@ -152,10 +179,27 @@ void switch_to_another_pc(
 }
 
 void switch_virtual_desktop_macos(device_t *state, int direction) {
-    /* Fix for MACOS: Send relative mouse movement here, one or two pixels in the
-       direction of movement, BEFORE absolute report sets X to 0 */
+    /*
+     * Fix for MACOS: Before sending new absolute report setting X to 0:
+     * 1. Move the cursor to the edge of the screen directly in the middle to handle screens
+     *    of different heights
+     * 2. Send relative mouse movement one or two pixels in the direction of movement to get
+     *    the cursor onto the next screen
+     */
+    mouse_report_t edge_position = {
+        .x = (direction == LEFT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD,
+        .y = MAX_SCREEN_COORD / 2,
+        .mode = ABSOLUTE,
+        .buttons = state->mouse_buttons,
+    };
+
     uint16_t move = (direction == LEFT) ? -MACOS_SWITCH_MOVE_X : MACOS_SWITCH_MOVE_X;
-    mouse_report_t move_relative_one = {.x = move, .mode = RELATIVE};
+    mouse_report_t move_relative_one = {
+        .x = move,
+        .mode = RELATIVE,
+    };
+
+    output_mouse_report(&edge_position, state);
 
     /* Once doesn't seem reliable enough, do it a few times */
     for (int i = 0; i < MACOS_SWITCH_MOVE_COUNT; i++)
@@ -219,12 +263,13 @@ void do_screen_switch(device_t *state, int direction) {
         switch_virtual_desktop(state, output, output->screen_index + 1, direction);
 }
 
-inline void extract_value(bool uses_id, int32_t *dst, report_val_t *src, uint8_t *raw_report, int len) {
+static inline bool extract_value(bool uses_id, int32_t *dst, report_val_t *src, uint8_t *raw_report, int len) {
     /* If HID Report ID is used, the report is prefixed by the report ID so we have to move by 1 byte */
     if (uses_id && (*raw_report++ != src->report_id))
-        return;
+        return false;
 
     *dst = get_report_value(raw_report, len, src);
+    return true;
 }
 
 void extract_report_values(uint8_t *raw_report, int len, device_t *state, mouse_values_t *values, hid_interface_t *iface) {
@@ -246,7 +291,10 @@ void extract_report_values(uint8_t *raw_report, int len, device_t *state, mouse_
     extract_value(uses_id, &values->move_y, &mouse->move_y, raw_report, len);
     extract_value(uses_id, &values->wheel, &mouse->wheel, raw_report, len);
     extract_value(uses_id, &values->pan, &mouse->pan, raw_report, len);
-    extract_value(uses_id, &values->buttons, &mouse->buttons, raw_report, len);
+
+    if (!extract_value(uses_id, &values->buttons, &mouse->buttons, raw_report, len)) {
+        values->buttons = state->mouse_buttons;
+    }
 }
 
 mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
