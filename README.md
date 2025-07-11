@@ -1,4 +1,4 @@
-# DeskHop - Fast Desktop Switching
+# LP - KM Switch
 
 Did you ever notice how, in the crazy world of tech, there's always that one quirky little project trying to solve a problem so niche that its only competitors might be a left-handed screwdriver and a self-hiding alarm clock?
 
