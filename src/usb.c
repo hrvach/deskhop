@@ -188,6 +188,34 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     if (instance >= MAX_INTERFACES)
         return;
 
+    /* Calculate a device index that distinguishes between different devices
+       while staying within the bounds of MAX_DEVICES.
+
+       Device index assignment:
+       - 0: Primary keyboard (the one set in tuh_hid_mount_cb)
+       - 1: Mouse devices
+       - MAX_DEVICES-2: Secondary keyboards (e.g., wireless keyboard through unified dongle)
+       - (dev_addr-1) % (MAX_DEVICES-1): Other devices
+
+       Note: Slot MAX_DEVICES-1 is reserved for the remote device (used in handle_keyboard_uart_msg) */
+    uint8_t device_idx;
+
+    if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD) {
+        if (dev_addr == global_state.kbd_dev_addr && instance == global_state.kbd_instance) {
+            /* Primary keyboard */
+            device_idx = 0;
+        } else {
+            /* Secondary keyboard (e.g., wireless keyboard through unified dongle) */
+            device_idx = (MAX_DEVICES - 2);
+        }
+    } else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE) {
+        /* Mouse devices */
+        device_idx = 1;
+    } else {
+        /* Other devices */
+        device_idx = (dev_addr - 1) % (MAX_DEVICES - 1);
+    }
+
     if (iface->uses_report_id || itf_protocol == HID_ITF_PROTOCOL_NONE) {
         uint8_t report_id = 0;
 
@@ -198,14 +226,14 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             process_report_f receiver = iface->report_handler[report_id];
 
             if (receiver != NULL)
-                receiver((uint8_t *)report, len, itf_protocol, iface);
+                receiver((uint8_t *)report, len, device_idx, iface);
         }
     }
     else if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD) {
-        process_keyboard_report((uint8_t *)report, len, itf_protocol, iface);
+        process_keyboard_report((uint8_t *)report, len, device_idx, iface);
     }
     else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE) {
-        process_mouse_report((uint8_t *)report, len, itf_protocol, iface);
+        process_mouse_report((uint8_t *)report, len, device_idx, iface);
     }
 
     /* Continue requesting reports */
