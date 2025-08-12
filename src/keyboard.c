@@ -52,12 +52,19 @@ hotkey_combo_t hotkeys[] = {
      .acknowledge    = true,
      .action_handler = &toggle_gaming_mode_handler},
 
-    /* Enable screensaver for active output */
+    /* Enable screensaver pong for active output */
     {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
      .keys           = {HID_KEY_S},
      .key_count      = 1,
      .acknowledge    = true,
-     .action_handler = &enable_screensaver_hotkey_handler},
+     .action_handler = &enable_screensaver_pong_hotkey_handler},
+
+    /* Enable screensaver jitter for active output */
+    {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
+     .keys           = {HID_KEY_J},
+     .key_count      = 1,
+     .acknowledge    = true,
+     .action_handler = &enable_screensaver_jitter_hotkey_handler},
 
     /* Disable screensaver for active output */
     {.modifier       = KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTSHIFT,
