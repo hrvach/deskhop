@@ -115,13 +115,24 @@ void mouse_zoom_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     send_value(state->mouse_zoom, MOUSE_ZOOM_MSG);
 };
 
-/* When pressed, enables the screensaver on active output */
-void enable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
+/* When pressed, enables the pong screensaver on active output */
+void enable_screensaver_pong_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
     uint8_t desired_mode = state->config.output[BOARD_ROLE].screensaver.mode;
 
-    /* If the user explicitly asks for screensaver to be active, ignore config and turn it on */
-    if (desired_mode == DISABLED)
+    /* If the user explicitly asks for pong screensaver to be active, ignore config and turn it on */
+    if (desired_mode == DISABLED || desired_mode == JITTER)
         desired_mode = PONG;
+
+    _screensaver_set(state, desired_mode);
+}
+
+/* When pressed, enables the jitter screensaver on active output */
+void enable_screensaver_jitter_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
+    uint8_t desired_mode = state->config.output[BOARD_ROLE].screensaver.mode;
+
+    /* If the user explicitly asks for jitter screensaver to be active, ignore config and turn it on */
+    if (desired_mode == DISABLED || desired_mode == PONG)
+        desired_mode = JITTER;
 
     _screensaver_set(state, desired_mode);
 }
