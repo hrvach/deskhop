@@ -52,12 +52,14 @@ int32_t get_report_value(uint8_t *report, int len, report_val_t *val) {
 
 /* After processing the descriptor, assign the values so we can later use them to interpret reports */
 void handle_consumer_control_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
+    keyboard_t *keyboard = get_keyboard(iface, src->report_id);
+
     if (src->offset > MAX_CC_BUTTONS) {
         return;
     }
 
     if (src->data_type == VARIABLE) {
-        iface->keyboard.cc_array[src->offset] = src->usage;
+        keyboard->cc_array[src->offset] = src->usage;
         iface->consumer.is_variable = true;
     }
 
@@ -66,12 +68,14 @@ void handle_consumer_control_values(report_val_t *src, report_val_t *dst, hid_in
 
 /* After processing the descriptor, assign the values so we can later use them to interpret reports */
 void handle_system_control_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
+    keyboard_t *keyboard = get_keyboard(iface, src->report_id);
+
     if (src->offset > MAX_SYS_BUTTONS) {
         return;
     }
 
     if (src->data_type == VARIABLE) {
-        iface->keyboard.sys_array[src->offset] = src->usage;
+        keyboard->sys_array[src->offset] = src->usage;
         iface->system.is_variable = true;
     }
 
@@ -81,9 +85,14 @@ void handle_system_control_values(report_val_t *src, report_val_t *dst, hid_inte
 /* After processing the descriptor, assign the values so we can later use them to interpret reports */
 void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
     const int LEFT_CTRL = 0xE0;
+    keyboard_t *keyboard = get_keyboard(iface, src->report_id);
 
     /* Constants are normally used for padding, so skip'em */
     if (src->item_type == CONSTANT)
+        return;
+
+    /* Prevent overwriting more memory than we have */
+    if (iface->num_keyboards >= MAX_KEYBOARDS)
         return;
 
     /* Detect and handle modifier keys. <= if modifier is less + constant padding? */
@@ -91,22 +100,23 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
         /* To make sure this really is the modifier key, we expect e.g. left control to be
            within the usage interval */
         if (LEFT_CTRL >= src->usage_min && LEFT_CTRL <= src->usage_max)
-            iface->keyboard.modifier = *src;
+            keyboard->modifier = *src;
     }
 
     /* If we have an array member, that's most likely a key (0x00 - 0xFF, 1 byte) */
     if (src->offset_idx < MAX_KEYS) {
-        iface->keyboard.key_array[src->offset_idx] = (src->data_type == ARRAY);
+        keyboard->key_array[src->offset_idx] = (src->data_type == ARRAY);
     }
 
     /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped. */
     if (src->size > 32 && src->data_type == VARIABLE) {
-        iface->keyboard.is_nkro = true;
-        iface->keyboard.nkro    = *src;
+        keyboard->is_nkro = true;
+        keyboard->nkro    = *src;
     }
 
     /* We found a keyboard on this interface. */
-    iface->keyboard.is_found = true;
+    keyboard->is_found = true;
+    iface->num_keyboards++;
 }
 
 void handle_buttons(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
@@ -127,6 +137,26 @@ void _store(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
         *dst = *src;
 }
 
+static uint8_t *get_mouse_id(hid_interface_t *iface) {
+    return &iface->mouse.report_id;
+}
+
+static uint8_t *get_consumer_id(hid_interface_t *iface) {
+    return &iface->consumer.report_id;
+}
+
+static uint8_t *get_system_id(hid_interface_t *iface) {
+    return &iface->system.report_id;
+}
+
+static uint8_t *get_next_keyboard_id(hid_interface_t *iface) {
+    if (iface->num_keyboards < MAX_KEYBOARDS)
+        return &iface->keyboards[iface->num_keyboards].report_id;
+
+    /* In case we are out of bounds, return the last keyboard's ID */
+    return &iface->keyboards[MAX_KEYBOARDS - 1].report_id;
+}
+
 
 void extract_data(hid_interface_t *iface, report_val_t *val) {
     const usage_map_t map[] = {
@@ -135,7 +165,7 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
          .handler      = handle_buttons,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.buttons,
-         .id           = &iface->mouse.report_id},
+         .get_id       = get_mouse_id},
 
         {.usage_page   = HID_USAGE_PAGE_DESKTOP,
          .global_usage = HID_USAGE_DESKTOP_MOUSE,
@@ -143,7 +173,7 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
          .handler      = _store,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.move_x,
-         .id           = &iface->mouse.report_id},
+         .get_id       = get_mouse_id},
 
         {.usage_page   = HID_USAGE_PAGE_DESKTOP,
          .global_usage = HID_USAGE_DESKTOP_MOUSE,
@@ -151,7 +181,7 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
          .handler      = _store,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.move_y,
-         .id           = &iface->mouse.report_id},
+         .get_id       = get_mouse_id},
 
         {.usage_page   = HID_USAGE_PAGE_DESKTOP,
          .global_usage = HID_USAGE_DESKTOP_MOUSE,
@@ -159,7 +189,7 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
          .handler      = _store,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.wheel,
-         .id           = &iface->mouse.report_id},
+         .get_id       = get_mouse_id},
 
         {.usage_page   = HID_USAGE_PAGE_CONSUMER,
          .global_usage = HID_USAGE_DESKTOP_MOUSE,
@@ -167,27 +197,27 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
          .handler      = _store,
          .receiver     = process_mouse_report,
          .dst          = &iface->mouse.pan,
-         .id           = &iface->mouse.report_id},
+         .get_id       = get_mouse_id},
 
         {.usage_page   = HID_USAGE_PAGE_KEYBOARD,
          .global_usage = HID_USAGE_DESKTOP_KEYBOARD,
          .handler      = handle_keyboard_descriptor_values,
          .receiver     = process_keyboard_report,
-         .id           = &iface->keyboard.report_id},
+         .get_id       = get_next_keyboard_id},
 
         {.usage_page   = HID_USAGE_PAGE_CONSUMER,
          .global_usage = HID_USAGE_CONSUMER_CONTROL,
          .handler      = handle_consumer_control_values,
          .receiver     = process_consumer_report,
          .dst          = &iface->consumer.val,
-         .id           = &iface->consumer.report_id},
+         .get_id       = get_consumer_id},
 
         {.usage_page   = HID_USAGE_PAGE_DESKTOP,
          .global_usage = HID_USAGE_DESKTOP_SYSTEM_CONTROL,
          .handler      = _store,
          .receiver     = process_system_report,
          .dst          = &iface->system.val,
-         .id           = &iface->system.report_id},
+         .get_id       = get_system_id},
     };
 
     /* We extracted all we could find in the descriptor to report_values, now go through them and
@@ -200,8 +230,9 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
         bool usage_pages_match   = (val->usage_page == hay->usage_page) || (hay->usage_page == 0);
 
         if (global_usages_match && usages_match && usage_pages_match) {
+            *(hay->get_id(iface)) = val->report_id;
+
             hay->handler(val, hay->dst, iface);
-            *hay->id = val->report_id;
 
             if (val->report_id < MAX_REPORTS)
                 iface->report_handler[val->report_id] = hay->receiver;
@@ -237,8 +268,8 @@ int32_t _extract_kbd_boot(uint8_t *raw_report, int len, hid_keyboard_report_t *r
 }
 
 int32_t _extract_kbd_other(uint8_t *raw_report, int len, hid_interface_t *iface, hid_keyboard_report_t *report) {
+    keyboard_t *kb = get_keyboard(iface, raw_report[0]);
     uint8_t *src = raw_report;
-    keyboard_t *kb = &iface->keyboard;
 
     if (iface->uses_report_id)
         src++;
@@ -253,8 +284,8 @@ int32_t _extract_kbd_other(uint8_t *raw_report, int len, hid_interface_t *iface,
 }
 
 int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, hid_keyboard_report_t *report) {
+    keyboard_t *kb = get_keyboard(iface, raw_report[0]);
     uint8_t *ptr = raw_report;
-    keyboard_t *kb = &iface->keyboard;
 
     /* Skip report ID */
     if (iface->uses_report_id)
@@ -278,6 +309,7 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
 
 int32_t extract_kbd_data(
     uint8_t *raw_report, int len, uint8_t itf, hid_interface_t *iface, hid_keyboard_report_t *report) {
+    keyboard_t *keyboard = get_keyboard(iface, raw_report[0]);
 
     /* Clear the report to start fresh */
     memset(report, 0, KBD_REPORT_LENGTH);
@@ -287,7 +319,7 @@ int32_t extract_kbd_data(
         return _extract_kbd_boot(raw_report, len, report);
 
     /* NKRO is a special case */
-    if (iface->keyboard.is_nkro)
+    if (keyboard->is_nkro)
         return _extract_kbd_nkro(raw_report, len, iface, report);
 
     /* If we're getting 8 bytes of report, it's safe to assume standard modifier + reserved + keys */

@@ -324,7 +324,9 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
     uint8_t new_report[CONSUMER_CONTROL_LENGTH] = {0};
     uint16_t *report_ptr = (uint16_t *)new_report;
+
     device_t *state = &global_state;
+    keyboard_t *keyboard = get_keyboard(iface, raw_report[0]);
 
     /* If consumer control is variable, read the values from cc_array and send as array. */
     if (iface->consumer.is_variable) {
@@ -333,7 +335,7 @@ void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
             int byte_idx = i >> 3;
 
             if ((raw_report[byte_idx + 1] >> bit_idx) & 1) {
-                report_ptr[0] = iface->keyboard.cc_array[i];
+                report_ptr[0] = keyboard->cc_array[i];
             }
         }
     }
@@ -359,4 +361,20 @@ void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_int
     } else {
         queue_packet(report_ptr, SYSTEM_CONTROL_MSG, SYSTEM_CONTROL_LENGTH);
     }
+}
+
+keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id) {
+    /* When we have just one keyboard (most cases), or don't use report ID */
+    if (iface->num_keyboards == 1 || !iface->uses_report_id)
+        return &iface->keyboards[PRIMARY_KEYBOARD];
+
+    /* Go through known keyboards and match on report ID, return pointer to keyboard_t */
+    for (int i = 0; i < iface->num_keyboards && i < MAX_KEYBOARDS; i++) {
+        if (iface->keyboards[i].report_id == report_id) {
+            return &iface->keyboards[i];
+        }
+    }
+
+    /* If nothing else is matched, return the primary keyboard. */
+    return &iface->keyboards[PRIMARY_KEYBOARD];
 }
