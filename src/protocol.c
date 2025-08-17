@@ -80,6 +80,10 @@ const field_map_t* get_field_map_entry(uint32_t index) {
 
 
 const field_map_t* get_field_map_index(uint32_t index) {
+    /* Clamp potential overflows to last element. */
+    if (index >= ARRAY_SIZE(api_field_map))
+        index = ARRAY_SIZE(api_field_map) - 1;
+
     return &api_field_map[index];
 }
 

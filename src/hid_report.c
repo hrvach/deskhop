@@ -32,7 +32,7 @@ int32_t get_report_value(uint8_t *report, int len, report_val_t *val) {
     int32_t result = report[byte_offset] >> offset_in_bits;
 
     /* Move to the next byte and continue fetching bits until the desired length is reached */
-    while (val->size > remaining_bits) {
+    while (val->size > remaining_bits && byte_offset < len) {
         result |= report[++byte_offset] << remaining_bits;
         remaining_bits += 8;
     }
