@@ -22,7 +22,7 @@ SHORTCUTS = {
     }
 
 STATUS_ = [
-    FormField(78, "Running FW version", None, {}, "uint16", elem="uint16"),
+    FormField(78, "Running FW version", None, {}, "uint16", elem="fw_version"),
     FormField(79, "Running FW checksum", None, {}, "uint32", elem="hex_info"),
 ]
 

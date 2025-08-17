@@ -16,6 +16,10 @@
     {{ label(item, add=':') }}
     {{ input(item, class='content api') }} data-hex readonly />
 
+  {% elif item.get("elem") == "fw_version" %}
+    {{ label(item, class='') }}
+    {{ input(item) }} data-fw-ver readonly />
+
   {% elif item.get("elem") == "label" %}
     {{ label(item, class='') }}
 

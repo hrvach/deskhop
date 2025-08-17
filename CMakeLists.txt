@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.6)
 
-## Version Configuration
-set(VERSION_MAJOR 00)
-set(VERSION_MINOR 170)
+## Version Configuration.
+## Define e.g. 0.72 as major 0 and minor 72
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 73)
 
 ## Release Type Selection
 option(DH_DEBUG "Build a debug version" OFF)
@@ -107,7 +108,9 @@ add_executable(${binary} ${DISK_ASM})
 
 target_sources(${binary} PUBLIC ${COMMON_SOURCES})
 target_compile_definitions(${binary} 
-    PRIVATE 
+    PRIVATE
+    VERSION_MAJOR=${VERSION_MAJOR}
+    VERSION_MINOR=${VERSION_MINOR}
     PIO_USB_USE_TINYUSB=${PIO_USE_TINYUSB}
     PIO_USB_DP_PIN_DEFAULT=${DP_PIN_DEFAULT}
     __disk_file_path__="${DISK_BIN}"
@@ -129,10 +132,13 @@ pico_set_linker_script(${binary} ${CMAKE_SOURCE_DIR}/misc/memory_map.ld)
 ## Build other file formats as well
 pico_add_extra_outputs(${binary})
 
+# For internal firmware use, to simplify comparison: 0.72 -> 172
+math(EXPR FIRMWARE_VERSION "${VERSION_MAJOR} * 1000 + ${VERSION_MINOR} + 100")
+
 ## Post-Build Commands
 add_custom_command(
     TARGET ${binary} POST_BUILD
-    COMMAND python3 ${CMAKE_SOURCE_DIR}/misc/crc32.py ${binary}.bin ${binary}.crc ${VERSION_MAJOR}${VERSION_MINOR}
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/misc/crc32.py ${binary}.bin ${binary}.crc ${FIRMWARE_VERSION}
     COMMAND ${CMAKE_OBJCOPY} --update-section .section_metadata=${binary}.crc ${binary}.elf
     COMMAND ${CMAKE_OBJCOPY} -O binary ${binary}.elf ${binary}.bin
     COMMAND ${CMAKE_BINARY_DIR}/elf2uf2/elf2uf2 ${binary}.elf ${binary}.uf2
