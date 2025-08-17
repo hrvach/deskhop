@@ -231,10 +231,6 @@ void initial_setup(device_t *state) {
     queue_init(&state->kbd_queue, sizeof(hid_keyboard_report_t), KBD_QUEUE_LENGTH);
     queue_init(&state->mouse_queue, sizeof(mouse_report_t), MOUSE_QUEUE_LENGTH);
 
-    /* Initialize keyboard states for all devices */
-    memset(state->kbd_states, 0, sizeof(state->kbd_states));
-    state->kbd_device_count = 0;
-
     /* Initialize generic HID packet queue */
     queue_init(&state->hid_queue_out, sizeof(hid_generic_pkt_t), HID_QUEUE_LENGTH);
 

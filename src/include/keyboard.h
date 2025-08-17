@@ -32,6 +32,7 @@ bool check_specific_hotkey(hotkey_combo_t, const hid_keyboard_report_t *);
  *  Keyboard State Management
  *==============================================================================*/
 void     update_kbd_state(device_t *, hid_keyboard_report_t *, uint8_t);
+void     update_remote_kbd_state(device_t *, hid_keyboard_report_t *);
 void     combine_kbd_states(device_t *, hid_keyboard_report_t *);
 
 /*==============================================================================
