@@ -18,8 +18,9 @@
  *  Data Extraction
  *==============================================================================*/
 
-int32_t  extract_bit_variable(report_val_t *, uint8_t *, int, uint8_t *);
-int32_t  extract_kbd_data(uint8_t *, int, uint8_t, hid_interface_t *, hid_keyboard_report_t *);
+int32_t    extract_bit_variable(report_val_t *, uint8_t *, int, uint8_t *);
+int32_t    extract_kbd_data(uint8_t *, int, uint8_t, hid_interface_t *, hid_keyboard_report_t *);
+keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id);
 
 /*==============================================================================
  *  Hotkey Handling
@@ -31,6 +32,7 @@ bool check_specific_hotkey(hotkey_combo_t, const hid_keyboard_report_t *);
  *  Keyboard State Management
  *==============================================================================*/
 void     update_kbd_state(device_t *, hid_keyboard_report_t *, uint8_t);
+void     update_remote_kbd_state(device_t *, hid_keyboard_report_t *);
 void     combine_kbd_states(device_t *, hid_keyboard_report_t *);
 
 /*==============================================================================

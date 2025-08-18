@@ -162,12 +162,12 @@ void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report
 /* Function handles received keypresses from the other board */
 void handle_keyboard_uart_msg(uart_packet_t *packet, device_t *state) {
     hid_keyboard_report_t *report = (hid_keyboard_report_t *)packet->data;
+    hid_keyboard_report_t combined_report;
 
-    /* Update the keyboard state for the remote device (using MAX_DEVICES-1 as the index) */
-    update_kbd_state(state, report, MAX_DEVICES-1);
+    /* Update the keyboard state for the remote device  */
+    update_remote_kbd_state(state, report);
 
     /* Create a combined report from all device states */
-    hid_keyboard_report_t combined_report;
     combine_kbd_states(state, &combined_report);
 
     /* Queue the combined report */

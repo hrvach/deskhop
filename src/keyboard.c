@@ -160,43 +160,56 @@ void update_kbd_state(device_t *state, hid_keyboard_report_t *report, uint8_t de
     if (device_idx >= MAX_DEVICES)
         return;
 
-    /* Ensure local devices never use the last slot, which is reserved for the remote device */
-    if (device_idx == MAX_DEVICES-1 && device_idx != 0) {
-        /* Use the previous slot instead */
-        device_idx = MAX_DEVICES-2;
-    }
-
     /* Update the keyboard state for this device */
-    memcpy(&state->kbd_states[device_idx], report, sizeof(hid_keyboard_report_t));
+    memcpy(&state->local_kbd_states[device_idx], report, sizeof(hid_keyboard_report_t));
 
-    /* Ensure kbd_device_count is at least device_idx + 1 */
-    if (state->kbd_device_count <= device_idx)
-        state->kbd_device_count = device_idx + 1;
+    /* Track the largest keyboard index we have */
+    if (state->max_kbd_idx < device_idx)
+        state->max_kbd_idx = device_idx;
 }
 
-/* Combine keyboard states from all devices into a single report */
+/* Update the struct storing the state of the keyboard(s) connected to the other board */
+void update_remote_kbd_state(device_t *state, hid_keyboard_report_t *report) {
+    memcpy(&state->remote_kbd_state, report, sizeof(hid_keyboard_report_t));
+}
+
+/* Add keys from source to destination, avoiding duplicates */
+static void add_keys(hid_keyboard_report_t *dest, const hid_keyboard_report_t *src) {
+    for (uint8_t i = 0; i < KEYS_IN_USB_REPORT; i++) {
+        uint8_t key = src->keycode[i];
+        
+        if (key == 0 || key_in_report(key, dest))
+            continue;
+            
+        uint8_t *empty_slot = memchr(dest->keycode, 0, KEYS_IN_USB_REPORT);
+        if (empty_slot)
+            *empty_slot = key;
+    }
+}
+
+/* Release all keys */
+void release_all_keys(device_t *state) {
+    memset(state->local_kbd_states, 0, sizeof(state->local_kbd_states));
+    memset(&state->remote_kbd_state, 0, sizeof(hid_keyboard_report_t));
+    
+    static hid_keyboard_report_t empty_report = {0};
+    queue_kbd_report(&empty_report, state);
+}
+
+
+/* Combine all keyboard states into a single report */
 void combine_kbd_states(device_t *state, hid_keyboard_report_t *combined_report) {
-    /* Initialize combined report */
     memset(combined_report, 0, sizeof(hid_keyboard_report_t));
 
-    /* Combine modifiers and keys from all devices */
-    for (uint8_t i = 0; i < state->kbd_device_count; i++) {
-        /* Combine modifiers with OR operation */
-        combined_report->modifier |= state->kbd_states[i].modifier;
-
-        /* Add keys from this device to the combined report */
-        for (uint8_t j = 0; j < KEYS_IN_USB_REPORT; j++) {
-            if (state->kbd_states[i].keycode[j] != 0) {
-                /* Find an empty slot in the combined report */
-                for (uint8_t k = 0; k < KEYS_IN_USB_REPORT; k++) {
-                    if (combined_report->keycode[k] == 0) {
-                        combined_report->keycode[k] = state->kbd_states[i].keycode[j];
-                        break;
-                    }
-                }
-            }
-        }
+    /* Combine all local keyboards up to max_kbd_idx */
+    for (uint8_t i = 0; i <= state->max_kbd_idx; i++) {
+        combined_report->modifier |= state->local_kbd_states[i].modifier;
+        add_keys(combined_report, &state->local_kbd_states[i]);
     }
+    
+    /* Add remote keyboard */
+    combined_report->modifier |= state->remote_kbd_state.modifier;
+    add_keys(combined_report, &state->remote_kbd_state);
 }
 
 /* ==================================================== *
@@ -236,18 +249,6 @@ void queue_kbd_report(hid_keyboard_report_t *report, device_t *state) {
         return;
 
     queue_try_add(&state->kbd_queue, report);
-}
-
-void release_all_keys(device_t *state) {
-    static hid_keyboard_report_t no_keys_pressed_report = {0, 0, {0}};
-
-    /* Clear keyboard states for all devices */
-    for (uint8_t i = 0; i < state->kbd_device_count; i++) {
-        memset(&state->kbd_states[i], 0, sizeof(hid_keyboard_report_t));
-    }
-
-    /* Send a report with no keys pressed */
-    queue_try_add(&state->kbd_queue, &no_keys_pressed_report);
 }
 
 /* If keys need to go locally, queue packet to kbd queue, else send them through UART */
@@ -331,7 +332,9 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
     uint8_t new_report[CONSUMER_CONTROL_LENGTH] = {0};
     uint16_t *report_ptr = (uint16_t *)new_report;
+
     device_t *state = &global_state;
+    keyboard_t *keyboard = get_keyboard(iface, raw_report[0]);
 
     /* If consumer control is variable, read the values from cc_array and send as array. */
     if (iface->consumer.is_variable) {
@@ -340,7 +343,7 @@ void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
             int byte_idx = i >> 3;
 
             if ((raw_report[byte_idx + 1] >> bit_idx) & 1) {
-                report_ptr[0] = iface->keyboard.cc_array[i];
+                report_ptr[0] = keyboard->cc_array[i];
             }
         }
     }
@@ -366,4 +369,20 @@ void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_int
     } else {
         queue_packet(report_ptr, SYSTEM_CONTROL_MSG, SYSTEM_CONTROL_LENGTH);
     }
+}
+
+keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id) {
+    /* When we have just one keyboard (most cases), or don't use report ID */
+    if (iface->num_keyboards == 1 || !iface->uses_report_id)
+        return &iface->keyboards[PRIMARY_KEYBOARD];
+
+    /* Go through known keyboards and match on report ID, return pointer to keyboard_t */
+    for (int i = 0; i < iface->num_keyboards && i < MAX_KEYBOARDS; i++) {
+        if (iface->keyboards[i].report_id == report_id) {
+            return &iface->keyboards[i];
+        }
+    }
+
+    /* If nothing else is matched, return the primary keyboard. */
+    return &iface->keyboards[PRIMARY_KEYBOARD];
 }

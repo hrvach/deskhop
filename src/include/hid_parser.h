@@ -24,8 +24,9 @@
 #define MAX_INTERFACES              6
 #define MAX_KEYS                    32
 #define MAX_REPORTS                 24
+#define MAX_KEYBOARDS               3
 #define MAX_SYS_BUTTONS             8
-
+#define PRIMARY_KEYBOARD            0
 /*==============================================================================
  *  Data Structures
  *==============================================================================*/
@@ -132,7 +133,8 @@ typedef struct {
 } report_t;
 
 struct hid_interface_t {
-    keyboard_t keyboard;
+    keyboard_t keyboards[MAX_KEYBOARDS];
+    uint8_t num_keyboards;
     mouse_t mouse;
     report_t consumer;
     report_t system;

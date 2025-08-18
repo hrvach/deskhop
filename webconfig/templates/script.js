@@ -87,7 +87,7 @@ async function connectHandler() {
     return;
 
   var devices = await navigator.hid.requestDevice({
-    filters: [{ vendorId: 0x1209, productId: 0xc000, usagePage: 0xff00, usage: 0x10 }]
+    filters: [{ vendorId: 0x2e8a, productId: 0x107c, usagePage: 0xff00, usage: 0x10 }]
   });
 
   device = devices[0];
@@ -149,6 +149,13 @@ function updateElement(key, event) {
 
     if (element.hasAttribute('data-hex'))
       setValue(element, parseInt(value).toString(16));
+
+    if (element.hasAttribute('data-fw-ver')) {
+      /* u16 version = major * 1000 + minor + 100; */
+      const major = Math.floor((value - 100) / 1000);
+      const minor = (value - 100) % 1000;
+      setValue(element, `v${major}.${minor}`);
+    }
   }
 }
 

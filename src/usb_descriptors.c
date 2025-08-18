@@ -18,10 +18,10 @@
 //--------------------------------------------------------------------+
 
                                         // https://github.com/raspberrypi/usb-pid
-tusb_desc_device_t const desc_device = DEVICE_DESCRIPTOR(0x2e8a, 0x107c);
+tusb_desc_device_t const desc_device_config = DEVICE_DESCRIPTOR(0x2e8a, 0x107c);
 
                                         // https://pid.codes/1209/C000/
-tusb_desc_device_t const desc_device_config = DEVICE_DESCRIPTOR(0x1209, 0xc000);
+tusb_desc_device_t const desc_device = DEVICE_DESCRIPTOR(0x1209, 0xc000);
 
 // Invoked when received GET DEVICE DESCRIPTOR
 // Application return pointer to descriptor
