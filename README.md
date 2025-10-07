@@ -98,6 +98,12 @@ _Note_ - This is not an actual generic USB drive, you can't use it to copy files
 
 **Option 2** - Using the ROM bootloader - hold the on-board button while connecting each Pico and copy the uf2 to the flash drive that appears. Images later than 0.6 support holding the button without having to fiddle around the power supply, but the "hold button while plugging" should always work, regardless of device state.
 
+**Option 3** - CDC Flash Command (Debug builds only) - If the firmware was built with `DH_DEBUG_CDC_FLASH=ON`, you can trigger bootloader mode via CDC serial command:
+```shell
+echo -n 'flash' > /dev/tty.usbmodem11104
+```
+This immediately resets the device into bootloader mode where it appears as "RPI-RP2" drive. This feature is intended for development workflows.
+
 ## Misc features
 
 ### Mouse slowdown
