@@ -215,6 +215,39 @@ bool validate_packet(uart_packet_t *packet) {
  * ================================================== */
 #ifdef DH_DEBUG
 
+// Based on: https://github.com/raspberrypi/pico-sdk/blob/a1438dff1d38bd9c65dbd693f0e5db4b9ae91779/src/rp2_common/pico_stdio_usb/stdio_usb.c#L100-L130
+static void cdc_write_str(const char *str) {
+    int str_len = strlen(str);
+
+    if (!tud_cdc_connected())
+        return;
+
+    uint64_t last_write_time = time_us_64();
+
+    for (int bytes_written = 0; bytes_written < str_len;) {
+        int bytes_remaining = str_len - bytes_written;
+        int available_space = (int)tud_cdc_write_available();
+        int chunk_size      = (bytes_remaining < available_space) ? bytes_remaining : available_space;
+
+        if (chunk_size > 0) {
+            int written = (int)tud_cdc_write(str + bytes_written, (uint32_t)chunk_size);
+            tud_task();
+            tud_cdc_write_flush();
+
+            bytes_written += written;
+            last_write_time = time_us_64();
+        } else {
+            tud_task();
+            tud_cdc_write_flush();
+
+            /* Timeout after 1ms if buffer stays full or connection lost */
+            if (!tud_cdc_connected() || (time_us_64() > last_write_time + 1000))
+                break;
+        }
+    }
+}
+
+
 int dh_debug_printf(const char *format, ...) {
     va_list args;
     va_start(args, format);
@@ -222,7 +255,7 @@ int dh_debug_printf(const char *format, ...) {
 
     int string_len = vsnprintf(buffer, 512, format, args);
 
-    tud_cdc_n_write(0, buffer, string_len);
+    cdc_write_str(buffer);
     tud_cdc_write_flush();
 
     va_end(args);
