@@ -33,6 +33,27 @@ uint32_t get_descriptor_value(uint8_t const *report, int size) {
     }
 }
 
+uint32_t *get_or_create_report_offset(parser_state_t *parser, uint8_t report_id) {
+    for (int i = 0; i < parser->num_report_offsets; i++) {
+        if (parser->report_offsets[i].report_id == report_id) {
+            return &parser->report_offsets[i].offset_in_bits;
+        }
+    }
+
+    if (parser->num_report_offsets < MAX_REPORTS) {
+        parser->report_offsets[parser->num_report_offsets].report_id = report_id;
+        parser->report_offsets[parser->num_report_offsets].offset_in_bits = 0;
+        return &parser->report_offsets[parser->num_report_offsets++].offset_in_bits;
+    }
+
+    return NULL;
+}
+
+uint32_t get_current_offset(parser_state_t *parser) {
+    uint32_t *offset = get_or_create_report_offset(parser, parser->report_id);
+    return offset ? *offset : 0;
+}
+
 void update_usage(parser_state_t *parser, int i) {
     /* If we don't have as many usages as elements, the usage for the previous element applies */
     if (i > 0 && i >= parser->usage_count && i < HID_MAX_USAGES)
@@ -40,9 +61,11 @@ void update_usage(parser_state_t *parser, int i) {
 }
 
 void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t data, uint16_t size, hid_interface_t *iface) {
+    uint32_t current_offset = get_current_offset(parser);
+
     *val = (report_val_t){
-        .offset     = parser->offset_in_bits,
-        .offset_idx = parser->offset_in_bits >> 3,
+        .offset     = current_offset,
+        .offset_idx = current_offset >> 3,
         .size       = size,
 
         .usage_max = parser->locals[RI_LOCAL_USAGE_MAX].val,
@@ -62,8 +85,6 @@ void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t da
 
 void handle_global_item(parser_state_t *parser, item_t *item) {
     if (item->hdr.tag == RI_GLOBAL_REPORT_ID) {
-        /* Reset offset for a new page */
-        parser->offset_in_bits = 0;
         parser->report_id = item->val;
     }
 
@@ -98,6 +119,10 @@ void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *if
         count = 1;
     }
 
+    uint32_t *current_offset = get_or_create_report_offset(parser, parser->report_id);
+    if (!current_offset)
+        return;
+
     for (int i = 0; i < count; i++) {
         update_usage(parser, i);
         store_element(parser, &val, i, item->val, size, iface);
@@ -106,7 +131,7 @@ void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *if
         extract_data(iface, &val);
 
         /* Iterate <count> times and increase offset by <size> amount, moving by <count> x <size> bits */
-        parser->offset_in_bits += size;
+        *current_offset += size;
     }
 
     /* Advance the usage array pointer by global report count and reset the count variable */
@@ -117,9 +142,6 @@ void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *if
 }
 
 void handle_main_item(parser_state_t *parser, item_t *item, hid_interface_t *iface) {
-    if (IS_BLOCK_END)
-        parser->offset_in_bits = 0;
-
     switch (item->hdr.tag) {
         case RI_MAIN_COLLECTION:
             parser->collection.start++;
