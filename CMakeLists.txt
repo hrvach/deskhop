@@ -7,6 +7,7 @@ set(VERSION_MINOR 73)
 
 ## Release Type Selection
 option(DH_DEBUG "Build a debug version" OFF)
+option(DH_DEBUG_CDC_FLASH "Enable CDC command to trigger bootloader mode" OFF)
 
 ## Hardware Configuration
 set(DP_PIN_DEFAULT 14 CACHE STRING "Default USB D+ Pin Number")
@@ -119,6 +120,10 @@ target_compile_definitions(${binary}
 ## Support building a debug version
 if (DH_DEBUG)
   add_definitions(-DDH_DEBUG)  
+endif()
+
+if (DH_DEBUG_CDC_FLASH)
+  add_definitions(-DDH_DEBUG_CDC_FLASH)
 endif()
   
 target_include_directories(${binary} PUBLIC ${COMMON_INCLUDES})
