@@ -1,3 +1,0 @@
-pico_simple_hardware_target(uart)
-
-pico_mirrored_target_link_libraries(hardware_uart INTERFACE hardware_resets hardware_clocks)

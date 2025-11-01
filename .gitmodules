@@ -1,0 +1,6 @@
+[submodule "lib/pico-sdk"]
+	path = lib/pico-sdk
+	url = https://github.com/raspberrypi/pico-sdk
+[submodule "lib/Pico-PIO-USB"]
+	path = lib/Pico-PIO-USB
+	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB
