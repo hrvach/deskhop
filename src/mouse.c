@@ -106,6 +106,15 @@ enum screen_pos_e update_mouse_position(device_t *state, mouse_values_t *values)
     /* Calculate movement */
     float acceleration_factor = calculate_mouse_acceleration_factor(values->move_x, values->move_y);
     int offset_x = round(values->move_x * acceleration_factor * (current->speed_x >> reduce_speed));
+    if (current->os == LINUX) {
+        /* Make the vertical acceleration similar to the horizontal, based
+           on the screen count.
+           This is only needed on linux as one absolute position is used
+           for all displays.
+           Possibly assumes that all displays are a similar resolution.
+           */
+        acceleration_factor *= current->screen_count;
+    }
     int offset_y = round(values->move_y * acceleration_factor * (current->speed_y >> reduce_speed));
 
     /* Determine if our upcoming movement would stay within the screen */
