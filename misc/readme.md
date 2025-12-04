@@ -1,0 +1,1 @@
+docker-compose -f docker.yml run --rm build_container sh -c "rm -rf build && cmake -S . -B build -DDH_DEBUG=ON && cmake --build build"

@@ -58,6 +58,10 @@ const field_map_t api_field_map[] = {
     { 75, false, UINT8,  1, offsetof(device_t, config.enable_acceleration) },
     { 76, false, UINT8,  1, offsetof(device_t, config.enforce_ports) },
     { 77, false, UINT16, 2, offsetof(device_t, config.jump_threshold) },
+    { 83, false, UINT8,  1, offsetof(device_t, config.gaming_mode_on_boot) },
+    { 84, false, UINT8,  1, offsetof(device_t, config.gaming_edge_enabled) },
+    { 85, false, UINT16, 2, offsetof(device_t, config.gaming_edge_threshold) },
+    { 86, false, UINT16, 2, offsetof(device_t, config.gaming_edge_window_ms) },
 
     /* Firmware */
     { 78, true,  UINT16, 2, offsetof(device_t, _running_fw.version) },

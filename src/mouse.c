@@ -240,8 +240,12 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
 void do_screen_switch(device_t *state, int direction) {
     output_t *output = &state->config.output[state->active_output];
 
-    /* No switching allowed if explicitly disabled or in gaming mode */
-    if (state->switch_lock || state->gaming_mode)
+    /* No switching allowed if explicitly disabled */
+    if (state->switch_lock)
+        return;
+
+    /* In gaming mode, only allow switching if edge detection enabled and triggered */
+    if (state->gaming_mode && !state->config.gaming_edge_enabled)
         return;
 
     /* We want to jump in the direction of the other computer */
@@ -317,6 +321,47 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
     return mouse_report;
 }
 
+enum screen_pos_e check_gaming_edge_switch(device_t *state, int offset_x) {
+    // Feature disabled - return early
+    if (!state->config.gaming_edge_enabled || !state->gaming_mode)
+        return NONE;
+
+    output_t *output = &state->config.output[state->active_output];
+    uint64_t now = time_us_64();
+    uint64_t window_us = state->config.gaming_edge_window_ms * 1000;
+
+    // Determine which direction would switch screens
+    enum screen_pos_e switch_direction = (output->pos == LEFT) ? RIGHT : LEFT;
+
+    // Check if movement is toward the other PC
+    bool moving_toward_switch = (switch_direction == LEFT && offset_x < 0) ||
+                                (switch_direction == RIGHT && offset_x > 0);
+
+    // Reset accumulator if:
+    // - Time window expired
+    // - Moving in opposite direction
+    if ((now - state->gaming_edge_last_reset) > window_us || !moving_toward_switch) {
+        state->gaming_edge_accum = 0;
+        state->gaming_edge_last_reset = now;
+
+        // If not moving toward switch, return early
+        if (!moving_toward_switch)
+            return NONE;
+    }
+
+    // Accumulate movement (use absolute value)
+    state->gaming_edge_accum += abs(offset_x);
+
+    // Check if threshold exceeded
+    if (state->gaming_edge_accum >= state->config.gaming_edge_threshold) {
+        state->gaming_edge_accum = 0;
+        state->gaming_edge_last_reset = now;
+        return switch_direction;
+    }
+
+    return NONE;
+}
+
 void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interface_t *iface) {
     mouse_values_t values = {0};
     device_t *state = &global_state;
@@ -326,6 +371,17 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
 
     /* Calculate and update mouse pointer movement. */
     enum screen_pos_e switch_direction = update_mouse_position(state, &values);
+
+    /* Check for gaming mode edge switching */
+    if (state->gaming_mode && state->config.gaming_edge_enabled) {
+        // Use the acceleration-adjusted offset from update_mouse_position
+        output_t *current = &state->config.output[state->active_output];
+        uint8_t reduce_speed = state->mouse_zoom ? MOUSE_ZOOM_SCALING_FACTOR : 0;
+        float acceleration_factor = calculate_mouse_acceleration_factor(values.move_x, values.move_y);
+        int offset_x = round(values.move_x * acceleration_factor * (current->speed_x >> reduce_speed));
+
+        switch_direction = check_gaming_edge_switch(state, offset_x);
+    }
 
     /* Create the report for the output PC based on the updated values */
     mouse_report_t report = create_mouse_report(state, &values);

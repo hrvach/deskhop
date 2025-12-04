@@ -15,7 +15,7 @@
 #include "misc.h"
 #include "screen.h"
 
-#define CURRENT_CONFIG_VERSION 8
+#define CURRENT_CONFIG_VERSION 10
 
 /*==============================================================================
  *  Configuration Data

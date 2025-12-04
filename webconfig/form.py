@@ -36,6 +36,14 @@ CONFIG_ = [
     FormField(72, "Force KBD Boot Protocol", None, {}, "uint8", "checkbox"),
     FormField(73, "KBD LED as Indicator", None, {}, "uint8", "checkbox"),
 
+    FormField(1004, "Gaming Mode", elem="label"),
+    FormField(83, "Start in Gaming Mode", None, {}, "uint8", "checkbox"),
+
+    FormField(1005, "Gaming Mode Edge Switching", elem="label"),
+    FormField(84, "Enable Edge Switching in Gaming Mode", None, {}, "uint8", "checkbox"),
+    FormField(85, "Movement Threshold", None, {}, "uint16", "number"),
+    FormField(86, "Time Window (ms)", None, {}, "uint16", "number"),
+
     FormField(76, "Enforce Ports", None, {}, "uint8", "checkbox"),
 ]
 
