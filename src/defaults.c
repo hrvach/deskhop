@@ -23,9 +23,7 @@ const config_t default_config = {
     .jump_threshold = JUMP_THRESHOLD,
 
     .gaming_mode_on_boot = true,
-    .gaming_edge_enabled = false,
-    .gaming_edge_threshold = 500,
-    .gaming_edge_window_ms = 500,
+    .gaming_edge_enabled = false,  // Global gaming edge switching disabled by default
 
     .output = {
         [OUTPUT_A] = {
@@ -45,7 +43,10 @@ const config_t default_config = {
                 .only_if_inactive = SCREENSAVER_A_ONLY_IF_INACTIVE,
                 .idle_time_us = (uint64_t)SCREENSAVER_A_IDLE_TIME_SEC * 1000000,
                 .max_time_us = (uint64_t)SCREENSAVER_A_MAX_TIME_SEC * 1000000,
-            }
+            },
+            .gaming_edge_threshold = GAMING_EDGE_THRESHOLD,
+            .gaming_edge_window_ms = GAMING_EDGE_WINDOW_MS,
+            .gaming_edge_max_vertical = GAMING_EDGE_MAX_VERTICAL,
         },
         [OUTPUT_B] = {
             .number = OUTPUT_B,
@@ -64,7 +65,10 @@ const config_t default_config = {
                 .only_if_inactive = SCREENSAVER_B_ONLY_IF_INACTIVE,
                 .idle_time_us = (uint64_t)SCREENSAVER_B_IDLE_TIME_SEC * 1000000,
                 .max_time_us = (uint64_t)SCREENSAVER_B_MAX_TIME_SEC * 1000000,
-            }
+            },
+            .gaming_edge_threshold = GAMING_EDGE_THRESHOLD,
+            .gaming_edge_window_ms = GAMING_EDGE_WINDOW_MS,
+            .gaming_edge_max_vertical = GAMING_EDGE_MAX_VERTICAL,
         }
     }
 };

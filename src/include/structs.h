@@ -80,10 +80,7 @@ typedef struct {
     uint16_t jump_threshold;
 
     uint8_t gaming_mode_on_boot;
-
-    uint8_t gaming_edge_enabled;
-    uint16_t gaming_edge_threshold;
-    uint16_t gaming_edge_window_ms;
+    uint8_t gaming_edge_enabled;  // Global enable for edge switching in gaming mode
 
     output_t output[NUM_SCREENS];
     uint32_t _reserved;
@@ -151,7 +148,8 @@ typedef struct {
     bool digitizer_active;   // True when digitizer Win/Mac workaround is active
 
     /* Gaming mode edge switching state */
-    int32_t gaming_edge_accum;        // Accumulated movement toward edge in gaming mode
+    uint32_t gaming_edge_accum;        // Accumulated horizontal movement toward edge in gaming mode
+    int32_t gaming_edge_vertical_accum; // Accumulated net vertical movement during edge detection (can be negative)
     uint64_t gaming_edge_last_reset;  // Timestamp of last accumulator reset
 
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */

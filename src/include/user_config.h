@@ -83,6 +83,27 @@
 #define ENABLE_ACCELERATION 1
 
 /**================================================== *
+ * ===========  Gaming Edge Switching  ============== *
+ * ================================================== *
+ *
+ * Gaming mode edge switching allows switching outputs in gaming mode
+ * by moving the mouse toward the edge of the screen.
+ *
+ * GAMING_EDGE_THRESHOLD: [0-4294967295], accumulated horizontal movement needed
+ *                        to trigger a switch (in mouse movement units)
+ * GAMING_EDGE_WINDOW_MS: [0-4294967295], time window in milliseconds for
+ *                        accumulating movement (max ~49 days)
+ * GAMING_EDGE_MAX_VERTICAL: [0-4294967295], maximum allowed vertical movement
+ *                          during edge detection (prevents accidental switches
+ *                          when moving mouse diagonally)
+ *
+ * */
+
+#define GAMING_EDGE_THRESHOLD 20000
+#define GAMING_EDGE_WINDOW_MS 1000
+#define GAMING_EDGE_MAX_VERTICAL 2000
+
+/**================================================== *
  * ==============  Screensaver Config  ============== *
  * ================================================== *
  *

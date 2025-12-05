@@ -321,14 +321,15 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
     return mouse_report;
 }
 
-enum screen_pos_e check_gaming_edge_switch(device_t *state, int offset_x) {
+enum screen_pos_e check_gaming_edge_switch(device_t *state, int offset_x, int offset_y) {
+    output_t *output = &state->config.output[state->active_output];
+    
     // Feature disabled - return early
     if (!state->config.gaming_edge_enabled || !state->gaming_mode)
         return NONE;
 
-    output_t *output = &state->config.output[state->active_output];
     uint64_t now = time_us_64();
-    uint64_t window_us = state->config.gaming_edge_window_ms * 1000;
+    uint64_t window_us = (uint64_t)output->gaming_edge_window_ms * 1000;
 
     // Determine which direction would switch screens
     enum screen_pos_e switch_direction = (output->pos == LEFT) ? RIGHT : LEFT;
@@ -337,11 +338,28 @@ enum screen_pos_e check_gaming_edge_switch(device_t *state, int offset_x) {
     bool moving_toward_switch = (switch_direction == LEFT && offset_x < 0) ||
                                 (switch_direction == RIGHT && offset_x > 0);
 
-    // Reset accumulator if:
+    // Reset accumulators if:
     // - Time window expired
     // - Moving in opposite direction
+    // - Vertical movement exceeds maximum allowed
+    bool reset_needed = false;
+    
     if ((now - state->gaming_edge_last_reset) > window_us || !moving_toward_switch) {
+        reset_needed = true;
+    }
+    
+    // Update vertical accumulation
+    state->gaming_edge_vertical_accum += offset_y;
+
+    uint32_t abs_vertical = (state->gaming_edge_vertical_accum < 0)
+        ? -(uint32_t)state->gaming_edge_vertical_accum
+        : (uint32_t)state->gaming_edge_vertical_accum;
+    if (abs_vertical > output->gaming_edge_max_vertical) {
+        reset_needed = true;
+    }
+    if (reset_needed) {
         state->gaming_edge_accum = 0;
+        state->gaming_edge_vertical_accum = 0;
         state->gaming_edge_last_reset = now;
 
         // If not moving toward switch, return early
@@ -349,12 +367,13 @@ enum screen_pos_e check_gaming_edge_switch(device_t *state, int offset_x) {
             return NONE;
     }
 
-    // Accumulate movement (use absolute value)
-    state->gaming_edge_accum += abs(offset_x);
+    // Accumulate horizontal movement (use absolute value)
+    state->gaming_edge_accum += (uint32_t)abs(offset_x);
 
     // Check if threshold exceeded
-    if (state->gaming_edge_accum >= state->config.gaming_edge_threshold) {
+    if (state->gaming_edge_accum >= output->gaming_edge_threshold) {
         state->gaming_edge_accum = 0;
+        state->gaming_edge_vertical_accum = 0;
         state->gaming_edge_last_reset = now;
         return switch_direction;
     }
@@ -373,14 +392,15 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     enum screen_pos_e switch_direction = update_mouse_position(state, &values);
 
     /* Check for gaming mode edge switching */
-    if (state->gaming_mode && state->config.gaming_edge_enabled) {
+    if (state->gaming_mode) {
         // Use the acceleration-adjusted offset from update_mouse_position
         output_t *current = &state->config.output[state->active_output];
         uint8_t reduce_speed = state->mouse_zoom ? MOUSE_ZOOM_SCALING_FACTOR : 0;
         float acceleration_factor = calculate_mouse_acceleration_factor(values.move_x, values.move_y);
         int offset_x = round(values.move_x * acceleration_factor * (current->speed_x >> reduce_speed));
+        int offset_y = round(values.move_y * acceleration_factor * (current->speed_y >> reduce_speed));
 
-        switch_direction = check_gaming_edge_switch(state, offset_x);
+        switch_direction = check_gaming_edge_switch(state, offset_x, offset_y);
     }
 
     /* Create the report for the output PC based on the updated values */
