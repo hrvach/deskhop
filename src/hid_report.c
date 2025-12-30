@@ -323,7 +323,7 @@ int32_t extract_kbd_data(
         return _extract_kbd_nkro(raw_report, len, iface, report);
 
     /* If we're getting 8 bytes of report, it's safe to assume standard modifier + reserved + keys */
-    if (len == KBD_REPORT_LENGTH || len == KBD_REPORT_LENGTH + 1)
+    if (!iface->uses_report_id && (len == KBD_REPORT_LENGTH || len == KBD_REPORT_LENGTH + 1))
         return _extract_kbd_boot(raw_report, len, report);
 
     /* This is something completely different, look at the report  */
