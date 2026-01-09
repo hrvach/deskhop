@@ -359,16 +359,24 @@ void handle_response_byte_msg(uart_packet_t *packet, device_t *state) {
 
 /* Process a request to read a firmware package from flash */
 void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
-    uint16_t other_running_version = packet->data16[0];
+    uint16_t other_fw_version = packet->data16[0];
+    uint32_t other_fw_crc = packet->data32[1];
+
+    state->other_board_fw_crc = other_fw_crc;
 
     if (state->fw.upgrade_in_progress)
         return;
 
-    /* If the other board isn't running a newer version, we are done */
-    if (other_running_version <= state->_running_fw.version)
+    if (other_fw_version > state->_running_fw.version) {
+        dh_debug_printf("FW upgrade: version %u > %u\n", other_fw_version, state->_running_fw.version);
+    } else if (other_fw_version == state->_running_fw.version &&
+               other_fw_crc != state->fw_crc &&
+               BOARD_ROLE == OUTPUT_B) {
+        dh_debug_printf("FW upgrade: CRC mismatch (ours=%08lx, theirs=%08lx)\n", state->fw_crc, other_fw_crc);
+    } else {
         return;
+    }
 
-    /* It is? Ok, kick off the firmware upgrade */
     state->fw = (fw_upgrade_state_t) {
         .upgrade_in_progress = true,
         .byte_done = true,

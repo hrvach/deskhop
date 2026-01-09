@@ -126,6 +126,8 @@ typedef struct {
     /* Firmware */
     fw_upgrade_state_t fw;           // State of the firmware upgrader
     firmware_metadata_t _running_fw; // RAM copy of running fw metadata
+    uint32_t fw_crc;                 // CRC32 of running firmware (computed at boot)
+    uint32_t other_board_fw_crc;     // Last known firmware CRC from other board
     bool reboot_requested;           // If set, stop updating watchdog
     uint64_t config_mode_timer;      // Counts how long are we to remain in config mode
 

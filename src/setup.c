@@ -251,8 +251,9 @@ void initial_setup(device_t *state) {
     configure_tx_dma(state);
     configure_rx_dma(state);
 
-    /* Load the current firmware info */
+    /* Load the current firmware info and compute CRC for firmware sync */
     state->_running_fw = _firmware_metadata;
+    state->fw_crc = calculate_firmware_crc32();
 
     /* Update the core1 initial pass timestamp before enabling the watchdog */
     state->core1_last_loop_pass = time_us_64();

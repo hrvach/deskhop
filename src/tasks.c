@@ -159,11 +159,16 @@ void heartbeat_output_task(device_t *state) {
         reset_usb_boot(1 << PICO_DEFAULT_LED_PIN, 0);
 #endif
 
+    /* Heartbeat packet layout:
+     * data16[0]: fw_version (16 bits)
+     * data16[1]: active_output (16 bits)
+     * data32[1]: fw_crc (32 bits)
+     */
     uart_packet_t packet = {
         .type = HEARTBEAT_MSG,
-        .data16 = {
-            [0] = state->_running_fw.version,
-            [2] = state->active_output,
+        .data32 = {
+            [0] = state->_running_fw.version | ((uint32_t)state->active_output << 16),
+            [1] = state->fw_crc,
         },
     };
 
