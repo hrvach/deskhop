@@ -181,14 +181,13 @@ void switch_to_another_pc(
 void switch_virtual_desktop_macos(device_t *state, int direction) {
     /*
      * Fix for MACOS: Before sending new absolute report setting X to 0:
-     * 1. Move the cursor to the edge of the screen directly in the middle to handle screens
-     *    of different heights
+     * 1. Move the cursor to the edge of the screen at the current Y position
      * 2. Send relative mouse movement one or two pixels in the direction of movement to get
      *    the cursor onto the next screen
      */
     mouse_report_t edge_position = {
         .x = (direction == LEFT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD,
-        .y = MAX_SCREEN_COORD / 2,
+        .y = state->pointer_y,
         .mode = ABSOLUTE,
         .buttons = state->mouse_buttons,
     };
