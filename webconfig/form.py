@@ -11,6 +11,17 @@ class FormField:
     data_type: str = "int32"
     elem: str | None = None
 
+@dataclass
+class TableRow:
+    """A table row with a label and four input fields (from top/bottom, to top/bottom)."""
+    label: str
+    from_top_offset: int
+    from_bottom_offset: int
+    to_top_offset: int
+    to_bottom_offset: int
+    data_type: str = "int32"
+    elem: str = "table_row"
+
 SHORTCUTS = {
     0x73: "None",
     0x2A: "Backspace",
@@ -53,20 +64,35 @@ OUTPUT_ = [
     FormField(10, "Only If Inactive", None, {}, "uint8", "checkbox"),
     FormField(11, "Idle Time (μs)", None, {}, "uint64"),
     FormField(12, "Max Time (μs)", None, {}, "uint64"),
+
+    FormField(1004, "Screen Transitions", elem="table_start"),
+    TableRow("1 ↔ 2", 13, 14, 15, 16),
+    TableRow("2 ↔ 3", 17, 18, 19, 20),
+    FormField(1005, "", elem="table_end"),
 ]
 
 def generate_output(base, data):
-    output = [
-        {
-            "name": field.name,
-            "key": base + field.offset,
-            "default": field.default,
-            "values": field.values,
-            "type": field.data_type,
-            "elem": field.elem,
-        }
-        for field in data
-    ]
+    output = []
+    for item in data:
+        if isinstance(item, TableRow):
+            output.append({
+                "label": item.label,
+                "from_top_key": base + item.from_top_offset,
+                "from_bottom_key": base + item.from_bottom_offset,
+                "to_top_key": base + item.to_top_offset,
+                "to_bottom_key": base + item.to_bottom_offset,
+                "type": item.data_type,
+                "elem": item.elem,
+            })
+        else:
+            output.append({
+                "name": item.name,
+                "key": base + item.offset,
+                "default": item.default,
+                "values": item.values,
+                "type": item.data_type,
+                "elem": item.elem,
+            })
     return output
 
 def output_A(base=10):

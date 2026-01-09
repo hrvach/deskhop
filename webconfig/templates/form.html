@@ -7,6 +7,11 @@
   onchange="valueChangedHandler(this)"
 {% endmacro %}
 
+{% macro table_input(key, dtype, type='text', class='api', name='name') %}
+<input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ dtype }}" data-key="{{ key }}"
+  onchange="valueChangedHandler(this)" />
+{% endmacro %}
+
 {% macro label(item, class='label-inline', add='') %}
 <label class="{{class}}"> {{ item.name }}{{ add }}</label>
 {% endmacro %}
@@ -22,6 +27,37 @@
 
   {% elif item.get("elem") == "label" %}
     {{ label(item, class='') }}
+
+  {% elif item.get("elem") == "table_start" %}
+    <label class="">{{ item.name }}</label>
+    <table class="transition-table">
+      <thead>
+        <tr>
+          <th rowspan="2"></th>
+          <th colspan="2">→ (From)</th>
+          <th colspan="2">← (To)</th>
+        </tr>
+        <tr>
+          <th>Top</th>
+          <th>Bottom</th>
+          <th>Top</th>
+          <th>Bottom</th>
+        </tr>
+      </thead>
+      <tbody>
+
+  {% elif item.get("elem") == "table_row" %}
+        <tr>
+          <td>{{ item.label }}</td>
+          <td>{{ table_input(item.from_top_key, item.type) }}</td>
+          <td>{{ table_input(item.from_bottom_key, item.type) }}</td>
+          <td>{{ table_input(item.to_top_key, item.type) }}</td>
+          <td>{{ table_input(item.to_bottom_key, item.type) }}</td>
+        </tr>
+
+  {% elif item.get("elem") == "table_end" %}
+      </tbody>
+    </table>
 
   {% elif item.get("elem") == "range" %}
   <div class="clearfix">

@@ -34,6 +34,16 @@ const field_map_t api_field_map[] = {
     { 21, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.idle_time_us) },
     { 22, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.max_time_us) },
 
+    /* Output A screen transitions */
+    { 23, false, INT32, 4, offsetof(device_t, config.output[0].screen_transition[0].from.top) },
+    { 24, false, INT32, 4, offsetof(device_t, config.output[0].screen_transition[0].from.bottom) },
+    { 25, false, INT32, 4, offsetof(device_t, config.output[0].screen_transition[0].to.top) },
+    { 26, false, INT32, 4, offsetof(device_t, config.output[0].screen_transition[0].to.bottom) },
+    { 27, false, INT32, 4, offsetof(device_t, config.output[0].screen_transition[1].from.top) },
+    { 28, false, INT32, 4, offsetof(device_t, config.output[0].screen_transition[1].from.bottom) },
+    { 29, false, INT32, 4, offsetof(device_t, config.output[0].screen_transition[1].to.top) },
+    { 30, false, INT32, 4, offsetof(device_t, config.output[0].screen_transition[1].to.bottom) },
+
     /* Output B */
     { 40, false, UINT32, 4, offsetof(device_t, config.output[1].number) },
     { 41, false, UINT32, 4, offsetof(device_t, config.output[1].screen_count) },
@@ -48,6 +58,16 @@ const field_map_t api_field_map[] = {
     { 50, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.only_if_inactive) },
     { 51, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.idle_time_us) },
     { 52, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.max_time_us) },
+
+    /* Output B screen transitions */
+    { 53, false, INT32, 4, offsetof(device_t, config.output[1].screen_transition[0].from.top) },
+    { 54, false, INT32, 4, offsetof(device_t, config.output[1].screen_transition[0].from.bottom) },
+    { 55, false, INT32, 4, offsetof(device_t, config.output[1].screen_transition[0].to.top) },
+    { 56, false, INT32, 4, offsetof(device_t, config.output[1].screen_transition[0].to.bottom) },
+    { 57, false, INT32, 4, offsetof(device_t, config.output[1].screen_transition[1].from.top) },
+    { 58, false, INT32, 4, offsetof(device_t, config.output[1].screen_transition[1].from.bottom) },
+    { 59, false, INT32, 4, offsetof(device_t, config.output[1].screen_transition[1].to.top) },
+    { 60, false, INT32, 4, offsetof(device_t, config.output[1].screen_transition[1].to.bottom) },
 
     /* Common config */
     { 70, false, UINT32, 4, offsetof(device_t, config.version) },

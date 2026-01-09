@@ -26,11 +26,36 @@ void output_toggle_hotkey_handler(device_t *state, hid_keyboard_report_t *report
 };
 
 void _get_border_position(device_t *state, border_size_t *border) {
-    /* To avoid having 2 different keys, if we're above half, it's the top coord */
-    if (state->pointer_y > (MAX_SCREEN_COORD / 2))
-        border->bottom = state->pointer_y;
-    else
-        border->top = state->pointer_y;
+    int y = state->pointer_y;
+
+    /* Check if this is the default/uninitialized state [0, MAX] */
+    if (border->top == 0 && border->bottom == MAX_SCREEN_COORD) {
+        /* First press - set both to current Y as starting point */
+        border->top = y;
+        border->bottom = y;
+    } else if (border->top == border->bottom) {
+        /* Second press - expand range in the appropriate direction */
+        if (y < border->top)
+            border->top = y;
+        else
+            border->bottom = y;
+    } else {
+        /* Already have a range - update whichever boundary is closer */
+        int dist_top = y > border->top ? y - border->top : border->top - y;
+        int dist_bottom = y > border->bottom ? y - border->bottom : border->bottom - y;
+
+        if (dist_top < dist_bottom)
+            border->top = y;
+        else
+            border->bottom = y;
+
+        /* Normalize: ensure top <= bottom */
+        if (border->top > border->bottom) {
+            int temp = border->top;
+            border->top = border->bottom;
+            border->bottom = temp;
+        }
+    }
 }
 
 void _screensaver_set(device_t *state, uint8_t value) {
@@ -40,15 +65,48 @@ void _screensaver_set(device_t *state, uint8_t value) {
         send_value(value, SCREENSAVER_MSG);
 };
 
-/* This key combo records switch y top coordinate for different-size monitors  */
-void screen_border_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    border_size_t *border = &state->config.output[state->active_output].border;
-    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
-        _get_border_position(state, border);
-        save_config(state);
+/* Core logic for saving screen border - always runs on active output device.
+ * Determines which border to set based on screen_index and cursor position:
+ * - On primary screen near the computer border: sets the computer-switching border
+ * - Otherwise: sets the appropriate screen_transition border for multi-monitor setups
+ */
+void _save_screen_border(device_t *state) {
+    output_t *output = &state->config.output[state->active_output];
+    int idx = output->screen_index;
+    bool cursor_toward_border = (output->pos == RIGHT && state->pointer_x < MAX_SCREEN_COORD / 2) ||
+                                (output->pos == LEFT && state->pointer_x > MAX_SCREEN_COORD / 2);
+
+    border_size_t *border;
+
+    if (idx == 1 && cursor_toward_border) {
+        /* On primary screen, cursor toward computer border: set computer-switching border */
+        border = &output->border;
+    } else if (idx == 1) {
+        /* On primary screen, cursor away from border: set transition 0 "from" (1→2) */
+        border = &output->screen_transition[0].from;
+    } else if (idx == MAX_SCREEN_COUNT) {
+        /* On last screen: set the "to" border for returning */
+        border = &output->screen_transition[idx - 2].to;
+    } else {
+        /* On middle screen: use cursor X position to decide which transition */
+        if (state->pointer_x < MAX_SCREEN_COORD / 2) {
+            border = &output->screen_transition[idx - 2].to;
+        } else {
+            border = &output->screen_transition[idx - 1].from;
+        }
     }
 
-    queue_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
+    _get_border_position(state, border);
+    save_config(state);
+}
+
+/* Hotkey handler - routes to correct device */
+void screen_border_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+        _save_screen_border(state);
+    } else {
+        queue_packet(NULL, SYNC_BORDERS_MSG, 0);
+    }
 };
 
 /* This key combo puts board A in firmware upgrade mode */
@@ -218,17 +276,11 @@ void handle_switch_lock_msg(uart_packet_t *packet, device_t *state) {
     state->switch_lock = packet->data[0];
 }
 
-/* Handle border syncing message that lets the other device know about monitor height offset */
+/* Handle border syncing message - trigger from other device to save screen border */
 void handle_sync_borders_msg(uart_packet_t *packet, device_t *state) {
-    border_size_t *border = &state->config.output[state->active_output].border;
-
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
-        _get_border_position(state, border);
-        queue_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
-    } else
-        memcpy(border, packet->data, sizeof(border_size_t));
-
-    save_config(state);
+        _save_screen_border(state);
+    }
 }
 
 /* Enter configuration mode (called via message or directly) */

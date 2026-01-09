@@ -663,3 +663,34 @@ img {
 .online {
   opacity: 0.5;
 }
+
+.transition-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.transition-table th,
+.transition-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: center;
+  border: 1px solid #d7e5f0;
+}
+
+.transition-table th {
+  background-color: #d7e5f0;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.transition-table td:first-child {
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.transition-table input {
+  width: 70px;
+  padding: 0.2rem 0.4rem;
+}

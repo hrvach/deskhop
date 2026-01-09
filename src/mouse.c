@@ -206,6 +206,35 @@ void switch_virtual_desktop_macos(device_t *state, int direction) {
 }
 
 void switch_virtual_desktop(device_t *state, output_t *output, int new_index, int direction) {
+    int current_index = output->screen_index;
+
+    /* Determine which transition we're using (screen_index is 1-based) */
+    int transition_idx;
+    border_size_t *allowed_range;
+    screen_transition_t *transition;
+
+    if (new_index > current_index) {
+        /* Moving to higher screen index (e.g., 1→2 or 2→3) */
+        transition_idx = current_index - 1;
+        transition = &output->screen_transition[transition_idx];
+        allowed_range = &transition->from;
+    } else {
+        /* Moving to lower screen index (e.g., 2→1 or 3→2) */
+        transition_idx = new_index - 1;
+        transition = &output->screen_transition[transition_idx];
+        allowed_range = &transition->to;
+    }
+
+    /* Only apply bounds check if BOTH directions of this transition are configured.
+     * This allows the user to travel to the other screen to configure the return path. */
+    bool from_valid = (transition->from.top < transition->from.bottom);
+    bool to_valid = (transition->to.top < transition->to.bottom);
+    bool range_valid = from_valid && to_valid;
+
+    /* Block transition if cursor is outside the allowed Y-range */
+    if (range_valid && (state->pointer_y < allowed_range->top || state->pointer_y > allowed_range->bottom))
+        return;
+
     switch (output->os) {
         case MACOS:
             switch_virtual_desktop_macos(state, direction);

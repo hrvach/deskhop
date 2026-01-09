@@ -672,6 +672,37 @@ img {
 .online {
   opacity: 0.5;
 }
+
+.transition-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.transition-table th,
+.transition-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: center;
+  border: 1px solid #d7e5f0;
+}
+
+.transition-table th {
+  background-color: #d7e5f0;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.transition-table td:first-child {
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.transition-table input {
+  width: 70px;
+  padding: 0.2rem 0.4rem;
+}
   </style>
 
   <title>DeskHop Config</title>
@@ -753,6 +784,8 @@ img {
 
 
 
+
+
   
     
 <label class=""> Screen Count</label>
@@ -773,6 +806,8 @@ img {
 
             
               
+
+
 
 
 
@@ -815,6 +850,8 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     <form>
@@ -849,6 +886,8 @@ img {
 
 
 
+
+
   
       
 <label class=""> Border Top</label>
@@ -870,6 +909,8 @@ img {
 
 
 
+
+
   
       
 <label class=""> Border Bottom</label>
@@ -883,6 +924,8 @@ img {
 
             
               
+
+
 
 
 
@@ -923,6 +966,8 @@ img {
 
 
 
+
+
   
     
 <label class=""> Screen Position</label>
@@ -941,6 +986,8 @@ img {
 
             
               
+
+
 
 
 
@@ -977,6 +1024,8 @@ img {
 
 
 
+
+
   
     
 <label class=""> Screensaver</label>
@@ -986,6 +1035,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1022,6 +1073,8 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
@@ -1038,6 +1091,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1067,6 +1122,8 @@ img {
 
 
 
+
+
   
       
 <label class=""> Max Time (μs)</label>
@@ -1075,6 +1132,126 @@ img {
 <input class="api" type="text" name="name22" data-type="uint64" data-key="22"
   onchange="valueChangedHandler(this)"
   />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+    <label class="">Screen Transitions</label>
+    <table class="transition-table">
+      <thead>
+        <tr>
+          <th rowspan="2"></th>
+          <th colspan="2">→ (From)</th>
+          <th colspan="2">← (To)</th>
+        </tr>
+        <tr>
+          <th>Top</th>
+          <th>Bottom</th>
+          <th>Top</th>
+          <th>Bottom</th>
+        </tr>
+      </thead>
+      <tbody>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>1 ↔ 2</td>
+          <td>
+<input class="api" type="text" name="name23" data-type="int32" data-key="23"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name24" data-type="int32" data-key="24"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name25" data-type="int32" data-key="25"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name26" data-type="int32" data-key="26"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>2 ↔ 3</td>
+          <td>
+<input class="api" type="text" name="name27" data-type="int32" data-key="27"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name28" data-type="int32" data-key="28"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name29" data-type="int32" data-key="29"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name30" data-type="int32" data-key="30"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+      </tbody>
+    </table>
 
   
 
@@ -1093,6 +1270,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1121,6 +1300,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1163,6 +1344,8 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     <form>
@@ -1197,6 +1380,8 @@ img {
 
 
 
+
+
   
       
 <label class=""> Border Top</label>
@@ -1218,6 +1403,8 @@ img {
 
 
 
+
+
   
       
 <label class=""> Border Bottom</label>
@@ -1231,6 +1418,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1271,6 +1460,8 @@ img {
 
 
 
+
+
   
     
 <label class=""> Screen Position</label>
@@ -1289,6 +1480,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1325,6 +1518,8 @@ img {
 
 
 
+
+
   
     
 <label class=""> Screensaver</label>
@@ -1334,6 +1529,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1370,6 +1567,8 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
@@ -1386,6 +1585,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1415,6 +1616,8 @@ img {
 
 
 
+
+
   
       
 <label class=""> Max Time (μs)</label>
@@ -1423,6 +1626,126 @@ img {
 <input class="api" type="text" name="name52" data-type="uint64" data-key="52"
   onchange="valueChangedHandler(this)"
   />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+    <label class="">Screen Transitions</label>
+    <table class="transition-table">
+      <thead>
+        <tr>
+          <th rowspan="2"></th>
+          <th colspan="2">→ (From)</th>
+          <th colspan="2">← (To)</th>
+        </tr>
+        <tr>
+          <th>Top</th>
+          <th>Bottom</th>
+          <th>Top</th>
+          <th>Bottom</th>
+        </tr>
+      </thead>
+      <tbody>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>1 ↔ 2</td>
+          <td>
+<input class="api" type="text" name="name53" data-type="int32" data-key="53"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name54" data-type="int32" data-key="54"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name55" data-type="int32" data-key="55"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name56" data-type="int32" data-key="56"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>2 ↔ 3</td>
+          <td>
+<input class="api" type="text" name="name57" data-type="int32" data-key="57"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name58" data-type="int32" data-key="58"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name59" data-type="int32" data-key="59"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name60" data-type="int32" data-key="60"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+      </tbody>
+    </table>
 
   
 
@@ -1453,6 +1776,8 @@ img {
 
 
 
+
+
   
     
 <label class=""> Mouse</label>
@@ -1462,6 +1787,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1494,6 +1821,8 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
@@ -1510,6 +1839,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1552,6 +1883,8 @@ img {
 
 
 
+
+
   
     
 <label class=""> Keyboard</label>
@@ -1561,6 +1894,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1593,6 +1928,8 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
@@ -1609,6 +1946,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1649,6 +1988,8 @@ img {
 
 
 
+
+
   
     
 <label class=""> Running FW version</label>
@@ -1662,6 +2003,8 @@ img {
 
           
             
+
+
 
 
 

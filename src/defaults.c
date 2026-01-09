@@ -10,6 +10,9 @@
  */
 #include "main.h"
 
+_Static_assert(MAX_SCREEN_COUNT == 3,
+    "Update screen_transition defaults in defaults.c when MAX_SCREEN_COUNT changes");
+
 /* Default configuration */
 const config_t default_config = {
     .magic_header = 0xB00B1E5,
@@ -22,6 +25,12 @@ const config_t default_config = {
             .border = {
                 .top = 0,
                 .bottom = MAX_SCREEN_COORD,
+            },
+            .screen_transition = {
+                [0] = { .from = { .top = 0, .bottom = MAX_SCREEN_COORD },
+                        .to   = { .top = 0, .bottom = MAX_SCREEN_COORD } },
+                [1] = { .from = { .top = 0, .bottom = MAX_SCREEN_COORD },
+                        .to   = { .top = 0, .bottom = MAX_SCREEN_COORD } },
             },
             .screen_count = 1,
             .screen_index = 1,
@@ -42,6 +51,12 @@ const config_t default_config = {
             .border = {
                 .top = 0,
                 .bottom = MAX_SCREEN_COORD,
+            },
+            .screen_transition = {
+                [0] = { .from = { .top = 0, .bottom = MAX_SCREEN_COORD },
+                        .to   = { .top = 0, .bottom = MAX_SCREEN_COORD } },
+                [1] = { .from = { .top = 0, .bottom = MAX_SCREEN_COORD },
+                        .to   = { .top = 0, .bottom = MAX_SCREEN_COORD } },
             },
             .screen_count = 1,
             .screen_index = 1,
