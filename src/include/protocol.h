@@ -36,6 +36,7 @@ enum packet_type_e {
     PROXY_PACKET_MSG     = 23,
     REQUEST_BYTE_MSG     = 24,
     RESPONSE_BYTE_MSG    = 25,
+    ENTER_CONFIG_MSG     = 26,
 };
 
 typedef enum {

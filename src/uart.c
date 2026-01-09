@@ -75,6 +75,7 @@ const uart_handler_t uart_handler[] = {
     {.type = SCREENSAVER_MSG, .handler = handle_screensaver_msg},
 
     /* Config */
+    {.type = ENTER_CONFIG_MSG, .handler = handle_enter_config_msg},
     {.type = WIPE_CONFIG_MSG, .handler = handle_wipe_config_msg},
     {.type = SAVE_CONFIG_MSG, .handler = handle_save_config_msg},
     {.type = REBOOT_MSG, .handler = handle_reboot_msg},

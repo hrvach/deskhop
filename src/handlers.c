@@ -144,14 +144,11 @@ void disable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *
 
 /* Put the device into a special configuration mode */
 void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    /* If config mode is already active, skip this and reboot to return to normal mode */
-    if (!state->config_mode_active) {
-        watchdog_hw->scratch[5] = MAGIC_WORD_1;
-        watchdog_hw->scratch[6] = MAGIC_WORD_2;
-    }
-
-    release_all_keys(state);
-    state->reboot_requested = true;
+    /* Enter config mode on the currently active output so the user sees the config UI */
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT)
+        handle_enter_config_msg(NULL, state);
+    else
+        send_value(ENABLE, ENTER_CONFIG_MSG);
 };
 
 
@@ -232,6 +229,16 @@ void handle_sync_borders_msg(uart_packet_t *packet, device_t *state) {
         memcpy(border, packet->data, sizeof(border_size_t));
 
     save_config(state);
+}
+
+/* Enter configuration mode (called via message or directly) */
+void handle_enter_config_msg(uart_packet_t *packet, device_t *state) {
+    if (!state->config_mode_active) {
+        watchdog_hw->scratch[5] = MAGIC_WORD_1;
+        watchdog_hw->scratch[6] = MAGIC_WORD_2;
+    }
+    release_all_keys(state);
+    state->reboot_requested = true;
 }
 
 /* When this message is received, flash the locally attached LED to verify serial comms */
