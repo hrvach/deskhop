@@ -131,6 +131,23 @@ void output_mouse_report(mouse_report_t *report, device_t *state) {
     }
 }
 
+/* Map Y coordinate when transitioning between screens within the same computer.
+ * Similar to scale_y_coordinate() but uses screen_transition ranges instead of output borders. */
+int16_t map_screen_transition_y(int pointer_y, border_size_t *from, border_size_t *to) {
+    int size_from = from->bottom - from->top;
+    int size_to = to->bottom - to->top;
+
+    /* Handle degenerate cases */
+    if (size_from <= 0)
+        return pointer_y;
+
+    if (size_to <= 0)
+        return to->top;
+
+    /* Linear interpolation from source range to destination range */
+    return to->top + ((pointer_y - from->top) * size_to) / size_from;
+}
+
 /* Calculate and return Y coordinate when moving from screen out_from to screen out_to */
 int16_t scale_y_coordinate(int screen_from, int screen_to, device_t *state) {
     output_t *from = &state->config.output[screen_from];
@@ -211,6 +228,7 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
     /* Determine which transition we're using (screen_index is 1-based) */
     int transition_idx;
     border_size_t *allowed_range;
+    border_size_t *target_range;
     screen_transition_t *transition;
 
     if (new_index > current_index) {
@@ -218,14 +236,16 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
         transition_idx = current_index - 1;
         transition = &output->screen_transition[transition_idx];
         allowed_range = &transition->from;
+        target_range = &transition->to;
     } else {
         /* Moving to lower screen index (e.g., 2→1 or 3→2) */
         transition_idx = new_index - 1;
         transition = &output->screen_transition[transition_idx];
         allowed_range = &transition->to;
+        target_range = &transition->from;
     }
 
-    /* Only apply bounds check if BOTH directions of this transition are configured.
+    /* Only apply bounds check and Y-mapping if BOTH directions of this transition are configured.
      * This allows the user to travel to the other screen to configure the return path. */
     bool from_valid = (transition->from.top < transition->from.bottom);
     bool to_valid = (transition->to.top < transition->to.bottom);
@@ -252,6 +272,10 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
             screen_count at 1 and it should just work */
             break;
     }
+
+    /* Map Y coordinate to destination range after OS handler positions cursor at screen edge */
+    if (range_valid)
+        state->pointer_y = map_screen_transition_y(state->pointer_y, allowed_range, target_range);
 
     state->pointer_x       = (direction == RIGHT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
     output->screen_index = new_index;
