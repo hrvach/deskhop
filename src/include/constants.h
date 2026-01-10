@@ -24,8 +24,8 @@
 
 #define ITF_NUM_HID        0
 #define ITF_NUM_HID_REL_M  1
-#define ITF_NUM_HID_VENDOR 1
-#define ITF_NUM_MSC        2
+#define ITF_NUM_HID_VENDOR 2
+#define ITF_NUM_MSC        3
 
 /*==============================================================================
  *  Mouse Modes

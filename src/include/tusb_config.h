@@ -116,7 +116,7 @@ extern int dh_debug_printf(const char *__restrict __format, ...);
  *==============================================================================*/
 
 // Enable HID (Human Interface Device) class (keyboard, mouse, etc.).
-#define CFG_TUD_HID    2
+#define CFG_TUD_HID    3
 
 // Enable MSC (Mass Storage Class) class.
 #define CFG_TUD_MSC    1
