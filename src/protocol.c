@@ -22,8 +22,6 @@ const field_map_t api_field_map[] = {
     { 11, false, UINT32, 4, offsetof(device_t, config.output[0].screen_count) },
     { 12, false, INT32,  4, offsetof(device_t, config.output[0].speed_x) },
     { 13, false, INT32,  4, offsetof(device_t, config.output[0].speed_y) },
-    { 14, false, INT32,  4, offsetof(device_t, config.output[0].border.top) },
-    { 15, false, INT32,  4, offsetof(device_t, config.output[0].border.bottom) },
     { 16, false, UINT8,  1, offsetof(device_t, config.output[0].os) },
     { 17, false, UINT8,  1, offsetof(device_t, config.output[0].pos) },
     { 18, false, UINT8,  1, offsetof(device_t, config.output[0].mouse_park_pos) },
@@ -49,8 +47,6 @@ const field_map_t api_field_map[] = {
     { 41, false, UINT32, 4, offsetof(device_t, config.output[1].screen_count) },
     { 42, false, INT32,  4, offsetof(device_t, config.output[1].speed_x) },
     { 43, false, INT32,  4, offsetof(device_t, config.output[1].speed_y) },
-    { 44, false, INT32,  4, offsetof(device_t, config.output[1].border.top) },
-    { 45, false, INT32,  4, offsetof(device_t, config.output[1].border.bottom) },
     { 46, false, UINT8,  1, offsetof(device_t, config.output[1].os) },
     { 47, false, UINT8,  1, offsetof(device_t, config.output[1].pos) },
     { 48, false, UINT8,  1, offsetof(device_t, config.output[1].mouse_park_pos) },
@@ -86,6 +82,12 @@ const field_map_t api_field_map[] = {
     { 80, true,  UINT8,  1, offsetof(device_t, keyboard_connected) },
     { 81, true,  UINT8,  1, offsetof(device_t, switch_lock) },
     { 82, true,  UINT8,  1, offsetof(device_t, relative_mouse) },
+
+    /* Computer border (A↔B transition) */
+    { 83, false, INT32, 4, offsetof(device_t, config.computer_border.from.top) },
+    { 84, false, INT32, 4, offsetof(device_t, config.computer_border.from.bottom) },
+    { 85, false, INT32, 4, offsetof(device_t, config.computer_border.to.top) },
+    { 86, false, INT32, 4, offsetof(device_t, config.computer_border.to.bottom) },
 };
 
 const field_map_t* get_field_map_entry(uint32_t index) {

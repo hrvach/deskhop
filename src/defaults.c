@@ -22,10 +22,6 @@ const config_t default_config = {
             .number = OUTPUT_A,
             .speed_x = MOUSE_SPEED_A_FACTOR_X,
             .speed_y = MOUSE_SPEED_A_FACTOR_Y,
-            .border = {
-                .top = 0,
-                .bottom = MAX_SCREEN_COORD,
-            },
             .screen_transition = {
                 [0] = { .from = { .top = 0, .bottom = MAX_SCREEN_COORD },
                         .to   = { .top = 0, .bottom = MAX_SCREEN_COORD } },
@@ -48,10 +44,6 @@ const config_t default_config = {
             .number = OUTPUT_B,
             .speed_x = MOUSE_SPEED_B_FACTOR_X,
             .speed_y = MOUSE_SPEED_B_FACTOR_Y,
-            .border = {
-                .top = 0,
-                .bottom = MAX_SCREEN_COORD,
-            },
             .screen_transition = {
                 [0] = { .from = { .top = 0, .bottom = MAX_SCREEN_COORD },
                         .to   = { .top = 0, .bottom = MAX_SCREEN_COORD } },
@@ -76,4 +68,8 @@ const config_t default_config = {
     .hotkey_toggle = HOTKEY_TOGGLE,
     .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
     .jump_threshold = JUMP_THRESHOLD,
+    .computer_border = {
+        .from = { .top = 0, .bottom = MAX_SCREEN_COORD },
+        .to   = { .top = 0, .bottom = MAX_SCREEN_COORD },
+    },
 };

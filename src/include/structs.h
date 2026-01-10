@@ -80,6 +80,7 @@ typedef struct {
     uint16_t jump_threshold;
 
     output_t output[NUM_SCREENS];
+    screen_transition_t computer_border;  // Y-ranges for computer A↔B transitions
     uint32_t _reserved;
 
     // Keep checksum at the end of the struct

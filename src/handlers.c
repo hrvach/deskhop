@@ -65,7 +65,30 @@ void _screensaver_set(device_t *state, uint8_t value) {
         send_value(value, SCREENSAVER_MSG);
 };
 
-/* Core logic for saving screen border - always runs on active output device.
+/* Send a SET_VAL_MSG to the other device to sync a config value */
+void _send_set_val_msg(uint8_t index, int32_t value) {
+    uint8_t data[PACKET_DATA_LENGTH] = {0};
+    data[0] = index;
+    memcpy(&data[1], &value, sizeof(int32_t));
+    queue_packet(data, SET_VAL_MSG, PACKET_DATA_LENGTH);
+}
+
+/* Sync the computer border to the other device after local save.
+ * Both devices need both from and to ranges for Y-mapping to work. */
+void _sync_computer_border(device_t *state) {
+    screen_transition_t *border = &state->config.computer_border;
+
+    /* Send all 4 values to the other device */
+    _send_set_val_msg(83, border->from.top);
+    _send_set_val_msg(84, border->from.bottom);
+    _send_set_val_msg(85, border->to.top);
+    _send_set_val_msg(86, border->to.bottom);
+
+    /* Tell the other device to save its config */
+    queue_packet(NULL, SAVE_CONFIG_MSG, 0);
+}
+
+/* Core logic for saving screen border - runs on device with the mouse.
  * Determines which border to set based on screen_index and cursor position:
  * - On primary screen near the computer border: sets the computer-switching border
  * - Otherwise: sets the appropriate screen_transition border for multi-monitor setups
@@ -77,14 +100,19 @@ void _save_screen_border(device_t *state) {
                                 (output->pos == LEFT && state->pointer_x > MAX_SCREEN_COORD / 2);
 
     border_size_t *border;
+    bool is_computer_border = false;
 
     if (idx == 1 && cursor_toward_border) {
         /* On primary screen, cursor toward computer border: set computer-switching border */
-        border = &output->border;
+        if (state->active_output == 0)
+            border = &state->config.computer_border.from;
+        else
+            border = &state->config.computer_border.to;
+        is_computer_border = true;
     } else if (idx == 1) {
         /* On primary screen, cursor away from border: set transition 0 "from" (1→2) */
         border = &output->screen_transition[0].from;
-    } else if (idx == MAX_SCREEN_COUNT) {
+    } else if (idx == output->screen_count) {
         /* On last screen: set the "to" border for returning */
         border = &output->screen_transition[idx - 2].to;
     } else {
@@ -98,11 +126,15 @@ void _save_screen_border(device_t *state) {
 
     _get_border_position(state, border);
     save_config(state);
+
+    /* Sync computer border to the other device so both have complete mapping data */
+    if (is_computer_border)
+        _sync_computer_border(state);
 }
 
-/* Hotkey handler - routes to correct device */
+/* Hotkey handler - routes to the device with the mouse, which has the authoritative pointer position */
 void screen_border_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+    if (state->mouse_connected) {
         _save_screen_border(state);
     } else {
         queue_packet(NULL, SYNC_BORDERS_MSG, 0);
@@ -276,11 +308,11 @@ void handle_switch_lock_msg(uart_packet_t *packet, device_t *state) {
     state->switch_lock = packet->data[0];
 }
 
-/* Handle border syncing message - trigger from other device to save screen border */
+/* Handle border syncing message - the other device is asking us to save the border.
+ * Only process if we have the mouse connected (and thus the authoritative pointer position). */
 void handle_sync_borders_msg(uart_packet_t *packet, device_t *state) {
-    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
+    if (state->mouse_connected)
         _save_screen_border(state);
-    }
 }
 
 /* Enter configuration mode (called via message or directly) */

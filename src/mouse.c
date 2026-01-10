@@ -131,8 +131,8 @@ void output_mouse_report(mouse_report_t *report, device_t *state) {
     }
 }
 
-/* Map Y coordinate when transitioning between screens within the same computer.
- * Similar to scale_y_coordinate() but uses screen_transition ranges instead of output borders. */
+/* Map Y coordinate when transitioning between screens (both intra-computer
+ * screen transitions and computer-to-computer transitions use this function). */
 int16_t map_screen_transition_y(int pointer_y, border_size_t *from, border_size_t *to) {
     int size_from = from->bottom - from->top;
     int size_to = to->bottom - to->top;
@@ -148,39 +148,23 @@ int16_t map_screen_transition_y(int pointer_y, border_size_t *from, border_size_
     return to->top + ((pointer_y - from->top) * size_to) / size_from;
 }
 
-/* Calculate and return Y coordinate when moving from screen out_from to screen out_to */
-int16_t scale_y_coordinate(int screen_from, int screen_to, device_t *state) {
-    output_t *from = &state->config.output[screen_from];
-    output_t *to   = &state->config.output[screen_to];
+void switch_to_another_pc(device_t *state, output_t *output, int output_to, int direction) {
+    screen_transition_t *border = &state->config.computer_border;
 
-    int size_to   = to->border.bottom - to->border.top;
-    int size_from = from->border.bottom - from->border.top;
+    /* Determine source/dest ranges based on which output we're leaving */
+    border_size_t *from_range = (state->active_output == 0) ? &border->from : &border->to;
+    border_size_t *to_range   = (state->active_output == 0) ? &border->to : &border->from;
 
-    /* If sizes match, there is nothing to do */
-    if (size_from == size_to)
-        return state->pointer_y;
+    /* Only apply bounds check and Y-mapping if BOTH directions are configured.
+     * This allows the user to travel to the other computer to configure the return path. */
+    bool from_valid = (from_range->top < from_range->bottom);
+    bool to_valid = (to_range->top < to_range->bottom);
+    bool range_valid = from_valid && to_valid;
 
-    /* Moving from smaller ==> bigger screen
-       y_a = top + (((bottom - top) * y_b) / HEIGHT) */
+    /* Block transition if cursor is outside the allowed Y-range */
+    if (range_valid && (state->pointer_y < from_range->top || state->pointer_y > from_range->bottom))
+        return;
 
-    if (size_from > size_to) {
-        return to->border.top + ((size_to * state->pointer_y) / MAX_SCREEN_COORD);
-    }
-
-    /* Moving from bigger ==> smaller screen
-       y_b = ((y_a - top) * HEIGHT) / (bottom - top) */
-
-    if (state->pointer_y < from->border.top)
-        return MIN_SCREEN_COORD;
-
-    if (state->pointer_y > from->border.bottom)
-        return MAX_SCREEN_COORD;
-
-    return ((state->pointer_y - from->border.top) * MAX_SCREEN_COORD) / size_from;
-}
-
-void switch_to_another_pc(
-    device_t *state, output_t *output, int output_to, int direction) {
     uint8_t *mouse_park_pos = &state->config.output[state->active_output].mouse_park_pos;
 
     int16_t mouse_y = (*mouse_park_pos == 0) ? MIN_SCREEN_COORD : /* Top */
@@ -191,8 +175,10 @@ void switch_to_another_pc(
 
     output_mouse_report(&hidden_pointer, state);
     set_active_output(state, output_to);
+
+
     state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
-    state->pointer_y = scale_y_coordinate(output->number, 1 - output->number, state);
+    state->pointer_y = map_screen_transition_y(state->pointer_y, from_range, to_range);
 }
 
 void switch_virtual_desktop_macos(device_t *state, int direction) {
