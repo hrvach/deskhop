@@ -755,6 +755,10 @@ img {
             <button data-handler="rebootHandler" class="button button-clear button-shifted online">Exit</button><br />
 
             <hr />
+            <button data-handler="exportConfigHandler" class="button button-clear button-shifted">Export JSON</button><br />
+            <button data-handler="importConfigHandler" class="button button-clear button-shifted">Import JSON</button><br />
+
+            <hr />
             <button data-handler="blinkHandler" class="button button-clear button-shifted online">Blink</button><br />
             <button data-handler="blinkBothHandler" class="button button-clear button-shifted online">Blink both</button><br />
             <button data-handler="enterBootloaderHandler" class="button button-clear button-shifted online">Bootloader</button><br />
@@ -775,6 +779,7 @@ img {
             <h3>Output A</h3>
 
             
+            
               
 
 
@@ -790,7 +795,7 @@ img {
     
 <label class=""> Screen Count</label>
 
-    <select class="api" data-type="uint32" data-key="11" required>
+    <select class="api" data-type="uint32" data-key="11" data-section="output_a" data-name="screen_count" required>
     <option disabled selected value></option>
 
     
@@ -825,12 +830,16 @@ img {
 
       
 <input class="input-inline" type="number" name="aInput12" data-type="int32" data-key="12"
+  data-section="output_a"
+  data-name="speed_x"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange12.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange12" data-type="int32" data-key="12"
+  data-section="output_a"
+  data-name="speed_x"
   onchange="valueChangedHandler(this)"
 
         min="1" max="100" oninput="this.form.aInput12.value=this.value" />
@@ -861,12 +870,16 @@ img {
 
       
 <input class="input-inline" type="number" name="aInput13" data-type="int32" data-key="13"
+  data-section="output_a"
+  data-name="speed_y"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange13.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange13" data-type="int32" data-key="13"
+  data-section="output_a"
+  data-name="speed_y"
   onchange="valueChangedHandler(this)"
 
         min="1" max="100" oninput="this.form.aInput13.value=this.value" />
@@ -892,7 +905,7 @@ img {
     
 <label class=""> Operating System</label>
 
-    <select class="api" data-type="uint8" data-key="16" required>
+    <select class="api" data-type="uint8" data-key="16" data-section="output_a" data-name="operating_system" required>
     <option disabled selected value></option>
 
     
@@ -926,7 +939,7 @@ img {
     
 <label class=""> Screen Position</label>
 
-    <select class="api" data-type="uint8" data-key="17" required>
+    <select class="api" data-type="uint8" data-key="17" data-section="output_a" data-name="screen_position" required>
     <option disabled selected value></option>
 
     
@@ -954,7 +967,7 @@ img {
     
 <label class=""> Cursor Park Position</label>
 
-    <select class="api" data-type="uint8" data-key="18" required>
+    <select class="api" data-type="uint8" data-key="18" data-section="output_a" data-name="cursor_park_position" required>
     <option disabled selected value></option>
 
     
@@ -1003,7 +1016,7 @@ img {
     
 <label class=""> Mode</label>
 
-    <select class="api" data-type="uint8" data-key="19" required>
+    <select class="api" data-type="uint8" data-key="19" data-section="output_a" data-name="mode" required>
     <option disabled selected value></option>
 
     
@@ -1036,6 +1049,8 @@ img {
 
     
 <input class="api" type="checkbox" name="name20" data-type="uint8" data-key="20"
+  data-section="output_a"
+  data-name="only_if_inactive"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1061,6 +1076,8 @@ img {
 
       
 <input class="api" type="text" name="name21" data-type="uint64" data-key="21"
+  data-section="output_a"
+  data-name="idle_time_us"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1084,6 +1101,8 @@ img {
 
       
 <input class="api" type="text" name="name22" data-type="uint64" data-key="22"
+  data-section="output_a"
+  data-name="max_time_us"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1138,18 +1157,26 @@ img {
           <td>1 ↔ 2</td>
           <td>
 <input class="api" type="text" name="name23" data-type="int32" data-key="23"
+  data-section="output_a"
+  data-name="screen_transitions.1_2.from_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name24" data-type="int32" data-key="24"
+  data-section="output_a"
+  data-name="screen_transitions.1_2.from_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name25" data-type="int32" data-key="25"
+  data-section="output_a"
+  data-name="screen_transitions.1_2.to_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name26" data-type="int32" data-key="26"
+  data-section="output_a"
+  data-name="screen_transitions.1_2.to_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
         </tr>
@@ -1173,18 +1200,26 @@ img {
           <td>2 ↔ 3</td>
           <td>
 <input class="api" type="text" name="name27" data-type="int32" data-key="27"
+  data-section="output_a"
+  data-name="screen_transitions.2_3.from_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name28" data-type="int32" data-key="28"
+  data-section="output_a"
+  data-name="screen_transitions.2_3.from_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name29" data-type="int32" data-key="29"
+  data-section="output_a"
+  data-name="screen_transitions.2_3.to_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name30" data-type="int32" data-key="30"
+  data-section="output_a"
+  data-name="screen_transitions.2_3.to_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
         </tr>
@@ -1223,6 +1258,7 @@ img {
             <h3>Output B</h3>
 
             
+            
               
 
 
@@ -1238,7 +1274,7 @@ img {
     
 <label class=""> Screen Count</label>
 
-    <select class="api" data-type="uint32" data-key="41" required>
+    <select class="api" data-type="uint32" data-key="41" data-section="output_b" data-name="screen_count" required>
     <option disabled selected value></option>
 
     
@@ -1273,12 +1309,16 @@ img {
 
       
 <input class="input-inline" type="number" name="aInput42" data-type="int32" data-key="42"
+  data-section="output_b"
+  data-name="speed_x"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange42.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange42" data-type="int32" data-key="42"
+  data-section="output_b"
+  data-name="speed_x"
   onchange="valueChangedHandler(this)"
 
         min="1" max="100" oninput="this.form.aInput42.value=this.value" />
@@ -1309,12 +1349,16 @@ img {
 
       
 <input class="input-inline" type="number" name="aInput43" data-type="int32" data-key="43"
+  data-section="output_b"
+  data-name="speed_y"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange43.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange43" data-type="int32" data-key="43"
+  data-section="output_b"
+  data-name="speed_y"
   onchange="valueChangedHandler(this)"
 
         min="1" max="100" oninput="this.form.aInput43.value=this.value" />
@@ -1340,7 +1384,7 @@ img {
     
 <label class=""> Operating System</label>
 
-    <select class="api" data-type="uint8" data-key="46" required>
+    <select class="api" data-type="uint8" data-key="46" data-section="output_b" data-name="operating_system" required>
     <option disabled selected value></option>
 
     
@@ -1374,7 +1418,7 @@ img {
     
 <label class=""> Screen Position</label>
 
-    <select class="api" data-type="uint8" data-key="47" required>
+    <select class="api" data-type="uint8" data-key="47" data-section="output_b" data-name="screen_position" required>
     <option disabled selected value></option>
 
     
@@ -1402,7 +1446,7 @@ img {
     
 <label class=""> Cursor Park Position</label>
 
-    <select class="api" data-type="uint8" data-key="48" required>
+    <select class="api" data-type="uint8" data-key="48" data-section="output_b" data-name="cursor_park_position" required>
     <option disabled selected value></option>
 
     
@@ -1451,7 +1495,7 @@ img {
     
 <label class=""> Mode</label>
 
-    <select class="api" data-type="uint8" data-key="49" required>
+    <select class="api" data-type="uint8" data-key="49" data-section="output_b" data-name="mode" required>
     <option disabled selected value></option>
 
     
@@ -1484,6 +1528,8 @@ img {
 
     
 <input class="api" type="checkbox" name="name50" data-type="uint8" data-key="50"
+  data-section="output_b"
+  data-name="only_if_inactive"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1509,6 +1555,8 @@ img {
 
       
 <input class="api" type="text" name="name51" data-type="uint64" data-key="51"
+  data-section="output_b"
+  data-name="idle_time_us"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1532,6 +1580,8 @@ img {
 
       
 <input class="api" type="text" name="name52" data-type="uint64" data-key="52"
+  data-section="output_b"
+  data-name="max_time_us"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1586,18 +1636,26 @@ img {
           <td>1 ↔ 2</td>
           <td>
 <input class="api" type="text" name="name53" data-type="int32" data-key="53"
+  data-section="output_b"
+  data-name="screen_transitions.1_2.from_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name54" data-type="int32" data-key="54"
+  data-section="output_b"
+  data-name="screen_transitions.1_2.from_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name55" data-type="int32" data-key="55"
+  data-section="output_b"
+  data-name="screen_transitions.1_2.to_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name56" data-type="int32" data-key="56"
+  data-section="output_b"
+  data-name="screen_transitions.1_2.to_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
         </tr>
@@ -1621,18 +1679,26 @@ img {
           <td>2 ↔ 3</td>
           <td>
 <input class="api" type="text" name="name57" data-type="int32" data-key="57"
+  data-section="output_b"
+  data-name="screen_transitions.2_3.from_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name58" data-type="int32" data-key="58"
+  data-section="output_b"
+  data-name="screen_transitions.2_3.from_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name59" data-type="int32" data-key="59"
+  data-section="output_b"
+  data-name="screen_transitions.2_3.to_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name60" data-type="int32" data-key="60"
+  data-section="output_b"
+  data-name="screen_transitions.2_3.to_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
         </tr>
@@ -1675,6 +1741,7 @@ img {
           <h3>Common Config</h3>
 
             
+            
               
 
 
@@ -1712,6 +1779,8 @@ img {
 
     
 <input class="api" type="checkbox" name="name71" data-type="uint8" data-key="71"
+  data-section="common"
+  data-name="force_mouse_boot_mode"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1738,6 +1807,8 @@ img {
 
     
 <input class="api" type="checkbox" name="name75" data-type="uint8" data-key="75"
+  data-section="common"
+  data-name="enable_acceleration"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1766,12 +1837,16 @@ img {
 
       
 <input class="input-inline" type="number" name="aInput77" data-type="uint16" data-key="77"
+  data-section="common"
+  data-name="jump_threshold"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange77.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange77" data-type="uint16" data-key="77"
+  data-section="common"
+  data-name="jump_threshold"
   onchange="valueChangedHandler(this)"
 
         min="0" max="3000" oninput="this.form.aInput77.value=this.value" />
@@ -1819,6 +1894,8 @@ img {
 
     
 <input class="api" type="checkbox" name="name72" data-type="uint8" data-key="72"
+  data-section="common"
+  data-name="force_kbd_boot_protocol"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1845,6 +1922,8 @@ img {
 
     
 <input class="api" type="checkbox" name="name73" data-type="uint8" data-key="73"
+  data-section="common"
+  data-name="kbd_led_as_indicator"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1871,6 +1950,8 @@ img {
 
     
 <input class="api" type="checkbox" name="name76" data-type="uint8" data-key="76"
+  data-section="common"
+  data-name="enforce_ports"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1927,18 +2008,26 @@ img {
           <td>A ↔ B</td>
           <td>
 <input class="api" type="text" name="name83" data-type="int32" data-key="83"
+  data-section="common"
+  data-name="border.from_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name84" data-type="int32" data-key="84"
+  data-section="common"
+  data-name="border.from_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name85" data-type="int32" data-key="85"
+  data-section="common"
+  data-name="border.to_top"
   onchange="valueChangedHandler(this)" />
 </td>
           <td>
 <input class="api" type="text" name="name86" data-type="int32" data-key="86"
+  data-section="common"
+  data-name="border.to_bottom"
   onchange="valueChangedHandler(this)" />
 </td>
         </tr>
@@ -1989,6 +2078,8 @@ img {
 
     
 <input class="api" type="text" name="name78" data-type="uint16" data-key="78"
+  data-section="common"
+  data-name="running_fw_version"
   onchange="valueChangedHandler(this)"
  data-fw-ver readonly />
 
@@ -2012,6 +2103,8 @@ img {
 
     
 <input class="content api" type="text" name="name79" data-type="uint32" data-key="79"
+  data-section="common"
+  data-name="running_fw_checksum"
   onchange="valueChangedHandler(this)"
  data-hex readonly />
 
@@ -2142,14 +2235,15 @@ function getValue(element) {
     return element.value;
 }
 
-function setValue(element, value) {
-  element.setAttribute('fetched-value', value);
+function setValue(element, value, updateFetchedValue = true) {
+  if (updateFetchedValue)
+    element.setAttribute('fetched-value', value);
 
   if (element.type === 'checkbox')
     element.checked = value;
   else
     element.value = value;
-    element.dispatchEvent(new Event('input', { bubbles: true }));
+  element.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 
@@ -2248,6 +2342,83 @@ async function saveHandler() {
 
 async function wipeConfigHandler() {
   await sendReport(packetType.wipeConfigMsg, [], true);
+}
+
+function setNestedValue(obj, path, value) {
+  const parts = path.split('.');
+  let current = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!(parts[i] in current)) current[parts[i]] = {};
+    current = current[parts[i]];
+  }
+  current[parts[parts.length - 1]] = value;
+}
+
+function getNestedValue(obj, path) {
+  const parts = path.split('.');
+  let current = obj;
+  for (const part of parts) {
+    if (current === undefined || current === null) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+const configVersion = 10;
+
+function exportConfigHandler() {
+  const config = { version: configVersion, output_a: {}, output_b: {}, common: {} };
+
+  document.querySelectorAll('.api').forEach(el => {
+    if (el.hasAttribute('readonly')) return;
+
+    const name = el.getAttribute('data-name');
+    const section = el.getAttribute('data-section');
+
+    if (name && section && config[section]) {
+      setNestedValue(config[section], name, getValue(el));
+    }
+  });
+
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'deskhop-config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importConfigHandler() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const config = JSON.parse(text);
+
+      document.querySelectorAll('.api').forEach(el => {
+        if (el.hasAttribute('readonly')) return;
+
+        const name = el.getAttribute('data-name');
+        const section = el.getAttribute('data-section');
+
+        if (name && section && config[section]) {
+          const value = getNestedValue(config[section], name);
+          if (value !== undefined) {
+            setValue(el, value, false);
+          }
+        }
+      });
+    } catch (err) {
+      alert('Failed to import config: ' + err.message);
+    }
+  };
+  input.click();
 }
   </script>
 </body>

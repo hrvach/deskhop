@@ -8,6 +8,18 @@ from jinja2 import Environment, FileSystemLoader
 from form import *
 import base64
 import gzip
+import re
+
+
+def get_config_version():
+    """Read CURRENT_CONFIG_VERSION from config.h"""
+    config_path = "../src/include/config.h"
+    with open(config_path, 'r') as f:
+        content = f.read()
+    match = re.search(r'#define\s+CURRENT_CONFIG_VERSION\s+(\d+)', content)
+    if not match:
+        raise ValueError(f"CURRENT_CONFIG_VERSION not found in {config_path}")
+    return int(match.group(1))
 
 # Input and output
 TEMPLATE_PATH = "templates/"
@@ -45,6 +57,7 @@ if __name__ == "__main__":
         screen_B=output_B(),
         status=output_status(),
         config=output_config(),
+        config_version=get_config_version(),
     )
 
     # Compress file and encode to base64

@@ -2,13 +2,17 @@
 
 {% set key = item.key %}
 
-{% macro input(item, type='text', class='api', name='name') %}
+{% macro input(item, type='text', class='api', name='name', json_name=None) %}
 <input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}"
+  {% if section %}data-section="{{ section }}"{% endif %}
+  {% if json_name %}data-name="{{ json_name }}"{% elif item.json_name %}data-name="{{ item.json_name }}"{% endif %}
   onchange="valueChangedHandler(this)"
 {% endmacro %}
 
-{% macro table_input(key, dtype, type='text', class='api', name='name') %}
+{% macro table_input(key, dtype, json_name='', type='text', class='api', name='name') %}
 <input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ dtype }}" data-key="{{ key }}"
+  {% if section %}data-section="{{ section }}"{% endif %}
+  {% if json_name %}data-name="{{ json_name }}"{% endif %}
   onchange="valueChangedHandler(this)" />
 {% endmacro %}
 
@@ -49,10 +53,10 @@
   {% elif item.get("elem") == "table_row" %}
         <tr>
           <td>{{ item.label }}</td>
-          <td>{{ table_input(item.from_top_key, item.type) }}</td>
-          <td>{{ table_input(item.from_bottom_key, item.type) }}</td>
-          <td>{{ table_input(item.to_top_key, item.type) }}</td>
-          <td>{{ table_input(item.to_bottom_key, item.type) }}</td>
+          <td>{{ table_input(item.from_top_key, item.type, item.json_names.from_top) }}</td>
+          <td>{{ table_input(item.from_bottom_key, item.type, item.json_names.from_bottom) }}</td>
+          <td>{{ table_input(item.to_top_key, item.type, item.json_names.to_top) }}</td>
+          <td>{{ table_input(item.to_bottom_key, item.type, item.json_names.to_bottom) }}</td>
         </tr>
 
   {% elif item.get("elem") == "table_end" %}
@@ -82,7 +86,7 @@
 
   {% elif item["values"] %}
     {{ label(item, class='') }}
-    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" required>
+    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" {% if section %}data-section="{{ section }}"{% endif %} {% if item.json_name %}data-name="{{ item.json_name }}"{% endif %} required>
     <option disabled selected value></option>
 
     {% for k, v in item["values"].items() %}

@@ -2,6 +2,16 @@
 
 from dataclasses import dataclass, field
 
+def to_json_name(name: str) -> str:
+    """Convert a human-readable name to a JSON-friendly key."""
+    return (name.lower()
+            .replace(" ↔ ", "_")
+            .replace("↔", "_")
+            .replace(" ", "_")
+            .replace("(", "")
+            .replace(")", "")
+            .replace("μ", "u"))
+
 @dataclass
 class FormField:
     offset: int
@@ -10,6 +20,11 @@ class FormField:
     values: dict[int, str] = field(default_factory=dict)
     data_type: str = "int32"
     elem: str | None = None
+    json_name: str | None = None
+
+    def __post_init__(self):
+        if self.json_name is None and self.name:
+            self.json_name = to_json_name(self.name)
 
 @dataclass
 class TableRow:
@@ -21,6 +36,12 @@ class TableRow:
     to_bottom_offset: int
     data_type: str = "int32"
     elem: str = "table_row"
+    json_prefix: str | None = None
+
+    def __post_init__(self):
+        if self.json_prefix is None:
+            # Convert "1 ↔ 2" to "1_2", "A ↔ B" to "a_b"
+            self.json_prefix = self.label.lower().replace(" ↔ ", "_")
 
 SHORTCUTS = {
     0x73: "None",
@@ -49,8 +70,8 @@ CONFIG_ = [
 
     FormField(76, "Enforce Ports", None, {}, "uint8", "checkbox"),
 
-    FormField(1003, "Computer Border (A ↔ B)", elem="table_start"),
-    TableRow("A ↔ B", 83, 84, 85, 86),
+    FormField(1003, "Computer Border (A ↔ B)", elem="table_start", json_name="border"),
+    TableRow("A ↔ B", 83, 84, 85, 86, json_prefix=""),
     FormField(1004, "", elem="table_end"),
 ]
 
@@ -73,10 +94,14 @@ OUTPUT_ = [
     FormField(1005, "", elem="table_end"),
 ]
 
-def generate_output(base, data):
+def generate_output(base, data, table_context=""):
     output = []
+    current_table_name = ""
     for item in data:
         if isinstance(item, TableRow):
+            # Build prefix: table_context + current_table_name + row_prefix (if any)
+            parts = [p for p in [table_context.rstrip('.'), current_table_name, item.json_prefix] if p]
+            prefix = ".".join(parts) if parts else ""
             output.append({
                 "label": item.label,
                 "from_top_key": base + item.from_top_offset,
@@ -85,8 +110,20 @@ def generate_output(base, data):
                 "to_bottom_key": base + item.to_bottom_offset,
                 "type": item.data_type,
                 "elem": item.elem,
+                "json_names": {
+                    "from_top": f"{prefix}.from_top" if prefix else "from_top",
+                    "from_bottom": f"{prefix}.from_bottom" if prefix else "from_bottom",
+                    "to_top": f"{prefix}.to_top" if prefix else "to_top",
+                    "to_bottom": f"{prefix}.to_bottom" if prefix else "to_bottom",
+                },
             })
         else:
+            # Track current table name for table rows
+            if item.elem == "table_start":
+                current_table_name = item.json_name if item.json_name else (to_json_name(item.name) if item.name else "")
+            elif item.elem == "table_end":
+                current_table_name = ""
+
             output.append({
                 "name": item.name,
                 "key": base + item.offset,
@@ -94,6 +131,7 @@ def generate_output(base, data):
                 "values": item.values,
                 "type": item.data_type,
                 "elem": item.elem,
+                "json_name": f"{table_context}{item.json_name}" if item.json_name else None,
             })
     return output
 

@@ -113,14 +113,15 @@ function getValue(element) {
     return element.value;
 }
 
-function setValue(element, value) {
-  element.setAttribute('fetched-value', value);
+function setValue(element, value, updateFetchedValue = true) {
+  if (updateFetchedValue)
+    element.setAttribute('fetched-value', value);
 
   if (element.type === 'checkbox')
     element.checked = value;
   else
     element.value = value;
-    element.dispatchEvent(new Event('input', { bubbles: true }));
+  element.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 
@@ -219,4 +220,81 @@ async function saveHandler() {
 
 async function wipeConfigHandler() {
   await sendReport(packetType.wipeConfigMsg, [], true);
+}
+
+function setNestedValue(obj, path, value) {
+  const parts = path.split('.');
+  let current = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!(parts[i] in current)) current[parts[i]] = {};
+    current = current[parts[i]];
+  }
+  current[parts[parts.length - 1]] = value;
+}
+
+function getNestedValue(obj, path) {
+  const parts = path.split('.');
+  let current = obj;
+  for (const part of parts) {
+    if (current === undefined || current === null) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+const configVersion = {{ config_version }};
+
+function exportConfigHandler() {
+  const config = { version: configVersion, output_a: {}, output_b: {}, common: {} };
+
+  document.querySelectorAll('.api').forEach(el => {
+    if (el.hasAttribute('readonly')) return;
+
+    const name = el.getAttribute('data-name');
+    const section = el.getAttribute('data-section');
+
+    if (name && section && config[section]) {
+      setNestedValue(config[section], name, getValue(el));
+    }
+  });
+
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'deskhop-config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importConfigHandler() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const config = JSON.parse(text);
+
+      document.querySelectorAll('.api').forEach(el => {
+        if (el.hasAttribute('readonly')) return;
+
+        const name = el.getAttribute('data-name');
+        const section = el.getAttribute('data-section');
+
+        if (name && section && config[section]) {
+          const value = getNestedValue(config[section], name);
+          if (value !== undefined) {
+            setValue(el, value, false);
+          }
+        }
+      });
+    } catch (err) {
+      alert('Failed to import config: ' + err.message);
+    }
+  };
+  input.click();
 }

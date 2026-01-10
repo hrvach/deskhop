@@ -60,6 +60,10 @@
             <button data-handler="rebootHandler" class="button button-clear button-shifted online">Exit</button><br />
 
             <hr />
+            <button data-handler="exportConfigHandler" class="button button-clear button-shifted">Export JSON</button><br />
+            <button data-handler="importConfigHandler" class="button button-clear button-shifted">Import JSON</button><br />
+
+            <hr />
             <button data-handler="blinkHandler" class="button button-clear button-shifted online">Blink</button><br />
             <button data-handler="blinkBothHandler" class="button button-clear button-shifted online">Blink both</button><br />
             <button data-handler="enterBootloaderHandler" class="button button-clear button-shifted online">Bootloader</button><br />
@@ -79,6 +83,7 @@
 
             <h3>Output A</h3>
 
+            {% set section = "output_a" %}
             {% for item in screen_A %}
               {% include "form.html" with context %}
             {% endfor %}
@@ -94,6 +99,7 @@
 
             <h3>Output B</h3>
 
+            {% set section = "output_b" %}
             {% for item in screen_B %}
               {% include "form.html" with context %}
             {% endfor %}
@@ -113,6 +119,7 @@
 
           <h3>Common Config</h3>
 
+            {% set section = "common" %}
             {% for item in config %}
               {% include "form.html" with context %}
             {% endfor %}
