@@ -16,6 +16,8 @@
 #define MACOS_SWITCH_MOVE_COUNT 5
 #define ACCEL_POINTS 7
 
+void switch_virtual_desktop_macos(device_t *state, int direction);
+
 /* Check if our upcoming mouse movement would result in having to switch outputs */
 enum screen_pos_e is_screen_switch_needed(int position, int offset) {
     if (position + offset < MIN_SCREEN_COORD - global_state.config.jump_threshold)
@@ -148,6 +150,29 @@ int16_t map_screen_transition_y(int pointer_y, border_size_t *from, border_size_
     return to->top + ((pointer_y - from->top) * size_to) / size_from;
 }
 
+/* When transitioning to a macOS output with multiple screens, push cursor to
+ * screen 1. External events may have moved it to another screen without our
+ * knowledge. We assume worst case (cursor on screen_count) and push toward
+ * the border. If already on screen 1, macOS ignores the push. */
+void reset_macos_to_screen1(device_t *state, output_t *output) {
+    if (output->screen_count <= 1)
+        return;
+
+    int16_t saved_pointer_y = state->pointer_y;
+    int8_t push_direction = (output->pos == LEFT) ? RIGHT : LEFT;
+
+    for (int8_t from_screen = output->screen_count; from_screen > 1; from_screen--) {
+        border_size_t *range = &output->screen_transition[from_screen - 2].to;
+        state->pointer_y = (range->top < range->bottom)
+                               ? (range->top + range->bottom) / 2
+                               : MAX_SCREEN_COORD / 2;
+        switch_virtual_desktop_macos(state, push_direction);
+    }
+
+    output->screen_index = 1;
+    state->pointer_y = saved_pointer_y;
+}
+
 void switch_to_another_pc(device_t *state, output_t *output, int output_to, int direction) {
     screen_transition_t *border = &state->config.computer_border;
 
@@ -176,6 +201,9 @@ void switch_to_another_pc(device_t *state, output_t *output, int output_to, int 
     output_mouse_report(&hidden_pointer, state);
     set_active_output(state, output_to);
 
+    /* For macOS with multiple screens, reset cursor to screen 1 */
+    if (state->config.output[output_to].os == MACOS)
+        reset_macos_to_screen1(state, &state->config.output[output_to]);
 
     state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
     state->pointer_y = map_screen_transition_y(state->pointer_y, from_range, to_range);
