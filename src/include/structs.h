@@ -136,6 +136,7 @@ typedef struct {
     /* Connection status flags */
     bool tud_connected;      // True when TinyUSB device successfully connects
     bool keyboard_connected; // True when our keyboard is connected locally
+    bool mouse_connected;    // True when our mouse is connected locally
 
     /* Feature flags */
     bool mouse_zoom;         // True when "mouse zoom" is enabled
