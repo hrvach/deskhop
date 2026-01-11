@@ -70,15 +70,41 @@ function packValue(element, key, dataType, buffer) {
   return new Uint8Array(buffer);
 }
 
-window.addEventListener('load', function () {
+window.addEventListener('load', async function () {
   if (!("hid" in navigator)) {
     document.getElementById('warning').style.display = 'block';
+    return;
   }
 
   this.document.getElementById('menu-buttons').addEventListener('click', function (event) {
     window[event.target.dataset.handler]();
-  })
+  });
+
+  // Try to auto-connect to a previously authorized device
+  await autoConnectHandler();
 });
+
+async function autoConnectHandler() {
+  // Get previously authorized devices (no user interaction required)
+  const devices = await navigator.hid.getDevices();
+
+  // Find a DeskHop device
+  const deskhopDevice = devices.find(d =>
+    d.vendorId === 0x2e8a &&
+    d.productId === 0x107c &&
+    d.collections.some(c => c.usagePage === 0xff00 && c.usage === 0x10)
+  );
+
+  if (deskhopDevice) {
+    device = deskhopDevice;
+    if (!device.opened) {
+      await device.open();
+    }
+    device.addEventListener('inputreport', handleInputReport);
+    document.querySelectorAll('.online').forEach(element => { element.style.opacity = 1.0; });
+    await readHandler();
+  }
+}
 
 document.getElementById('submitButton').addEventListener('click', async () => { await saveHandler(); });
 
