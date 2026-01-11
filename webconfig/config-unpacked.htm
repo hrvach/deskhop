@@ -703,6 +703,68 @@ img {
   width: 70px;
   padding: 0.2rem 0.4rem;
 }
+
+.tip {
+  position: relative;
+}
+
+.tip::after {
+  content: "?";
+  display: inline-block;
+  text-align: center;
+  margin-left: 0.4em;
+  width: 1.3em;
+  height: 1.3em;
+  line-height: 1.3em;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: #fff;
+  background: #888;
+  border-radius: 50%;
+  cursor: help;
+  vertical-align: middle;
+  margin-bottom: 0.3em;
+}
+
+.tip:hover::after {
+  background: #666;
+}
+
+.tip::before {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 0.6em 1em;
+  width: max-content;
+  max-width: 500px;
+  font-size: 0.85em;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #fff;
+  background: #333;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  white-space: normal;
+  text-align: center;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+}
+
+.tip:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tip-r::before {
+  left: auto;
+  right: 0;
+  transform: none;
+}
   </style>
 
   <title>DeskHop Config</title>
@@ -793,7 +855,7 @@ img {
 
   
     
-<label class=""> Screen Count</label>
+<label class="">Screen Count</label>
 
     <select class="api" data-type="uint32" data-key="11" data-section="output_a" data-name="screen_count" required>
     <option disabled selected value></option>
@@ -825,7 +887,7 @@ img {
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Speed X=</label>
+<label class="label-inline">Speed X=</label>
 
 
       
@@ -865,7 +927,7 @@ img {
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Speed Y=</label>
+<label class="label-inline">Speed Y=</label>
 
 
       
@@ -903,7 +965,7 @@ img {
 
   
     
-<label class=""> Operating System</label>
+<label class="">Operating System</label>
 
     <select class="api" data-type="uint8" data-key="16" data-section="output_a" data-name="operating_system" required>
     <option disabled selected value></option>
@@ -937,7 +999,7 @@ img {
 
   
     
-<label class=""> Screen Position</label>
+<label class="">Screen Position</label>
 
     <select class="api" data-type="uint8" data-key="17" data-section="output_a" data-name="screen_position" required>
     <option disabled selected value></option>
@@ -965,7 +1027,7 @@ img {
 
   
     
-<label class=""> Cursor Park Position</label>
+<label class="">Cursor Park Position<span class="tip" data-tip="Where the cursor appears when switching to this computer. Use 'Previous' to remember the last position, or set Top/Bottom for a consistent starting point."></span></label>
 
     <select class="api" data-type="uint8" data-key="18" data-section="output_a" data-name="cursor_park_position" required>
     <option disabled selected value></option>
@@ -995,7 +1057,7 @@ img {
 
   
     
-<label class=""> Screensaver</label>
+<label class="">Screensaver</label>
 
 
   
@@ -1014,7 +1076,7 @@ img {
 
   
     
-<label class=""> Mode</label>
+<label class="">Mode<span class="tip" data-tip="Moves the cursor automatically to prevent screen sleep. Pong bounces smoothly across the screen; Jitter makes small random movements."></span></label>
 
     <select class="api" data-type="uint8" data-key="19" data-section="output_a" data-name="mode" required>
     <option disabled selected value></option>
@@ -1045,7 +1107,7 @@ img {
   
   <div class="clearfix">
     
-<label class="label-inline"> Only If Inactive</label>
+<label class="label-inline">Only If Inactive<span class="tip" data-tip="Only activate screensaver when no mouse/keyboard input is detected. Disable to run screensaver continuously regardless of activity."></span></label>
 
     
 <input class="api" type="checkbox" name="name20" data-type="uint8" data-key="20"
@@ -1072,7 +1134,7 @@ img {
 
   
       
-<label class=""> Idle Time (μs)</label>
+<label class="">Idle Time (μs)<span class="tip" data-tip="How long to wait (in microseconds) after last input before starting the screensaver. Example: 5000000 = 5 seconds."></span></label>
 
       
 <input class="api" type="text" name="name21" data-type="uint64" data-key="21"
@@ -1097,7 +1159,7 @@ img {
 
   
       
-<label class=""> Max Time (μs)</label>
+<label class="">Max Time (μs)<span class="tip" data-tip="Maximum duration (in microseconds) the screensaver runs before stopping. Set to 0 for unlimited. Example: 60000000 = 1 minute."></span></label>
 
       
 <input class="api" type="text" name="name22" data-type="uint64" data-key="22"
@@ -1121,7 +1183,7 @@ img {
 
 
   
-    <label class="">Screen Transitions</label>
+    <label>Screen Transitions<span class="tip" data-tip="Defines where the cursor exits and enters each screen. Use RightShift + F12 + Y hotkey; see manual for more details."></span></label>
     <table class="transition-table">
       <thead>
         <tr>
@@ -1272,7 +1334,7 @@ img {
 
   
     
-<label class=""> Screen Count</label>
+<label class="">Screen Count</label>
 
     <select class="api" data-type="uint32" data-key="41" data-section="output_b" data-name="screen_count" required>
     <option disabled selected value></option>
@@ -1304,7 +1366,7 @@ img {
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Speed X=</label>
+<label class="label-inline">Speed X=</label>
 
 
       
@@ -1344,7 +1406,7 @@ img {
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Speed Y=</label>
+<label class="label-inline">Speed Y=</label>
 
 
       
@@ -1382,7 +1444,7 @@ img {
 
   
     
-<label class=""> Operating System</label>
+<label class="">Operating System</label>
 
     <select class="api" data-type="uint8" data-key="46" data-section="output_b" data-name="operating_system" required>
     <option disabled selected value></option>
@@ -1416,7 +1478,7 @@ img {
 
   
     
-<label class=""> Screen Position</label>
+<label class="">Screen Position</label>
 
     <select class="api" data-type="uint8" data-key="47" data-section="output_b" data-name="screen_position" required>
     <option disabled selected value></option>
@@ -1444,7 +1506,7 @@ img {
 
   
     
-<label class=""> Cursor Park Position</label>
+<label class="">Cursor Park Position<span class="tip" data-tip="Where the cursor appears when switching to this computer. Use 'Previous' to remember the last position, or set Top/Bottom for a consistent starting point."></span></label>
 
     <select class="api" data-type="uint8" data-key="48" data-section="output_b" data-name="cursor_park_position" required>
     <option disabled selected value></option>
@@ -1474,7 +1536,7 @@ img {
 
   
     
-<label class=""> Screensaver</label>
+<label class="">Screensaver</label>
 
 
   
@@ -1493,7 +1555,7 @@ img {
 
   
     
-<label class=""> Mode</label>
+<label class="">Mode<span class="tip" data-tip="Moves the cursor automatically to prevent screen sleep. Pong bounces smoothly across the screen; Jitter makes small random movements."></span></label>
 
     <select class="api" data-type="uint8" data-key="49" data-section="output_b" data-name="mode" required>
     <option disabled selected value></option>
@@ -1524,7 +1586,7 @@ img {
   
   <div class="clearfix">
     
-<label class="label-inline"> Only If Inactive</label>
+<label class="label-inline">Only If Inactive<span class="tip" data-tip="Only activate screensaver when no mouse/keyboard input is detected. Disable to run screensaver continuously regardless of activity."></span></label>
 
     
 <input class="api" type="checkbox" name="name50" data-type="uint8" data-key="50"
@@ -1551,7 +1613,7 @@ img {
 
   
       
-<label class=""> Idle Time (μs)</label>
+<label class="">Idle Time (μs)<span class="tip" data-tip="How long to wait (in microseconds) after last input before starting the screensaver. Example: 5000000 = 5 seconds."></span></label>
 
       
 <input class="api" type="text" name="name51" data-type="uint64" data-key="51"
@@ -1576,7 +1638,7 @@ img {
 
   
       
-<label class=""> Max Time (μs)</label>
+<label class="">Max Time (μs)<span class="tip" data-tip="Maximum duration (in microseconds) the screensaver runs before stopping. Set to 0 for unlimited. Example: 60000000 = 1 minute."></span></label>
 
       
 <input class="api" type="text" name="name52" data-type="uint64" data-key="52"
@@ -1600,7 +1662,7 @@ img {
 
 
   
-    <label class="">Screen Transitions</label>
+    <label>Screen Transitions<span class="tip" data-tip="Defines where the cursor exits and enters each screen. Use RightShift + F12 + Y hotkey; see manual for more details."></span></label>
     <table class="transition-table">
       <thead>
         <tr>
@@ -1755,7 +1817,7 @@ img {
 
   
     
-<label class=""> Mouse</label>
+<label class="">Mouse</label>
 
 
   
@@ -1775,7 +1837,7 @@ img {
   
   <div class="clearfix">
     
-<label class="label-inline"> Force Mouse Boot Mode</label>
+<label class="label-inline">Force Mouse Boot Mode<span class="tip" data-tip="Not recommended for most users. Uses a simpler protocol that may fix compatibility issues, but the mouse may lose some features."></span></label>
 
     
 <input class="api" type="checkbox" name="name71" data-type="uint8" data-key="71"
@@ -1803,7 +1865,7 @@ img {
   
   <div class="clearfix">
     
-<label class="label-inline"> Enable Acceleration</label>
+<label class="label-inline">Enable Acceleration<span class="tip" data-tip="Makes the cursor move faster the quicker you move the mouse. Disable for precise 1:1 movement, e.g. for gaming or design work."></span></label>
 
     
 <input class="api" type="checkbox" name="name75" data-type="uint8" data-key="75"
@@ -1832,7 +1894,7 @@ img {
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Jump Threshold=</label>
+<label class="label-inline">Jump Threshold=</label>
 
 
       
@@ -1870,7 +1932,7 @@ img {
 
   
     
-<label class=""> Keyboard</label>
+<label class="">Keyboard</label>
 
 
   
@@ -1890,7 +1952,7 @@ img {
   
   <div class="clearfix">
     
-<label class="label-inline"> Force KBD Boot Protocol</label>
+<label class="label-inline">Force KBD Boot Protocol<span class="tip" data-tip="Enable if your keyboard isn't working correctly. Some keyboards with media keys or macro features need this simpler protocol."></span></label>
 
     
 <input class="api" type="checkbox" name="name72" data-type="uint8" data-key="72"
@@ -1918,7 +1980,7 @@ img {
   
   <div class="clearfix">
     
-<label class="label-inline"> KBD LED as Indicator</label>
+<label class="label-inline">KBD LED as Indicator<span class="tip" data-tip="Briefly flashes Caps/Scroll/Num Lock LEDs when switching outputs, giving visual feedback of which computer is active."></span></label>
 
     
 <input class="api" type="checkbox" name="name73" data-type="uint8" data-key="73"
@@ -1946,7 +2008,7 @@ img {
   
   <div class="clearfix">
     
-<label class="label-inline"> Enforce Ports</label>
+<label class="label-inline">Enforce Ports<span class="tip" data-tip="Restricts keyboard to board A and mouse to board B. Enable if your devices are being detected on the wrong board."></span></label>
 
     
 <input class="api" type="checkbox" name="name76" data-type="uint8" data-key="76"
@@ -1972,7 +2034,7 @@ img {
 
 
   
-    <label class="">Computer Border (A ↔ B)</label>
+    <label>Computer Border (A ↔ B)</label>
     <table class="transition-table">
       <thead>
         <tr>
@@ -2074,7 +2136,7 @@ img {
 
   
     
-<label class=""> Running FW version</label>
+<label class="">Running FW version</label>
 
     
 <input class="api" type="text" name="name78" data-type="uint16" data-key="78"
@@ -2099,7 +2161,7 @@ img {
 
   
     
-<label class="label-inline"> Running FW checksum:</label>
+<label class="label-inline">Running FW checksum:</label>
 
     
 <input class="content api" type="text" name="name79" data-type="uint32" data-key="79"

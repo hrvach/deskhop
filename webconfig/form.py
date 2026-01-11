@@ -21,6 +21,7 @@ class FormField:
     data_type: str = "int32"
     elem: str | None = None
     json_name: str | None = None
+    help: str | None = None
 
     def __post_init__(self):
         if self.json_name is None and self.name:
@@ -60,15 +61,20 @@ STATUS_ = [
 
 CONFIG_ = [
     FormField(1001, "Mouse", elem="label"),
-    FormField(71, "Force Mouse Boot Mode", None, {}, "uint8", "checkbox"),
-    FormField(75, "Enable Acceleration", None, {}, "uint8", "checkbox"),
+    FormField(71, "Force Mouse Boot Mode", None, {}, "uint8", "checkbox",
+              help="Not recommended for most users. Uses a simpler protocol that may fix compatibility issues, but the mouse may lose some features."),
+    FormField(75, "Enable Acceleration", None, {}, "uint8", "checkbox",
+              help="Makes the cursor move faster the quicker you move the mouse. Disable for precise 1:1 movement, e.g. for gaming or design work."),
     FormField(77, "Jump Threshold", 0, {"min": 0, "max": 3000}, "uint16", "range"),
 
     FormField(1002, "Keyboard", elem="label"),
-    FormField(72, "Force KBD Boot Protocol", None, {}, "uint8", "checkbox"),
-    FormField(73, "KBD LED as Indicator", None, {}, "uint8", "checkbox"),
+    FormField(72, "Force KBD Boot Protocol", None, {}, "uint8", "checkbox",
+              help="Enable if your keyboard isn't working correctly. Some keyboards with media keys or macro features need this simpler protocol."),
+    FormField(73, "KBD LED as Indicator", None, {}, "uint8", "checkbox",
+              help="Briefly flashes Caps/Scroll/Num Lock LEDs when switching outputs, giving visual feedback of which computer is active."),
 
-    FormField(76, "Enforce Ports", None, {}, "uint8", "checkbox"),
+    FormField(76, "Enforce Ports", None, {}, "uint8", "checkbox",
+              help="Restricts keyboard to board A and mouse to board B. Enable if your devices are being detected on the wrong board."),
 
     FormField(1003, "Computer Border (A ↔ B)", elem="table_start", json_name="border"),
     TableRow("A ↔ B", 83, 84, 85, 86, json_prefix=""),
@@ -81,14 +87,20 @@ OUTPUT_ = [
     FormField(3, "Speed Y", 16, {"min": 1, "max": 100}, "int32", "range"),
     FormField(6, "Operating System", 1, {1: "Linux", 2: "MacOS", 3: "Windows", 4: "Android", 255: "Other"}, "uint8"),
     FormField(7, "Screen Position", 1, {1: "Left", 2: "Right"}, "uint8"),
-    FormField(8, "Cursor Park Position", 0, {0: "Top", 1: "Bottom", 3: "Previous"}, "uint8"),
+    FormField(8, "Cursor Park Position", 0, {0: "Top", 1: "Bottom", 3: "Previous"}, "uint8",
+              help="Where the cursor appears when switching to this computer. Use 'Previous' to remember the last position, or set Top/Bottom for a consistent starting point."),
     FormField(1003, "Screensaver", elem="label"),
-    FormField(9, "Mode", 0, {0: "Disabled", 1: "Pong", 2: "Jitter"}, "uint8"),
-    FormField(10, "Only If Inactive", None, {}, "uint8", "checkbox"),
-    FormField(11, "Idle Time (μs)", None, {}, "uint64"),
-    FormField(12, "Max Time (μs)", None, {}, "uint64"),
+    FormField(9, "Mode", 0, {0: "Disabled", 1: "Pong", 2: "Jitter"}, "uint8",
+              help="Moves the cursor automatically to prevent screen sleep. Pong bounces smoothly across the screen; Jitter makes small random movements."),
+    FormField(10, "Only If Inactive", None, {}, "uint8", "checkbox",
+              help="Only activate screensaver when no mouse/keyboard input is detected. Disable to run screensaver continuously regardless of activity."),
+    FormField(11, "Idle Time (μs)", None, {}, "uint64",
+              help="How long to wait (in microseconds) after last input before starting the screensaver. Example: 5000000 = 5 seconds."),
+    FormField(12, "Max Time (μs)", None, {}, "uint64",
+              help="Maximum duration (in microseconds) the screensaver runs before stopping. Set to 0 for unlimited. Example: 60000000 = 1 minute."),
 
-    FormField(1004, "Screen Transitions", elem="table_start"),
+    FormField(1004, "Screen Transitions", elem="table_start",
+              help="Defines where the cursor exits and enters each screen. Use RightShift + F12 + Y hotkey; see manual for more details."),
     TableRow("1 ↔ 2", 13, 14, 15, 16),
     TableRow("2 ↔ 3", 17, 18, 19, 20),
     FormField(1005, "", elem="table_end"),
@@ -132,6 +144,7 @@ def generate_output(base, data, table_context=""):
                 "type": item.data_type,
                 "elem": item.elem,
                 "json_name": f"{table_context}{item.json_name}" if item.json_name else None,
+                "help": item.help,
             })
     return output
 

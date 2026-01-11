@@ -694,3 +694,65 @@ img {
   width: 70px;
   padding: 0.2rem 0.4rem;
 }
+
+.tip {
+  position: relative;
+}
+
+.tip::after {
+  content: "?";
+  display: inline-block;
+  text-align: center;
+  margin-left: 0.4em;
+  width: 1.3em;
+  height: 1.3em;
+  line-height: 1.3em;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: #fff;
+  background: #888;
+  border-radius: 50%;
+  cursor: help;
+  vertical-align: middle;
+  margin-bottom: 0.3em;
+}
+
+.tip:hover::after {
+  background: #666;
+}
+
+.tip::before {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 0.6em 1em;
+  width: max-content;
+  max-width: 500px;
+  font-size: 0.85em;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #fff;
+  background: #333;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  white-space: normal;
+  text-align: center;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+}
+
+.tip:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tip-r::before {
+  left: auto;
+  right: 0;
+  transform: none;
+}
