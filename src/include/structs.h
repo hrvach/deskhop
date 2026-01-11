@@ -60,6 +60,7 @@ typedef enum { IDLE, READING_PACKET, PROCESSING_PACKET } receiver_state_t;
 typedef struct {
     uint32_t address;         // Address we're sending to the other box
     uint32_t checksum;
+    uint32_t last_request_time;  // Timestamp of last REQUEST_BYTE_MSG (for tracking if we're sending)
     uint16_t version;
     bool byte_done;           // Has the byte been successfully transferred
     bool upgrade_in_progress; // True if firmware transfer from the other box is in progress

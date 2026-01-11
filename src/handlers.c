@@ -420,6 +420,9 @@ void handle_request_byte_msg(uart_packet_t *packet, device_t *state) {
     if (address > STAGING_IMAGE_SIZE)
         return;
 
+    /* Track that we're sending firmware (for LED indication) */
+    state->fw.last_request_time = time_us_32();
+
     /* Add requested data to bytes 4-7 in the packet and return it with a different type */
     uint32_t data = *(uint32_t *)&ADDR_FW_RUNNING[address];
     packet->data32[1] = data;
