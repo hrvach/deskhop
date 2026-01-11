@@ -81,7 +81,8 @@ typedef struct {
 
     output_t output[NUM_SCREENS];
     screen_transition_t computer_border;  // Y-ranges for computer A↔B transitions
-    uint32_t _reserved;
+    uint16_t hold_threshold_ms;           // Tap vs hold threshold for output toggle hotkey
+    uint16_t _reserved;
 
     // Keep checksum at the end of the struct
     uint32_t checksum;
@@ -151,6 +152,9 @@ typedef struct {
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
     int32_t blinks_left;     // How many blink transitions are left
     int32_t last_led_change; // Timestamp of the last time led state transitioned
+
+    /* Hold-to-switch state tracking */
+    uint64_t toggle_hotkey_press_time; // When toggle hotkey was first pressed (0 = not pressed)
 } device_t;
 /*==============================================================================*/
 

@@ -68,6 +68,7 @@ const config_t default_config = {
     .hotkey_toggle = HOTKEY_TOGGLE,
     .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
     .jump_threshold = JUMP_THRESHOLD,
+    .hold_threshold_ms = HOTKEY_HOLD_THRESHOLD_MS,
     .computer_border = {
         .from = { .top = 0, .bottom = MAX_SCREEN_COORD },
         .to   = { .top = 0, .bottom = MAX_SCREEN_COORD },

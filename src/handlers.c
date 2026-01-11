@@ -21,6 +21,14 @@ void output_toggle_hotkey_handler(device_t *state, hid_keyboard_report_t *report
     if (state->switch_lock)
         return;
 
+    /* If we're already tracking a press, don't re-trigger */
+    if (state->toggle_hotkey_press_time != 0)
+        return;
+
+    /* Record when the hotkey was first pressed */
+    state->toggle_hotkey_press_time = time_us_64();
+
+    /* Switch immediately - we'll decide on release whether to stay or switch back */
     state->active_output ^= 1;
     set_active_output(state, state->active_output);
 };

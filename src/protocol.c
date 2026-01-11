@@ -88,6 +88,9 @@ const field_map_t api_field_map[] = {
     { 84, false, INT32, 4, offsetof(device_t, config.computer_border.from.bottom) },
     { 85, false, INT32, 4, offsetof(device_t, config.computer_border.to.top) },
     { 86, false, INT32, 4, offsetof(device_t, config.computer_border.to.bottom) },
+
+    /* Hold-to-switch threshold */
+    { 87, false, UINT16, 2, offsetof(device_t, config.hold_threshold_ms) },
 };
 
 const field_map_t* get_field_map_entry(uint32_t index) {

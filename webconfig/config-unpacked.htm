@@ -2007,6 +2007,46 @@ img {
 
   
   <div class="clearfix">
+    <form>
+      
+<label class="label-inline">Hold Threshold (ms)=<span class="tip" data-tip="Time in milliseconds to distinguish tap (permanent switch) from hold (temporary switch). Set to 0 to disable hold-to-switch."></span></label>
+
+
+      
+<input class="input-inline" type="number" name="aInput87" data-type="uint16" data-key="87"
+  data-section="common"
+  data-name="hold_threshold_ms"
+  onchange="valueChangedHandler(this)"
+
+        readonly oninput="this.form.aRange87.value=this.value" />
+
+      
+<input class="range api" type="range" name="aRange87" data-type="uint16" data-key="87"
+  data-section="common"
+  data-name="hold_threshold_ms"
+  onchange="valueChangedHandler(this)"
+
+        min="0" max="1000" oninput="this.form.aInput87.value=this.value" />
+    </form>
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+  <div class="clearfix">
     
 <label class="label-inline">Enforce Ports<span class="tip" data-tip="Restricts keyboard to board A and mouse to board B. Enable if your devices are being detected on the wrong board."></span></label>
 

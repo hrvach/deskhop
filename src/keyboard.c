@@ -150,6 +150,44 @@ hotkey_combo_t *check_all_hotkeys(hid_keyboard_report_t *report, device_t *state
     return NULL;
 }
 
+/* Check if the output toggle hotkey is currently pressed (checks first hotkey in array) */
+bool is_toggle_hotkey_pressed(hid_keyboard_report_t *report) {
+    return check_specific_hotkey(hotkeys[0], report);
+}
+
+/* Handle hold-to-switch state machine for output toggle.
+ * Called after processing the keyboard report to detect hotkey release.
+ *
+ * The switch already happened on press (in output_toggle_hotkey_handler).
+ * On release, we decide whether to stay (tap) or switch back (hold):
+ *   - Tap (< threshold): stay on new output (permanent switch)
+ *   - Hold (>= threshold): switch back to original (temporary switch)
+ */
+void check_toggle_hotkey_hold(device_t *state, hid_keyboard_report_t *report) {
+    /* Not tracking a press, nothing to do */
+    if (state->toggle_hotkey_press_time == 0)
+        return;
+
+    /* If hotkey is still pressed, keep waiting */
+    if (is_toggle_hotkey_pressed(report))
+        return;
+
+    /* Hotkey was released - check how long it was held */
+    uint16_t threshold_ms = state->config.hold_threshold_ms;
+    uint64_t elapsed = time_us_64() - state->toggle_hotkey_press_time;
+    uint64_t threshold_us = _MS(threshold_ms);
+
+    /* If threshold is 0 (feature disabled) or it was a tap, stay on new output */
+    /* If it was a hold (>= threshold), switch back to original */
+    if (threshold_ms > 0 && elapsed >= threshold_us) {
+        state->active_output ^= 1;
+        set_active_output(state, state->active_output);
+    }
+
+    /* Reset tracking state */
+    state->toggle_hotkey_press_time = 0;
+}
+
 /* ==================================================== *
  * Keyboard State Management
  * ==================================================== */
@@ -319,11 +357,14 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 
         /* Execute the corresponding handler */
         hotkey->action_handler(state, &new_report);
-
-        /* And pass the key to the output PC if configured to do so. */
-        if (!hotkey->pass_to_os)
-            return;
     }
+
+    /* Always check hold-to-switch state (must run on every report to detect releases) */
+    check_toggle_hotkey_hold(state, &new_report);
+
+    /* Don't pass hotkey to OS if configured not to */
+    if (hotkey != NULL && !hotkey->pass_to_os)
+        return;
 
     /* This method will decide if the key gets queued locally or sent through UART */
     send_key(&new_report, state);

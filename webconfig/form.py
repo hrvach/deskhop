@@ -72,6 +72,8 @@ CONFIG_ = [
               help="Enable if your keyboard isn't working correctly. Some keyboards with media keys or macro features need this simpler protocol."),
     FormField(73, "KBD LED as Indicator", None, {}, "uint8", "checkbox",
               help="Briefly flashes Caps/Scroll/Num Lock LEDs when switching outputs, giving visual feedback of which computer is active."),
+    FormField(87, "Hold Threshold (ms)", 180, {"min": 0, "max": 1000}, "uint16", "range",
+              help="Time in milliseconds to distinguish tap (permanent switch) from hold (temporary switch). Set to 0 to disable hold-to-switch."),
 
     FormField(76, "Enforce Ports", None, {}, "uint8", "checkbox",
               help="Restricts keyboard to board A and mouse to board B. Enable if your devices are being detected on the wrong board."),
