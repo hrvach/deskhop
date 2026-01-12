@@ -20,8 +20,8 @@
 #define HID_DEFAULT_NUM_COLLECTIONS 16
 #define HID_MAX_USAGES              128
 #define MAX_CC_BUTTONS              16
-#define MAX_DEVICES                 3
-#define MAX_INTERFACES              6
+#define MAX_DEVICES                 4
+#define MAX_INTERFACES              12  // Per device; allows for complex devices like QMK
 #define MAX_KEYS                    32
 #define MAX_REPORTS                 24
 #define MAX_KEYBOARDS               3
