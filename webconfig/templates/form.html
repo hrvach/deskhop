@@ -42,10 +42,10 @@
           <th colspan="2">← (To)</th>
         </tr>
         <tr>
-          <th>Top</th>
-          <th>Bottom</th>
-          <th>Top</th>
-          <th>Bottom</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Start</th>
+          <th>End</th>
         </tr>
       </thead>
       <tbody>
@@ -53,10 +53,10 @@
   {% elif item.get("elem") == "table_row" %}
         <tr>
           <td>{{ item.label }}</td>
-          <td>{{ table_input(item.from_top_key, item.type, item.json_names.from_top) }}</td>
-          <td>{{ table_input(item.from_bottom_key, item.type, item.json_names.from_bottom) }}</td>
-          <td>{{ table_input(item.to_top_key, item.type, item.json_names.to_top) }}</td>
-          <td>{{ table_input(item.to_bottom_key, item.type, item.json_names.to_bottom) }}</td>
+          <td>{{ table_input(item.from_start_key, item.type, item.json_names.from_start) }}</td>
+          <td>{{ table_input(item.from_end_key, item.type, item.json_names.from_end) }}</td>
+          <td>{{ table_input(item.to_start_key, item.type, item.json_names.to_start) }}</td>
+          <td>{{ table_input(item.to_end_key, item.type, item.json_names.to_end) }}</td>
         </tr>
 
   {% elif item.get("elem") == "table_end" %}
@@ -86,7 +86,7 @@
 
   {% elif item["values"] %}
     {{ label(item, class='') }}
-    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" {% if section %}data-section="{{ section }}"{% endif %} {% if item.json_name %}data-name="{{ item.json_name }}"{% endif %} required>
+    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" {% if section %}data-section="{{ section }}"{% endif %} {% if item.json_name %}data-name="{{ item.json_name }}"{% endif %} onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     {% for k, v in item["values"].items() %}

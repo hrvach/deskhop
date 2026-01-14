@@ -1,6 +1,18 @@
 const mgmtReportId = 6;
 var device;
 
+/* Screen Position validation: both outputs must use same orientation */
+const SCREEN_POS_KEY_A = 17;  /* Output A: base 10 + offset 7 */
+const SCREEN_POS_KEY_B = 47;  /* Output B: base 40 + offset 7 */
+
+/* Conditional visibility: Monitor Layout and Border Monitor Index only shown when Screen Count > 1 */
+const SCREEN_COUNT_KEY_A = 11;      /* Output A: base 10 + offset 1 */
+const SCREEN_COUNT_KEY_B = 41;      /* Output B: base 40 + offset 1 */
+const MONITOR_LAYOUT_KEY_A = 14;    /* Output A: base 10 + offset 4 */
+const MONITOR_LAYOUT_KEY_B = 44;    /* Output B: base 40 + offset 4 */
+const BORDER_MON_IDX_KEY_A = 15;    /* Output A: base 10 + offset 5 */
+const BORDER_MON_IDX_KEY_B = 45;    /* Output B: base 40 + offset 5 */
+
 const packetType = {
   keyboardReportMsg: 1, mouseReportMsg: 2, outputSelectMsg: 3, firmwareUpgradeMsg: 4, switchLockMsg: 7,
   syncBordersMsg: 8, flashLedMsg: 9, wipeConfigMsg: 10, readConfigMsg: 16, writeConfigMsg: 17, saveConfigMsg: 18,
@@ -80,6 +92,9 @@ window.addEventListener('load', async function () {
     window[event.target.dataset.handler]();
   });
 
+  /* Hide Border Monitor Index by default (shown when Screen Count > 1) */
+  updateAllMultiMonitorFieldsVisibility();
+
   // Try to auto-connect to a previously authorized device
   await autoConnectHandler();
 });
@@ -148,6 +163,11 @@ function setValue(element, value, updateFetchedValue = true) {
   else
     element.value = value;
   element.dispatchEvent(new Event('input', { bubbles: true }));
+
+  /* Update Border Monitor Index visibility when Screen Count changes */
+  const key = parseInt(element.getAttribute('data-key'));
+  if (key === SCREEN_COUNT_KEY_A || key === SCREEN_COUNT_KEY_B)
+    updateMultiMonitorFieldsVisibility(key);
 }
 
 
@@ -208,12 +228,81 @@ async function enterBootloaderHandler() {
   await sendReport(packetType.firmwareUpgradeMsg, true, true);
 }
 
+function setFieldVisibility(fieldKey, show) {
+  const element = document.querySelector(`[data-key="${fieldKey}"]`);
+  if (!element)
+    return;
+
+  const display = show ? '' : 'none';
+
+  /* Hide the element and its preceding label */
+  element.style.display = display;
+  const label = element.previousElementSibling;
+  if (label && label.tagName === 'LABEL')
+    label.style.display = display;
+  /* Also hide the <br> after the element */
+  const br = element.nextElementSibling;
+  if (br && br.tagName === 'BR')
+    br.style.display = display;
+}
+
+function updateMultiMonitorFieldsVisibility(screenCountKey) {
+  const isOutputA = (screenCountKey === SCREEN_COUNT_KEY_A);
+  const monitorLayoutKey = isOutputA ? MONITOR_LAYOUT_KEY_A : MONITOR_LAYOUT_KEY_B;
+  const borderMonKey = isOutputA ? BORDER_MON_IDX_KEY_A : BORDER_MON_IDX_KEY_B;
+
+  const screenCountEl = document.querySelector(`[data-key="${screenCountKey}"]`);
+
+  /* Hide by default if Screen Count not set or <= 1 */
+  const screenCount = screenCountEl ? parseInt(screenCountEl.value) : 0;
+  const show = screenCount > 1;
+
+  setFieldVisibility(monitorLayoutKey, show);
+  setFieldVisibility(borderMonKey, show);
+}
+
+function updateAllMultiMonitorFieldsVisibility() {
+  updateMultiMonitorFieldsVisibility(SCREEN_COUNT_KEY_A);
+  updateMultiMonitorFieldsVisibility(SCREEN_COUNT_KEY_B);
+}
+
+function isVerticalPosition(value) {
+  /* TOP=4, BOTTOM=5 are vertical; LEFT=1, RIGHT=2 are horizontal */
+  return value == 4 || value == 5;
+}
+
+function validateScreenPositions() {
+  const elementA = document.querySelector(`[data-key="${SCREEN_POS_KEY_A}"]`);
+  const elementB = document.querySelector(`[data-key="${SCREEN_POS_KEY_B}"]`);
+
+  if (!elementA || !elementB || !elementA.value || !elementB.value)
+    return true;  /* Not both set yet, allow */
+
+  const aVertical = isVerticalPosition(elementA.value);
+  const bVertical = isVerticalPosition(elementB.value);
+
+  if (aVertical !== bVertical) {
+    const aOrientation = aVertical ? "vertical (Top/Bottom)" : "horizontal (Left/Right)";
+    const bOrientation = bVertical ? "vertical (Top/Bottom)" : "horizontal (Left/Right)";
+
+    alert(`Screen Position mismatch!\n\nOutput A is set to ${aOrientation}, but Output B is set to ${bOrientation}.\n\nBoth outputs must use the same orientation (both horizontal or both vertical).`);
+    return false;
+  }
+
+  return true;
+}
+
 async function valueChangedHandler(element) {
   var key = element.getAttribute('data-key');
   var dataType = element.getAttribute('data-type');
+  var keyInt = parseInt(key);
 
   var origValue = element.getAttribute('fetched-value');
   var newValue = getValue(element);
+
+  /* Update Border Monitor Index visibility when Screen Count changes */
+  if (keyInt === SCREEN_COUNT_KEY_A || keyInt === SCREEN_COUNT_KEY_B)
+    updateMultiMonitorFieldsVisibility(keyInt);
 
   if (origValue != newValue) {
     uintBuffer = packValue(element, key, dataType);
@@ -230,6 +319,10 @@ async function saveHandler() {
   const elements = document.querySelectorAll('.api');
 
   if (!device || !device.opened)
+    return;
+
+  /* Validate Screen Position orientation before saving */
+  if (!validateScreenPositions())
     return;
 
   for (const element of elements) {

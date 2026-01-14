@@ -19,12 +19,22 @@
 void switch_virtual_desktop_macos(device_t *state, int direction);
 
 /* Check if our upcoming mouse movement would result in having to switch outputs */
-enum screen_pos_e is_screen_switch_needed(int position, int offset) {
+enum screen_pos_e is_horizontal_switch_needed(int position, int offset) {
     if (position + offset < MIN_SCREEN_COORD - global_state.config.jump_threshold)
         return LEFT;
 
     if (position + offset > MAX_SCREEN_COORD + global_state.config.jump_threshold)
         return RIGHT;
+
+    return NONE;
+}
+
+enum screen_pos_e is_vertical_switch_needed(int position, int offset) {
+    if (position + offset < MIN_SCREEN_COORD - global_state.config.jump_threshold)
+        return TOP;
+
+    if (position + offset > MAX_SCREEN_COORD + global_state.config.jump_threshold)
+        return BOTTOM;
 
     return NONE;
 }
@@ -96,7 +106,7 @@ float calculate_mouse_acceleration_factor(int32_t offset_x, int32_t offset_y) {
     return lower->factor + interpolation_pos * (upper->factor - lower->factor);
 }
 
-/* Returns LEFT if need to jump left, RIGHT if right, NONE otherwise */
+/* Returns direction if need to switch screens, NONE otherwise */
 enum screen_pos_e update_mouse_position(device_t *state, mouse_values_t *values) {
     output_t *current    = &state->config.output[state->active_output];
     uint8_t reduce_speed = 0;
@@ -111,16 +121,22 @@ enum screen_pos_e update_mouse_position(device_t *state, mouse_values_t *values)
     int offset_y = round(values->move_y * acceleration_factor * (current->speed_y >> reduce_speed));
 
     /* Determine if our upcoming movement would stay within the screen */
-    enum screen_pos_e switch_direction = is_screen_switch_needed(state->pointer_x, offset_x);
+    enum screen_pos_e horizontal_switch = is_horizontal_switch_needed(state->pointer_x, offset_x);
+    enum screen_pos_e vertical_switch = is_vertical_switch_needed(state->pointer_y, offset_y);
 
-    /* Update movement */
-    state->pointer_x = move_and_keep_on_screen(state->pointer_x, offset_x);
-    state->pointer_y = move_and_keep_on_screen(state->pointer_y, offset_y);
+    /* Update movement (clamp if no switch is happening) */
+    if (horizontal_switch == NONE)
+        state->pointer_x = move_and_keep_on_screen(state->pointer_x, offset_x);
+    if (vertical_switch == NONE)
+        state->pointer_y = move_and_keep_on_screen(state->pointer_y, offset_y);
 
     /* Update buttons state */
     state->mouse_buttons = values->buttons;
 
-    return switch_direction;
+    /* Prioritize horizontal switches */
+    if (horizontal_switch != NONE)
+        return horizontal_switch;
+    return vertical_switch;
 }
 
 /* If we are active output, queue packet to mouse queue, else send them through UART */
@@ -133,21 +149,22 @@ void output_mouse_report(mouse_report_t *report, device_t *state) {
     }
 }
 
-/* Map Y coordinate when transitioning between screens (both intra-computer
- * screen transitions and computer-to-computer transitions use this function). */
-int16_t map_screen_transition_y(int pointer_y, border_size_t *from, border_size_t *to) {
-    int size_from = from->bottom - from->top;
-    int size_to = to->bottom - to->top;
+/* Map coordinate when transitioning between screens.
+ * For horizontal layouts: maps Y coordinate.
+ * For vertical layouts: maps X coordinate. */
+int16_t map_screen_transition(int pointer, border_size_t *from, border_size_t *to) {
+    int size_from = from->end - from->start;
+    int size_to = to->end - to->start;
 
     /* Handle degenerate cases */
     if (size_from <= 0)
-        return pointer_y;
+        return pointer;
 
     if (size_to <= 0)
-        return to->top;
+        return to->start;
 
     /* Linear interpolation from source range to destination range */
-    return to->top + ((pointer_y - from->top) * size_to) / size_from;
+    return to->start + ((pointer - from->start) * size_to) / size_from;
 }
 
 /* When transitioning to a macOS output with multiple screens, push cursor to
@@ -163,8 +180,8 @@ void reset_macos_to_screen1(device_t *state, output_t *output) {
 
     for (int8_t from_screen = output->screen_count; from_screen > 1; from_screen--) {
         border_size_t *range = &output->screen_transition[from_screen - 2].to;
-        state->pointer_y = (range->top < range->bottom)
-                               ? (range->top + range->bottom) / 2
+        state->pointer_y = (range->start < range->end)
+                               ? (range->start + range->end) / 2
                                : MAX_SCREEN_COORD / 2;
         switch_virtual_desktop_macos(state, push_direction);
     }
@@ -174,20 +191,31 @@ void reset_macos_to_screen1(device_t *state, output_t *output) {
 }
 
 void switch_to_another_pc(device_t *state, output_t *output, int output_to, int direction) {
+    /* When monitor and computer orientations differ, only border_monitor_index can switch */
+    bool is_vertical_monitor = (output->monitor_layout == LAYOUT_VERTICAL);
+    bool is_vertical_computer = (output->pos == TOP || output->pos == BOTTOM);
+    if (is_vertical_monitor != is_vertical_computer &&
+        output->screen_index != output->border_monitor_index) {
+        return;
+    }
+
     screen_transition_t *border = &state->config.computer_border;
 
     /* Determine source/dest ranges based on which output we're leaving */
     border_size_t *from_range = (state->active_output == 0) ? &border->from : &border->to;
     border_size_t *to_range   = (state->active_output == 0) ? &border->to : &border->from;
 
-    /* Only apply bounds check and Y-mapping if BOTH directions are configured.
+    /* Only apply bounds check and mapping if BOTH directions are configured.
      * This allows the user to travel to the other computer to configure the return path. */
-    bool from_valid = (from_range->top < from_range->bottom);
-    bool to_valid = (to_range->top < to_range->bottom);
+    bool from_valid = (from_range->start < from_range->end);
+    bool to_valid = (to_range->start < to_range->end);
     bool range_valid = from_valid && to_valid;
 
-    /* Block transition if cursor is outside the allowed Y-range */
-    if (range_valid && (state->pointer_y < from_range->top || state->pointer_y > from_range->bottom))
+    /* Use computer layout to determine which coordinate to check (vertical = X, horizontal = Y) */
+    int16_t check_coord = is_vertical_computer ? state->pointer_x : state->pointer_y;
+
+    /* Block transition if cursor is outside the allowed range */
+    if (range_valid && (check_coord < from_range->start || check_coord > from_range->end))
         return;
 
     uint8_t *mouse_park_pos = &state->config.output[state->active_output].mouse_park_pos;
@@ -205,27 +233,39 @@ void switch_to_another_pc(device_t *state, output_t *output, int output_to, int 
     if (state->config.output[output_to].os == MACOS)
         reset_macos_to_screen1(state, &state->config.output[output_to]);
 
-    state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
-    state->pointer_y = map_screen_transition_y(state->pointer_y, from_range, to_range);
+    /* Set new position based on computer layout */
+    if (is_vertical_computer) {
+        state->pointer_y = (direction == TOP) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
+        state->pointer_x = map_screen_transition(state->pointer_x, from_range, to_range);
+    } else {
+        state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
+        state->pointer_y = map_screen_transition(state->pointer_y, from_range, to_range);
+    }
 }
 
 void switch_virtual_desktop_macos(device_t *state, int direction) {
     /*
-     * Fix for MACOS: Before sending new absolute report setting X to 0:
-     * 1. Move the cursor to the edge of the screen at the current Y position
-     * 2. Send relative mouse movement one or two pixels in the direction of movement to get
+     * Fix for MACOS: Before sending new absolute report setting coordinate to edge:
+     * 1. Move the cursor to the edge of the screen at the current position
+     * 2. Send relative mouse movement in the direction of movement to get
      *    the cursor onto the next screen
      */
+    bool is_vertical = (direction == TOP || direction == BOTTOM);
+
     mouse_report_t edge_position = {
-        .x = (direction == LEFT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD,
-        .y = state->pointer_y,
+        .x = is_vertical ? state->pointer_x : ((direction == LEFT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD),
+        .y = is_vertical ? ((direction == TOP) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD) : state->pointer_y,
         .mode = ABSOLUTE,
         .buttons = state->mouse_buttons,
     };
 
-    uint16_t move = (direction == LEFT) ? -MACOS_SWITCH_MOVE_X : MACOS_SWITCH_MOVE_X;
+    int16_t move_amount = MACOS_SWITCH_MOVE_X;
+    if (direction == LEFT || direction == TOP)
+        move_amount = -move_amount;
+
     mouse_report_t move_relative_one = {
-        .x = move,
+        .x = is_vertical ? 0 : move_amount,
+        .y = is_vertical ? move_amount : 0,
         .mode = RELATIVE,
         .buttons = state->mouse_buttons,
     };
@@ -239,6 +279,7 @@ void switch_virtual_desktop_macos(device_t *state, int direction) {
 
 void switch_virtual_desktop(device_t *state, output_t *output, int new_index, int direction) {
     int current_index = output->screen_index;
+    bool is_vertical = (output->monitor_layout == LAYOUT_VERTICAL);
 
     /* Determine which transition we're using (screen_index is 1-based) */
     int transition_idx;
@@ -260,14 +301,17 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
         target_range = &transition->from;
     }
 
-    /* Only apply bounds check and Y-mapping if BOTH directions of this transition are configured.
+    /* Only apply bounds check and mapping if BOTH directions of this transition are configured.
      * This allows the user to travel to the other screen to configure the return path. */
-    bool from_valid = (transition->from.top < transition->from.bottom);
-    bool to_valid = (transition->to.top < transition->to.bottom);
+    bool from_valid = (transition->from.start < transition->from.end);
+    bool to_valid = (transition->to.start < transition->to.end);
     bool range_valid = from_valid && to_valid;
 
-    /* Block transition if cursor is outside the allowed Y-range */
-    if (range_valid && (state->pointer_y < allowed_range->top || state->pointer_y > allowed_range->bottom))
+    /* Check the appropriate coordinate based on layout */
+    int16_t check_coord = is_vertical ? state->pointer_x : state->pointer_y;
+
+    /* Block transition if cursor is outside the allowed range */
+    if (range_valid && (check_coord < allowed_range->start || check_coord > allowed_range->end))
         return;
 
     switch (output->os) {
@@ -288,11 +332,17 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
             break;
     }
 
-    /* Map Y coordinate to destination range after OS handler positions cursor at screen edge */
-    if (range_valid)
-        state->pointer_y = map_screen_transition_y(state->pointer_y, allowed_range, target_range);
+    /* Map coordinate to destination range after OS handler positions cursor at screen edge */
+    if (is_vertical) {
+        if (range_valid)
+            state->pointer_x = map_screen_transition(state->pointer_x, allowed_range, target_range);
+        state->pointer_y = (direction == BOTTOM) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
+    } else {
+        if (range_valid)
+            state->pointer_y = map_screen_transition(state->pointer_y, allowed_range, target_range);
+        state->pointer_x = (direction == RIGHT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
+    }
 
-    state->pointer_x       = (direction == RIGHT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
     output->screen_index = new_index;
 }
 
@@ -311,23 +361,76 @@ void do_screen_switch(device_t *state, int direction) {
     if (state->switch_lock || state->gaming_mode)
         return;
 
-    /* We want to jump in the direction of the other computer */
-    if (output->pos != direction) {
-        if (output->screen_index == 1) { /* We are at the border -> switch outputs */
-            /* No switching allowed if mouse button is held. Should only apply to the border! */
-            if (state->mouse_buttons)
-                return;
+    bool is_vertical_monitor = (output->monitor_layout == LAYOUT_VERTICAL);
+    /* Derive computer layout from position (TOP/BOTTOM = vertical, LEFT/RIGHT = horizontal) */
+    bool is_vertical_computer = (output->pos == TOP || output->pos == BOTTOM);
+    bool dir_is_vertical = (direction == TOP || direction == BOTTOM);
 
-            switch_to_another_pc(state, output, 1 - state->active_output, direction);
+    /* Is direction along the monitor layout? (could move between monitors) */
+    bool dir_along_monitors = (is_vertical_monitor == dir_is_vertical);
+
+    /* Is direction toward the other computer? Only true if direction matches computer orientation
+     * and we're moving opposite to our position (toward the border where the other computer is) */
+    bool toward_other_computer = (is_vertical_computer == dir_is_vertical) && (output->pos != direction);
+
+    if (dir_along_monitors) {
+        /* Movement along monitor layout (between screens on same computer) */
+        int original_screen_index = output->screen_index;
+
+        /* Are we moving toward screen 1 (the border screen)?
+         * Screen 1 is always closest to the computer border (opposite of pos).
+         * When monitor and computer orientations match, this equals toward_other_computer.
+         * When they differ, use geometric convention (LEFT/TOP = toward lower index). */
+        bool toward_screen_1;
+        if (is_vertical_monitor == is_vertical_computer) {
+            toward_screen_1 = toward_other_computer;
+        } else {
+            toward_screen_1 = is_vertical_monitor ? (direction == TOP) : (direction == LEFT);
         }
-        /* If here, this output has multiple desktops and we are not on the main one */
-        else
-            switch_virtual_desktop(state, output, output->screen_index - 1, direction);
-    }
 
-    /* We want to jump away from the other computer, only possible if there is another screen to jump to */
-    else if (output->screen_index < output->screen_count)
-        switch_virtual_desktop(state, output, output->screen_index + 1, direction);
+        if (toward_screen_1) {
+            if (output->screen_index > 1) {
+                /* Move to lower screen index */
+                switch_virtual_desktop(state, output, output->screen_index - 1, direction);
+            } else if (toward_other_computer) {
+                /* At screen 1 AND moving toward other computer - try to switch */
+                if (state->mouse_buttons)
+                    return;
+                switch_to_another_pc(state, output, 1 - state->active_output, direction);
+                return;
+            }
+        } else if (output->screen_index < output->screen_count) {
+            /* Move to higher screen index */
+            switch_virtual_desktop(state, output, output->screen_index + 1, direction);
+        }
+
+        /* If screen didn't change, clamp position */
+        if (output->screen_index == original_screen_index) {
+            if (is_vertical_monitor)
+                state->pointer_y = (direction == TOP) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
+            else
+                state->pointer_x = (direction == LEFT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
+        }
+    } else {
+        /* Movement perpendicular to monitor layout (orientations differ) */
+        if (toward_other_computer) {
+            /* Only the configured border monitor can switch to other computer */
+            bool can_switch = (output->screen_index == output->border_monitor_index);
+
+            if (can_switch) {
+                if (state->mouse_buttons)
+                    return;
+                switch_to_another_pc(state, output, 1 - state->active_output, direction);
+                return;
+            }
+        }
+
+        /* Clamp position */
+        if (dir_is_vertical)
+            state->pointer_y = (direction == TOP) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
+        else
+            state->pointer_x = (direction == LEFT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
+    }
 }
 
 static inline bool extract_value(bool uses_id, int32_t *dst, report_val_t *src, uint8_t *raw_report, int len) {
@@ -400,7 +503,7 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     /* Move the mouse, depending where the output is supposed to go */
     output_mouse_report(&report, state);
 
-    /* We use the mouse to switch outputs, if switch_direction is LEFT or RIGHT */
+    /* We use the mouse to switch outputs, if switch_direction is not NONE */
     if (switch_direction != NONE)
         do_screen_switch(state, switch_direction);
 }

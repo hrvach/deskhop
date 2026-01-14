@@ -37,31 +37,31 @@ void _get_border_position(device_t *state, border_size_t *border) {
     int y = state->pointer_y;
 
     /* Check if this is the default/uninitialized state [0, MAX] */
-    if (border->top == 0 && border->bottom == MAX_SCREEN_COORD) {
+    if (border->start == 0 && border->end == MAX_SCREEN_COORD) {
         /* First press - set both to current Y as starting point */
-        border->top = y;
-        border->bottom = y;
-    } else if (border->top == border->bottom) {
+        border->start = y;
+        border->end = y;
+    } else if (border->start == border->end) {
         /* Second press - expand range in the appropriate direction */
-        if (y < border->top)
-            border->top = y;
+        if (y < border->start)
+            border->start = y;
         else
-            border->bottom = y;
+            border->end = y;
     } else {
         /* Already have a range - update whichever boundary is closer */
-        int dist_top = y > border->top ? y - border->top : border->top - y;
-        int dist_bottom = y > border->bottom ? y - border->bottom : border->bottom - y;
+        int dist_start = y > border->start ? y - border->start : border->start - y;
+        int dist_end = y > border->end ? y - border->end : border->end - y;
 
-        if (dist_top < dist_bottom)
-            border->top = y;
+        if (dist_start < dist_end)
+            border->start = y;
         else
-            border->bottom = y;
+            border->end = y;
 
-        /* Normalize: ensure top <= bottom */
-        if (border->top > border->bottom) {
-            int temp = border->top;
-            border->top = border->bottom;
-            border->bottom = temp;
+        /* Normalize: ensure start <= end */
+        if (border->start > border->end) {
+            int temp = border->start;
+            border->start = border->end;
+            border->end = temp;
         }
     }
 }
@@ -82,15 +82,15 @@ void _send_set_val_msg(uint8_t index, int32_t value) {
 }
 
 /* Sync the computer border to the other device after local save.
- * Both devices need both from and to ranges for Y-mapping to work. */
+ * Both devices need both from and to ranges for coordinate mapping to work. */
 void _sync_computer_border(device_t *state) {
     screen_transition_t *border = &state->config.computer_border;
 
     /* Send all 4 values to the other device */
-    _send_set_val_msg(83, border->from.top);
-    _send_set_val_msg(84, border->from.bottom);
-    _send_set_val_msg(85, border->to.top);
-    _send_set_val_msg(86, border->to.bottom);
+    _send_set_val_msg(83, border->from.start);
+    _send_set_val_msg(84, border->from.end);
+    _send_set_val_msg(85, border->to.start);
+    _send_set_val_msg(86, border->to.end);
 
     /* Tell the other device to save its config */
     queue_packet(NULL, SAVE_CONFIG_MSG, 0);
@@ -124,7 +124,7 @@ void _save_screen_border(device_t *state) {
         /* On last screen: set the "to" border for returning */
         border = &output->screen_transition[idx - 2].to;
     } else {
-        /* On middle screen: use cursor X position to decide which transition */
+        /* On middle screen: use cursor position to decide which transition */
         if (state->pointer_x < MAX_SCREEN_COORD / 2) {
             border = &output->screen_transition[idx - 2].to;
         } else {
