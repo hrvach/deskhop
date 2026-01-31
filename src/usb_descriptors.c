@@ -171,17 +171,17 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
 #ifndef DH_DEBUG
 
 #define ITF_NUM_TOTAL 2
-#define ITF_NUM_TOTAL_CONFIG 3
+#define ITF_NUM_TOTAL_CONFIG 4
 #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN)
-#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN)
+#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN)
 
 #else
-#define ITF_NUM_CDC 3
+#define ITF_NUM_CDC 4
 #define ITF_NUM_TOTAL 3
-#define ITF_NUM_TOTAL_CONFIG 4
+#define ITF_NUM_TOTAL_CONFIG 5
 
 #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
-#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN + TUD_CDC_DESC_LEN)
+#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN + TUD_CDC_DESC_LEN)
 
 #define EPNUM_CDC_NOTIF  0x85
 #define EPNUM_CDC_OUT    0x06
@@ -227,6 +227,14 @@ uint8_t const desc_configuration_config[] = {
                        HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report),
                        EPNUM_HID,
+                       CFG_TUD_HID_EP_BUFSIZE,
+                       1),
+
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_REL_M,
+                       STRID_MOUSE,
+                       HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_relmouse),
+                       EPNUM_HID_REL_M,
                        CFG_TUD_HID_EP_BUFSIZE,
                        1),
 
