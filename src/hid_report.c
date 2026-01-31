@@ -114,9 +114,11 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
         keyboard->nkro    = *src;
     }
 
-    /* We found a keyboard on this interface. */
-    keyboard->is_found = true;
-    iface->num_keyboards++;
+    /* We found a keyboard on this interface for a specific report id. */
+    if (!keyboard->is_found) {
+        keyboard->is_found = true;
+        iface->num_keyboards++;
+    }
 }
 
 void handle_buttons(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {

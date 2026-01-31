@@ -24,7 +24,7 @@
 #define MAX_INTERFACES              12  // Per device; allows for complex devices like QMK
 #define MAX_KEYS                    32
 #define MAX_REPORTS                 24
-#define MAX_KEYBOARDS               3
+#define MAX_KEYBOARDS               5
 #define MAX_SYS_BUTTONS             8
 #define PRIMARY_KEYBOARD            0
 /*==============================================================================
