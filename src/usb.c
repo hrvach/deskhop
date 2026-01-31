@@ -173,10 +173,16 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
             if (global_state.config.enforce_ports && BOARD_ROLE == OUTPUT_A)
                 return;
 
-            /* Switch to using report protocol instead of boot, it's more complicated but
-               at least we get all the information we need (looking at you, mouse wheel) */
-            if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
-                tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
+            if (global_state.config.force_mouse_boot_mode) {
+                /* User requested boot mode - simpler protocol for compatibility.
+                   Note: many mice still send wheel data even in boot mode. */
+                tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_BOOT);
+            } else {
+                /* Switch to using report protocol instead of boot, it's more complicated but
+                   at least we get all the information we need (looking at you, mouse wheel) */
+                if (tuh_hid_get_protocol(dev_addr, instance) == HID_PROTOCOL_BOOT) {
+                    tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
+                }
             }
             break;
 
