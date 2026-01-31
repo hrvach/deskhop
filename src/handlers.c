@@ -172,7 +172,7 @@ void handle_keyboard_uart_msg(uart_packet_t *packet, device_t *state) {
 
     /* Queue the combined report */
     queue_kbd_report(&combined_report, state);
-    state->last_activity[BOARD_ROLE] = time_us_64();
+    state->last_activity[state->active_output] = time_us_64();
 }
 
 /* Function handles received mouse moves from the other board */
@@ -184,7 +184,7 @@ void handle_mouse_abs_uart_msg(uart_packet_t *packet, device_t *state) {
     state->pointer_y       = mouse_report->y;
     state->mouse_buttons   = mouse_report->buttons;
 
-    state->last_activity[BOARD_ROLE] = time_us_64();
+    state->last_activity[state->active_output] = time_us_64();
 }
 
 /* Function handles request to switch output  */
