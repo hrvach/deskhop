@@ -133,6 +133,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
             break;
 
         case HID_ITF_PROTOCOL_MOUSE:
+            global_state.mouse_connected = false;
             break;
     }
 
@@ -184,6 +185,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
                     tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_REPORT);
                 }
             }
+            global_state.mouse_connected = true;
             break;
 
         case HID_ITF_PROTOCOL_NONE:
