@@ -36,6 +36,10 @@ CONFIG_ = [
     FormField(72, "Force KBD Boot Protocol", None, {}, "uint8", "checkbox"),
     FormField(73, "KBD LED as Indicator", None, {}, "uint8", "checkbox"),
 
+    FormField(1004, "Gaming Mode", elem="label"),
+    FormField(83, "Start in Gaming Mode", None, {}, "uint8", "checkbox"),
+    FormField(84, "Enable Edge Switching in Gaming Mode", None, {}, "uint8", "checkbox"),
+
     FormField(76, "Enforce Ports", None, {}, "uint8", "checkbox"),
 ]
 
@@ -53,6 +57,10 @@ OUTPUT_ = [
     FormField(10, "Only If Inactive", None, {}, "uint8", "checkbox"),
     FormField(11, "Idle Time (μs)", None, {}, "uint64"),
     FormField(12, "Max Time (μs)", None, {}, "uint64"),
+    FormField(1005, "Gaming Mode Edge Switching", elem="label"),
+    FormField(13, "Movement Threshold", None, {}, "uint32", "number"),
+    FormField(14, "Time Window (ms)", None, {}, "uint32", "number"),
+    FormField(15, "Max Vertical Movement", None, {}, "uint32", "number"),
 ]
 
 def generate_output(base, data):

@@ -14,8 +14,19 @@
 const config_t default_config = {
     .magic_header = 0xB00B1E5,
     .version = CURRENT_CONFIG_VERSION,
-    .output[OUTPUT_A] =
-        {
+    .enforce_ports = ENFORCE_PORTS,
+    .force_kbd_boot_protocol = ENFORCE_KEYBOARD_BOOT_PROTOCOL,
+    .force_mouse_boot_mode = false,
+    .enable_acceleration = ENABLE_ACCELERATION,
+    .hotkey_toggle = HOTKEY_TOGGLE,
+    .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
+    .jump_threshold = JUMP_THRESHOLD,
+
+    .gaming_mode_on_boot = true,
+    .gaming_edge_enabled = false,  // Global gaming edge switching disabled by default
+
+    .output = {
+        [OUTPUT_A] = {
             .number = OUTPUT_A,
             .speed_x = MOUSE_SPEED_A_FACTOR_X,
             .speed_y = MOUSE_SPEED_A_FACTOR_Y,
@@ -32,10 +43,12 @@ const config_t default_config = {
                 .only_if_inactive = SCREENSAVER_A_ONLY_IF_INACTIVE,
                 .idle_time_us = (uint64_t)SCREENSAVER_A_IDLE_TIME_SEC * 1000000,
                 .max_time_us = (uint64_t)SCREENSAVER_A_MAX_TIME_SEC * 1000000,
-            }
+            },
+            .gaming_edge_threshold = GAMING_EDGE_THRESHOLD,
+            .gaming_edge_window_ms = GAMING_EDGE_WINDOW_MS,
+            .gaming_edge_max_vertical = GAMING_EDGE_MAX_VERTICAL,
         },
-    .output[OUTPUT_B] =
-        {
+        [OUTPUT_B] = {
             .number = OUTPUT_B,
             .speed_x = MOUSE_SPEED_B_FACTOR_X,
             .speed_y = MOUSE_SPEED_B_FACTOR_Y,
@@ -52,13 +65,10 @@ const config_t default_config = {
                 .only_if_inactive = SCREENSAVER_B_ONLY_IF_INACTIVE,
                 .idle_time_us = (uint64_t)SCREENSAVER_B_IDLE_TIME_SEC * 1000000,
                 .max_time_us = (uint64_t)SCREENSAVER_B_MAX_TIME_SEC * 1000000,
-            }
-        },
-    .enforce_ports = ENFORCE_PORTS,
-    .force_kbd_boot_protocol = ENFORCE_KEYBOARD_BOOT_PROTOCOL,
-    .force_mouse_boot_mode = false,
-    .enable_acceleration = ENABLE_ACCELERATION,
-    .hotkey_toggle = HOTKEY_TOGGLE,
-    .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
-    .jump_threshold = JUMP_THRESHOLD,
+            },
+            .gaming_edge_threshold = GAMING_EDGE_THRESHOLD,
+            .gaming_edge_window_ms = GAMING_EDGE_WINDOW_MS,
+            .gaming_edge_max_vertical = GAMING_EDGE_MAX_VERTICAL,
+        }
+    }
 };
