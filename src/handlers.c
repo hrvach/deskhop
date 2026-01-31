@@ -21,16 +21,49 @@ void output_toggle_hotkey_handler(device_t *state, hid_keyboard_report_t *report
     if (state->switch_lock)
         return;
 
+    /* If we're already tracking a press, don't re-trigger */
+    if (state->toggle_hotkey_press_time != 0)
+        return;
+
+    /* Record when the hotkey was first pressed */
+    state->toggle_hotkey_press_time = time_us_64();
+
+    /* Switch immediately - we'll decide on release whether to stay or switch back */
     state->active_output ^= 1;
     set_active_output(state, state->active_output);
 };
 
 void _get_border_position(device_t *state, border_size_t *border) {
-    /* To avoid having 2 different keys, if we're above half, it's the top coord */
-    if (state->pointer_y > (MAX_SCREEN_COORD / 2))
-        border->bottom = state->pointer_y;
-    else
-        border->top = state->pointer_y;
+    int y = state->pointer_y;
+
+    /* Check if this is the default/uninitialized state [0, MAX] */
+    if (border->start == 0 && border->end == MAX_SCREEN_COORD) {
+        /* First press - set both to current Y as starting point */
+        border->start = y;
+        border->end = y;
+    } else if (border->start == border->end) {
+        /* Second press - expand range in the appropriate direction */
+        if (y < border->start)
+            border->start = y;
+        else
+            border->end = y;
+    } else {
+        /* Already have a range - update whichever boundary is closer */
+        int dist_start = y > border->start ? y - border->start : border->start - y;
+        int dist_end = y > border->end ? y - border->end : border->end - y;
+
+        if (dist_start < dist_end)
+            border->start = y;
+        else
+            border->end = y;
+
+        /* Normalize: ensure start <= end */
+        if (border->start > border->end) {
+            int temp = border->start;
+            border->start = border->end;
+            border->end = temp;
+        }
+    }
 }
 
 void _screensaver_set(device_t *state, uint8_t value) {
@@ -40,15 +73,80 @@ void _screensaver_set(device_t *state, uint8_t value) {
         send_value(value, SCREENSAVER_MSG);
 };
 
-/* This key combo records switch y top coordinate for different-size monitors  */
-void screen_border_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    border_size_t *border = &state->config.output[state->active_output].border;
-    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
-        _get_border_position(state, border);
-        save_config(state);
+/* Send a SET_VAL_MSG to the other device to sync a config value */
+void _send_set_val_msg(uint8_t index, int32_t value) {
+    uint8_t data[PACKET_DATA_LENGTH] = {0};
+    data[0] = index;
+    memcpy(&data[1], &value, sizeof(int32_t));
+    queue_packet(data, SET_VAL_MSG, PACKET_DATA_LENGTH);
+}
+
+/* Sync the computer border to the other device after local save.
+ * Both devices need both from and to ranges for coordinate mapping to work. */
+void _sync_computer_border(device_t *state) {
+    screen_transition_t *border = &state->config.computer_border;
+
+    /* Send all 4 values to the other device */
+    _send_set_val_msg(83, border->from.start);
+    _send_set_val_msg(84, border->from.end);
+    _send_set_val_msg(85, border->to.start);
+    _send_set_val_msg(86, border->to.end);
+
+    /* Tell the other device to save its config */
+    queue_packet(NULL, SAVE_CONFIG_MSG, 0);
+}
+
+/* Core logic for saving screen border - runs on device with the mouse.
+ * Determines which border to set based on screen_index and cursor position:
+ * - On primary screen near the computer border: sets the computer-switching border
+ * - Otherwise: sets the appropriate screen_transition border for multi-monitor setups
+ */
+void _save_screen_border(device_t *state) {
+    output_t *output = &state->config.output[state->active_output];
+    int idx = output->screen_index;
+    bool cursor_toward_border = (output->pos == RIGHT && state->pointer_x < MAX_SCREEN_COORD / 2) ||
+                                (output->pos == LEFT && state->pointer_x > MAX_SCREEN_COORD / 2);
+
+    border_size_t *border;
+    bool is_computer_border = false;
+
+    if (idx == 1 && cursor_toward_border) {
+        /* On primary screen, cursor toward computer border: set computer-switching border */
+        if (state->active_output == 0)
+            border = &state->config.computer_border.from;
+        else
+            border = &state->config.computer_border.to;
+        is_computer_border = true;
+    } else if (idx == 1) {
+        /* On primary screen, cursor away from border: set transition 0 "from" (1→2) */
+        border = &output->screen_transition[0].from;
+    } else if (idx == output->screen_count) {
+        /* On last screen: set the "to" border for returning */
+        border = &output->screen_transition[idx - 2].to;
+    } else {
+        /* On middle screen: use cursor position to decide which transition */
+        if (state->pointer_x < MAX_SCREEN_COORD / 2) {
+            border = &output->screen_transition[idx - 2].to;
+        } else {
+            border = &output->screen_transition[idx - 1].from;
+        }
     }
 
-    queue_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
+    _get_border_position(state, border);
+    save_config(state);
+
+    /* Sync computer border to the other device so both have complete mapping data */
+    if (is_computer_border)
+        _sync_computer_border(state);
+}
+
+/* Hotkey handler - routes to the device with the mouse, which has the authoritative pointer position */
+void screen_border_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
+    if (state->mouse_connected) {
+        _save_screen_border(state);
+    } else {
+        queue_packet(NULL, SYNC_BORDERS_MSG, 0);
+    }
 };
 
 /* This key combo puts board A in firmware upgrade mode */
@@ -144,14 +242,11 @@ void disable_screensaver_hotkey_handler(device_t *state, hid_keyboard_report_t *
 
 /* Put the device into a special configuration mode */
 void config_enable_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
-    /* If config mode is already active, skip this and reboot to return to normal mode */
-    if (!state->config_mode_active) {
-        watchdog_hw->scratch[5] = MAGIC_WORD_1;
-        watchdog_hw->scratch[6] = MAGIC_WORD_2;
-    }
-
-    release_all_keys(state);
-    state->reboot_requested = true;
+    /* Enter config mode on the currently active output so the user sees the config UI */
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT)
+        handle_enter_config_msg(NULL, state);
+    else
+        send_value(ENABLE, ENTER_CONFIG_MSG);
 };
 
 
@@ -221,17 +316,21 @@ void handle_switch_lock_msg(uart_packet_t *packet, device_t *state) {
     state->switch_lock = packet->data[0];
 }
 
-/* Handle border syncing message that lets the other device know about monitor height offset */
+/* Handle border syncing message - the other device is asking us to save the border.
+ * Only process if we have the mouse connected (and thus the authoritative pointer position). */
 void handle_sync_borders_msg(uart_packet_t *packet, device_t *state) {
-    border_size_t *border = &state->config.output[state->active_output].border;
+    if (state->mouse_connected)
+        _save_screen_border(state);
+}
 
-    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
-        _get_border_position(state, border);
-        queue_packet((uint8_t *)border, SYNC_BORDERS_MSG, sizeof(border_size_t));
-    } else
-        memcpy(border, packet->data, sizeof(border_size_t));
-
-    save_config(state);
+/* Enter configuration mode (called via message or directly) */
+void handle_enter_config_msg(uart_packet_t *packet, device_t *state) {
+    if (!state->config_mode_active) {
+        watchdog_hw->scratch[5] = MAGIC_WORD_1;
+        watchdog_hw->scratch[6] = MAGIC_WORD_2;
+    }
+    release_all_keys(state);
+    state->reboot_requested = true;
 }
 
 /* When this message is received, flash the locally attached LED to verify serial comms */
@@ -321,6 +420,9 @@ void handle_request_byte_msg(uart_packet_t *packet, device_t *state) {
     if (address > STAGING_IMAGE_SIZE)
         return;
 
+    /* Track that we're sending firmware (for LED indication) */
+    state->fw.last_request_time = time_us_32();
+
     /* Add requested data to bytes 4-7 in the packet and return it with a different type */
     uint32_t data = *(uint32_t *)&ADDR_FW_RUNNING[address];
     packet->data32[1] = data;
@@ -359,16 +461,24 @@ void handle_response_byte_msg(uart_packet_t *packet, device_t *state) {
 
 /* Process a request to read a firmware package from flash */
 void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
-    uint16_t other_running_version = packet->data16[0];
+    uint16_t other_fw_version = packet->data16[0];
+    uint32_t other_fw_crc = packet->data32[1];
+
+    state->other_board_fw_crc = other_fw_crc;
 
     if (state->fw.upgrade_in_progress)
         return;
 
-    /* If the other board isn't running a newer version, we are done */
-    if (other_running_version <= state->_running_fw.version)
+    if (other_fw_version > state->_running_fw.version) {
+        dh_debug_printf("FW upgrade: version %u > %u\n", other_fw_version, state->_running_fw.version);
+    } else if (other_fw_version == state->_running_fw.version &&
+               other_fw_crc != state->fw_crc &&
+               BOARD_ROLE == OUTPUT_B) {
+        dh_debug_printf("FW upgrade: CRC mismatch (ours=%08lx, theirs=%08lx)\n", state->fw_crc, other_fw_crc);
+    } else {
         return;
+    }
 
-    /* It is? Ok, kick off the firmware upgrade */
     state->fw = (fw_upgrade_state_t) {
         .upgrade_in_progress = true,
         .byte_done = true,

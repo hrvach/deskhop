@@ -19,16 +19,26 @@
 
 #define MAX_SCREEN_COORD 32767
 #define MIN_SCREEN_COORD 0
+#define MAX_SCREEN_COUNT 3  // Max physical monitors per computer
 
 /*==============================================================================
  *  Data Structures
  *==============================================================================*/
 
 typedef struct {
-    int top;    // When jumping from a smaller to a bigger screen, go to THIS top height
-    int bottom; // When jumping from a smaller to a bigger screen, go to THIS bottom
-                // height
+    int16_t start;  // Range start (Y for horizontal layouts, X for vertical)
+    int16_t end;    // Range end
 } border_size_t;
+
+typedef struct {
+    border_size_t from;  // Range on lower-indexed screen to allow transition
+    border_size_t to;    // Range on higher-indexed screen to allow transition back
+} screen_transition_t;
+
+typedef enum {
+    LAYOUT_HORIZONTAL = 0,  // Side-by-side arrangement
+    LAYOUT_VERTICAL = 1     // Stacked arrangement (top-to-bottom)
+} layout_t;
 
 typedef struct {
     uint8_t mode;
@@ -43,9 +53,11 @@ typedef struct {
     uint32_t screen_index;     // Current active screen
     int32_t speed_x;           // Mouse speed per output, in direction X
     int32_t speed_y;           // Mouse speed per output, in direction Y
-    border_size_t border;      // Screen border size/offset to keep cursor at same height when switching
+    screen_transition_t screen_transition[MAX_SCREEN_COUNT - 1];  // Ranges for screen transitions
     uint8_t os;                // Operating system on this output
-    uint8_t pos;               // Screen position on this output
+    uint8_t pos;               // Screen position on this output (LEFT/RIGHT or TOP/BOTTOM)
     uint8_t mouse_park_pos;    // Where the mouse goes after switch
+    layout_t monitor_layout;   // How this computer's monitors are arranged
+    uint8_t border_monitor_index;  // For vertical layouts: which monitor can switch to other computer
     screensaver_t screensaver; // Screensaver parameters for this output
 } output_t;

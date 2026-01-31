@@ -60,6 +60,7 @@ typedef enum { IDLE, READING_PACKET, PROCESSING_PACKET } receiver_state_t;
 typedef struct {
     uint32_t address;         // Address we're sending to the other box
     uint32_t checksum;
+    uint32_t last_request_time;  // Timestamp of last REQUEST_BYTE_MSG (for tracking if we're sending)
     uint16_t version;
     bool byte_done;           // Has the byte been successfully transferred
     bool upgrade_in_progress; // True if firmware transfer from the other box is in progress
@@ -80,7 +81,9 @@ typedef struct {
     uint16_t jump_threshold;
 
     output_t output[NUM_SCREENS];
-    uint32_t _reserved;
+    screen_transition_t computer_border;  // Ranges for computer A↔B transitions
+    uint16_t hold_threshold_ms;           // Tap vs hold threshold for output toggle hotkey
+    uint16_t _reserved;
 
     // Keep checksum at the end of the struct
     uint32_t checksum;
@@ -126,6 +129,8 @@ typedef struct {
     /* Firmware */
     fw_upgrade_state_t fw;           // State of the firmware upgrader
     firmware_metadata_t _running_fw; // RAM copy of running fw metadata
+    uint32_t fw_crc;                 // CRC32 of running firmware (computed at boot)
+    uint32_t other_board_fw_crc;     // Last known firmware CRC from other board
     bool reboot_requested;           // If set, stop updating watchdog
     uint64_t config_mode_timer;      // Counts how long are we to remain in config mode
 
@@ -148,6 +153,9 @@ typedef struct {
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
     int32_t blinks_left;     // How many blink transitions are left
     int32_t last_led_change; // Timestamp of the last time led state transitioned
+
+    /* Hold-to-switch state tracking */
+    uint64_t toggle_hotkey_press_time; // When toggle hotkey was first pressed (0 = not pressed)
 } device_t;
 /*==============================================================================*/
 
@@ -172,6 +180,8 @@ enum screen_pos_e {
     LEFT   = 1,
     RIGHT  = 2,
     MIDDLE = 3,
+    TOP    = 4,
+    BOTTOM = 5,
 };
 
 enum screensaver_mode_e {

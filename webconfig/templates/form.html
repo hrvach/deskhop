@@ -2,13 +2,22 @@
 
 {% set key = item.key %}
 
-{% macro input(item, type='text', class='api', name='name') %}
+{% macro input(item, type='text', class='api', name='name', json_name=None) %}
 <input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}"
+  {% if section %}data-section="{{ section }}"{% endif %}
+  {% if json_name %}data-name="{{ json_name }}"{% elif item.json_name %}data-name="{{ item.json_name }}"{% endif %}
   onchange="valueChangedHandler(this)"
 {% endmacro %}
 
+{% macro table_input(key, dtype, json_name='', type='text', class='api', name='name') %}
+<input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ dtype }}" data-key="{{ key }}"
+  {% if section %}data-section="{{ section }}"{% endif %}
+  {% if json_name %}data-name="{{ json_name }}"{% endif %}
+  onchange="valueChangedHandler(this)" />
+{% endmacro %}
+
 {% macro label(item, class='label-inline', add='') %}
-<label class="{{class}}"> {{ item.name }}{{ add }}</label>
+<label class="{{class}}">{{ item.name }}{{ add }}{% if item.help %}<span class="tip" data-tip="{{ item.help }}"></span>{% endif %}</label>
 {% endmacro %}
 
 {% block form_render %}
@@ -22,6 +31,37 @@
 
   {% elif item.get("elem") == "label" %}
     {{ label(item, class='') }}
+
+  {% elif item.get("elem") == "table_start" %}
+    <label>{{ item.name }}{% if item.help %}<span class="tip" data-tip="{{ item.help }}"></span>{% endif %}</label>
+    <table class="transition-table">
+      <thead>
+        <tr>
+          <th rowspan="2"></th>
+          <th colspan="2">→ (From)</th>
+          <th colspan="2">← (To)</th>
+        </tr>
+        <tr>
+          <th>Start</th>
+          <th>End</th>
+          <th>Start</th>
+          <th>End</th>
+        </tr>
+      </thead>
+      <tbody>
+
+  {% elif item.get("elem") == "table_row" %}
+        <tr>
+          <td>{{ item.label }}</td>
+          <td>{{ table_input(item.from_start_key, item.type, item.json_names.from_start) }}</td>
+          <td>{{ table_input(item.from_end_key, item.type, item.json_names.from_end) }}</td>
+          <td>{{ table_input(item.to_start_key, item.type, item.json_names.to_start) }}</td>
+          <td>{{ table_input(item.to_end_key, item.type, item.json_names.to_end) }}</td>
+        </tr>
+
+  {% elif item.get("elem") == "table_end" %}
+      </tbody>
+    </table>
 
   {% elif item.get("elem") == "range" %}
   <div class="clearfix">
@@ -46,7 +86,7 @@
 
   {% elif item["values"] %}
     {{ label(item, class='') }}
-    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" required>
+    <select class="api" data-type="{{ item.type }}" data-key="{{ key }}" {% if section %}data-section="{{ section }}"{% endif %} {% if item.json_name %}data-name="{{ item.json_name }}"{% endif %} onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     {% for k, v in item["values"].items() %}

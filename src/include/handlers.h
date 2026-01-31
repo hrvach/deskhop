@@ -41,6 +41,7 @@ void wipe_config_hotkey_handler(device_t *, hid_keyboard_report_t *);
 void handle_api_msgs(uart_packet_t *, device_t *);
 void handle_api_read_all_msg(uart_packet_t *, device_t *);
 void handle_consumer_control_msg(uart_packet_t *, device_t *);
+void handle_enter_config_msg(uart_packet_t *, device_t *);
 void handle_flash_led_msg(uart_packet_t *, device_t *);
 void handle_fw_upgrade_msg(uart_packet_t *, device_t *);
 void handle_toggle_gaming_msg(uart_packet_t *, device_t *);

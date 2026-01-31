@@ -51,6 +51,19 @@
 #define HOTKEY_TOGGLE    HID_KEY_CAPS_LOCK
 
 /**================================================== *
+ *
+ * HOTKEY_HOLD_THRESHOLD_MS: Time in milliseconds to distinguish
+ * between a tap (permanent switch) and a hold (temporary switch).
+ * If the hotkey is held longer than this threshold, releasing it
+ * will switch back to the original output.
+ *
+ * Set to 0 to disable hold-to-switch behavior (always permanent).
+ *
+ * */
+
+#define HOTKEY_HOLD_THRESHOLD_MS 180
+
+/**================================================== *
  * ==============  Mouse Speed Factor  ============== *
  * ================================================== *
  *

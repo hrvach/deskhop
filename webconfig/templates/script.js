@@ -1,6 +1,18 @@
 const mgmtReportId = 6;
 var device;
 
+/* Screen Position validation: both outputs must use same orientation */
+const SCREEN_POS_KEY_A = 17;  /* Output A: base 10 + offset 7 */
+const SCREEN_POS_KEY_B = 47;  /* Output B: base 40 + offset 7 */
+
+/* Conditional visibility: Monitor Layout and Border Monitor Index only shown when Screen Count > 1 */
+const SCREEN_COUNT_KEY_A = 11;      /* Output A: base 10 + offset 1 */
+const SCREEN_COUNT_KEY_B = 41;      /* Output B: base 40 + offset 1 */
+const MONITOR_LAYOUT_KEY_A = 14;    /* Output A: base 10 + offset 4 */
+const MONITOR_LAYOUT_KEY_B = 44;    /* Output B: base 40 + offset 4 */
+const BORDER_MON_IDX_KEY_A = 15;    /* Output A: base 10 + offset 5 */
+const BORDER_MON_IDX_KEY_B = 45;    /* Output B: base 40 + offset 5 */
+
 const packetType = {
   keyboardReportMsg: 1, mouseReportMsg: 2, outputSelectMsg: 3, firmwareUpgradeMsg: 4, switchLockMsg: 7,
   syncBordersMsg: 8, flashLedMsg: 9, wipeConfigMsg: 10, readConfigMsg: 16, writeConfigMsg: 17, saveConfigMsg: 18,
@@ -70,15 +82,44 @@ function packValue(element, key, dataType, buffer) {
   return new Uint8Array(buffer);
 }
 
-window.addEventListener('load', function () {
+window.addEventListener('load', async function () {
   if (!("hid" in navigator)) {
     document.getElementById('warning').style.display = 'block';
+    return;
   }
 
   this.document.getElementById('menu-buttons').addEventListener('click', function (event) {
     window[event.target.dataset.handler]();
-  })
+  });
+
+  /* Hide Border Monitor Index by default (shown when Screen Count > 1) */
+  updateAllMultiMonitorFieldsVisibility();
+
+  // Try to auto-connect to a previously authorized device
+  await autoConnectHandler();
 });
+
+async function autoConnectHandler() {
+  // Get previously authorized devices (no user interaction required)
+  const devices = await navigator.hid.getDevices();
+
+  // Find a DeskHop device
+  const deskhopDevice = devices.find(d =>
+    d.vendorId === 0x2e8a &&
+    d.productId === 0x107c &&
+    d.collections.some(c => c.usagePage === 0xff00 && c.usage === 0x10)
+  );
+
+  if (deskhopDevice) {
+    device = deskhopDevice;
+    if (!device.opened) {
+      await device.open();
+    }
+    device.addEventListener('inputreport', handleInputReport);
+    document.querySelectorAll('.online').forEach(element => { element.style.opacity = 1.0; });
+    await readHandler();
+  }
+}
 
 document.getElementById('submitButton').addEventListener('click', async () => { await saveHandler(); });
 
@@ -113,14 +154,20 @@ function getValue(element) {
     return element.value;
 }
 
-function setValue(element, value) {
-  element.setAttribute('fetched-value', value);
+function setValue(element, value, updateFetchedValue = true) {
+  if (updateFetchedValue)
+    element.setAttribute('fetched-value', value);
 
   if (element.type === 'checkbox')
     element.checked = value;
   else
     element.value = value;
-    element.dispatchEvent(new Event('input', { bubbles: true }));
+  element.dispatchEvent(new Event('input', { bubbles: true }));
+
+  /* Update Border Monitor Index visibility when Screen Count changes */
+  const key = parseInt(element.getAttribute('data-key'));
+  if (key === SCREEN_COUNT_KEY_A || key === SCREEN_COUNT_KEY_B)
+    updateMultiMonitorFieldsVisibility(key);
 }
 
 
@@ -181,12 +228,81 @@ async function enterBootloaderHandler() {
   await sendReport(packetType.firmwareUpgradeMsg, true, true);
 }
 
+function setFieldVisibility(fieldKey, show) {
+  const element = document.querySelector(`[data-key="${fieldKey}"]`);
+  if (!element)
+    return;
+
+  const display = show ? '' : 'none';
+
+  /* Hide the element and its preceding label */
+  element.style.display = display;
+  const label = element.previousElementSibling;
+  if (label && label.tagName === 'LABEL')
+    label.style.display = display;
+  /* Also hide the <br> after the element */
+  const br = element.nextElementSibling;
+  if (br && br.tagName === 'BR')
+    br.style.display = display;
+}
+
+function updateMultiMonitorFieldsVisibility(screenCountKey) {
+  const isOutputA = (screenCountKey === SCREEN_COUNT_KEY_A);
+  const monitorLayoutKey = isOutputA ? MONITOR_LAYOUT_KEY_A : MONITOR_LAYOUT_KEY_B;
+  const borderMonKey = isOutputA ? BORDER_MON_IDX_KEY_A : BORDER_MON_IDX_KEY_B;
+
+  const screenCountEl = document.querySelector(`[data-key="${screenCountKey}"]`);
+
+  /* Hide by default if Screen Count not set or <= 1 */
+  const screenCount = screenCountEl ? parseInt(screenCountEl.value) : 0;
+  const show = screenCount > 1;
+
+  setFieldVisibility(monitorLayoutKey, show);
+  setFieldVisibility(borderMonKey, show);
+}
+
+function updateAllMultiMonitorFieldsVisibility() {
+  updateMultiMonitorFieldsVisibility(SCREEN_COUNT_KEY_A);
+  updateMultiMonitorFieldsVisibility(SCREEN_COUNT_KEY_B);
+}
+
+function isVerticalPosition(value) {
+  /* TOP=4, BOTTOM=5 are vertical; LEFT=1, RIGHT=2 are horizontal */
+  return value == 4 || value == 5;
+}
+
+function validateScreenPositions() {
+  const elementA = document.querySelector(`[data-key="${SCREEN_POS_KEY_A}"]`);
+  const elementB = document.querySelector(`[data-key="${SCREEN_POS_KEY_B}"]`);
+
+  if (!elementA || !elementB || !elementA.value || !elementB.value)
+    return true;  /* Not both set yet, allow */
+
+  const aVertical = isVerticalPosition(elementA.value);
+  const bVertical = isVerticalPosition(elementB.value);
+
+  if (aVertical !== bVertical) {
+    const aOrientation = aVertical ? "vertical (Top/Bottom)" : "horizontal (Left/Right)";
+    const bOrientation = bVertical ? "vertical (Top/Bottom)" : "horizontal (Left/Right)";
+
+    alert(`Screen Position mismatch!\n\nOutput A is set to ${aOrientation}, but Output B is set to ${bOrientation}.\n\nBoth outputs must use the same orientation (both horizontal or both vertical).`);
+    return false;
+  }
+
+  return true;
+}
+
 async function valueChangedHandler(element) {
   var key = element.getAttribute('data-key');
   var dataType = element.getAttribute('data-type');
+  var keyInt = parseInt(key);
 
   var origValue = element.getAttribute('fetched-value');
   var newValue = getValue(element);
+
+  /* Update Border Monitor Index visibility when Screen Count changes */
+  if (keyInt === SCREEN_COUNT_KEY_A || keyInt === SCREEN_COUNT_KEY_B)
+    updateMultiMonitorFieldsVisibility(keyInt);
 
   if (origValue != newValue) {
     uintBuffer = packValue(element, key, dataType);
@@ -205,6 +321,10 @@ async function saveHandler() {
   if (!device || !device.opened)
     return;
 
+  /* Validate Screen Position orientation before saving */
+  if (!validateScreenPositions())
+    return;
+
   for (const element of elements) {
     var origValue = element.getAttribute('fetched-value')
 
@@ -219,4 +339,81 @@ async function saveHandler() {
 
 async function wipeConfigHandler() {
   await sendReport(packetType.wipeConfigMsg, [], true);
+}
+
+function setNestedValue(obj, path, value) {
+  const parts = path.split('.');
+  let current = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!(parts[i] in current)) current[parts[i]] = {};
+    current = current[parts[i]];
+  }
+  current[parts[parts.length - 1]] = value;
+}
+
+function getNestedValue(obj, path) {
+  const parts = path.split('.');
+  let current = obj;
+  for (const part of parts) {
+    if (current === undefined || current === null) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+const configVersion = {{ config_version }};
+
+function exportConfigHandler() {
+  const config = { version: configVersion, output_a: {}, output_b: {}, common: {} };
+
+  document.querySelectorAll('.api').forEach(el => {
+    if (el.hasAttribute('readonly')) return;
+
+    const name = el.getAttribute('data-name');
+    const section = el.getAttribute('data-section');
+
+    if (name && section && config[section]) {
+      setNestedValue(config[section], name, getValue(el));
+    }
+  });
+
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'deskhop-config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importConfigHandler() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const config = JSON.parse(text);
+
+      document.querySelectorAll('.api').forEach(el => {
+        if (el.hasAttribute('readonly')) return;
+
+        const name = el.getAttribute('data-name');
+        const section = el.getAttribute('data-section');
+
+        if (name && section && config[section]) {
+          const value = getNestedValue(config[section], name);
+          if (value !== undefined) {
+            setValue(el, value, false);
+          }
+        }
+      });
+    } catch (err) {
+      alert('Failed to import config: ' + err.message);
+    }
+  };
+  input.click();
 }

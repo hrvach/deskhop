@@ -672,6 +672,99 @@ img {
 .online {
   opacity: 0.5;
 }
+
+.transition-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.transition-table th,
+.transition-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: center;
+  border: 1px solid #d7e5f0;
+}
+
+.transition-table th {
+  background-color: #d7e5f0;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.transition-table td:first-child {
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.transition-table input {
+  width: 70px;
+  padding: 0.2rem 0.4rem;
+}
+
+.tip {
+  position: relative;
+}
+
+.tip::after {
+  content: "?";
+  display: inline-block;
+  text-align: center;
+  margin-left: 0.4em;
+  width: 1.3em;
+  height: 1.3em;
+  line-height: 1.3em;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: #fff;
+  background: #888;
+  border-radius: 50%;
+  cursor: help;
+  vertical-align: middle;
+  margin-bottom: 0.3em;
+}
+
+.tip:hover::after {
+  background: #666;
+}
+
+.tip::before {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 0.6em 1em;
+  width: max-content;
+  max-width: 500px;
+  font-size: 0.85em;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #fff;
+  background: #333;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  white-space: normal;
+  text-align: center;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+}
+
+.tip:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tip-r::before {
+  left: auto;
+  right: 0;
+  transform: none;
+}
   </style>
 
   <title>DeskHop Config</title>
@@ -724,6 +817,10 @@ img {
             <button data-handler="rebootHandler" class="button button-clear button-shifted online">Exit</button><br />
 
             <hr />
+            <button data-handler="exportConfigHandler" class="button button-clear button-shifted">Export JSON</button><br />
+            <button data-handler="importConfigHandler" class="button button-clear button-shifted">Import JSON</button><br />
+
+            <hr />
             <button data-handler="blinkHandler" class="button button-clear button-shifted online">Blink</button><br />
             <button data-handler="blinkBothHandler" class="button button-clear button-shifted online">Blink both</button><br />
             <button data-handler="enterBootloaderHandler" class="button button-clear button-shifted online">Bootloader</button><br />
@@ -744,7 +841,10 @@ img {
             <h3>Output A</h3>
 
             
+            
               
+
+
 
 
 
@@ -755,9 +855,9 @@ img {
 
   
     
-<label class=""> Screen Count</label>
+<label class="">Screen Count</label>
 
-    <select class="api" data-type="uint32" data-key="11" required>
+    <select class="api" data-type="uint32" data-key="11" data-section="output_a" data-name="screen_count" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
@@ -781,21 +881,85 @@ img {
 
 
 
+
+
+  
+    
+<label class="">Monitor Layout<span class="tip" data-tip="How monitors are arranged on this computer: Horizontal (side-by-side) or Vertical (stacked top-to-bottom)."></span></label>
+
+    <select class="api" data-type="uint8" data-key="14" data-section="output_a" data-name="monitor_layout" onchange="valueChangedHandler(this)" required>
+    <option disabled selected value></option>
+
+    
+    <option value="0">Horizontal</option>
+    
+    <option value="1">Vertical</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+    
+<label class="">Border Monitor Index<span class="tip" data-tip="Which monitor can switch to the other computer. Numbering: 1=left/top, 2=middle, 3=right/bottom. Only applies when monitor orientation differs from computer orientation (e.g., side-by-side monitors with a stacked computer arrangement)."></span></label>
+
+    <select class="api" data-type="uint8" data-key="15" data-section="output_a" data-name="border_monitor_index" onchange="valueChangedHandler(this)" required>
+    <option disabled selected value></option>
+
+    
+    <option value="1">1</option>
+    
+    <option value="2">2</option>
+    
+    <option value="3">3</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
   
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Speed X=</label>
+<label class="label-inline">Speed X=</label>
 
 
       
 <input class="input-inline" type="number" name="aInput12" data-type="int32" data-key="12"
+  data-section="output_a"
+  data-name="speed_x"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange12.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange12" data-type="int32" data-key="12"
+  data-section="output_a"
+  data-name="speed_x"
   onchange="valueChangedHandler(this)"
 
         min="1" max="100" oninput="this.form.aInput12.value=this.value" />
@@ -815,21 +979,27 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Speed Y=</label>
+<label class="label-inline">Speed Y=</label>
 
 
       
 <input class="input-inline" type="number" name="aInput13" data-type="int32" data-key="13"
+  data-section="output_a"
+  data-name="speed_y"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange13.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange13" data-type="int32" data-key="13"
+  data-section="output_a"
+  data-name="speed_y"
   onchange="valueChangedHandler(this)"
 
         min="1" max="100" oninput="this.form.aInput13.value=this.value" />
@@ -849,53 +1019,13 @@ img {
 
 
 
-  
-      
-<label class=""> Border Top</label>
-
-      
-<input class="api" type="text" name="name14" data-type="int32" data-key="14"
-  onchange="valueChangedHandler(this)"
-  />
-
-  
-
-            
-              
-
-
-
-
-
-
-
-
-  
-      
-<label class=""> Border Bottom</label>
-
-      
-<input class="api" type="text" name="name15" data-type="int32" data-key="15"
-  onchange="valueChangedHandler(this)"
-  />
-
-  
-
-            
-              
-
-
-
-
-
-
 
 
   
     
-<label class=""> Operating System</label>
+<label class="">Operating System</label>
 
-    <select class="api" data-type="uint8" data-key="16" required>
+    <select class="api" data-type="uint8" data-key="16" data-section="output_a" data-name="operating_system" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
@@ -923,17 +1053,23 @@ img {
 
 
 
+
+
   
     
-<label class=""> Screen Position</label>
+<label class="">Screen Position<span class="tip" data-tip="Position of this output in your setup. Use Left/Right for side-by-side setups, Top/Bottom for stacked setups. The inter-computer border is on the opposite side (e.g., Right position = border on left edge)."></span></label>
 
-    <select class="api" data-type="uint8" data-key="17" required>
+    <select class="api" data-type="uint8" data-key="17" data-section="output_a" data-name="screen_position" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
     <option value="1">Left</option>
     
     <option value="2">Right</option>
+    
+    <option value="4">Top</option>
+    
+    <option value="5">Bottom</option>
     
     </select><br />
 
@@ -949,11 +1085,13 @@ img {
 
 
 
+
+
   
     
-<label class=""> Cursor Park Position</label>
+<label class="">Cursor Park Position<span class="tip" data-tip="Where the cursor appears when switching to this computer. Use 'Previous' to remember the last position, or set Top/Bottom for a consistent starting point."></span></label>
 
-    <select class="api" data-type="uint8" data-key="18" required>
+    <select class="api" data-type="uint8" data-key="18" data-section="output_a" data-name="cursor_park_position" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
@@ -977,9 +1115,11 @@ img {
 
 
 
+
+
   
     
-<label class=""> Screensaver</label>
+<label class="">Screensaver</label>
 
 
   
@@ -994,11 +1134,13 @@ img {
 
 
 
+
+
   
     
-<label class=""> Mode</label>
+<label class="">Mode<span class="tip" data-tip="Moves the cursor automatically to prevent screen sleep. Pong bounces smoothly across the screen; Jitter makes small random movements."></span></label>
 
-    <select class="api" data-type="uint8" data-key="19" required>
+    <select class="api" data-type="uint8" data-key="19" data-section="output_a" data-name="mode" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
@@ -1022,13 +1164,17 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
-<label class="label-inline"> Only If Inactive</label>
+<label class="label-inline">Only If Inactive<span class="tip" data-tip="Only activate screensaver when no mouse/keyboard input is detected. Disable to run screensaver continuously regardless of activity."></span></label>
 
     
 <input class="api" type="checkbox" name="name20" data-type="uint8" data-key="20"
+  data-section="output_a"
+  data-name="only_if_inactive"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1046,12 +1192,16 @@ img {
 
 
 
+
+
   
       
-<label class=""> Idle Time (μs)</label>
+<label class="">Idle Time (μs)<span class="tip" data-tip="How long to wait (in microseconds) after last input before starting the screensaver. Example: 5000000 = 5 seconds."></span></label>
 
       
 <input class="api" type="text" name="name21" data-type="uint64" data-key="21"
+  data-section="output_a"
+  data-name="idle_time_us"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1067,14 +1217,154 @@ img {
 
 
 
+
+
   
       
-<label class=""> Max Time (μs)</label>
+<label class="">Max Time (μs)<span class="tip" data-tip="Maximum duration (in microseconds) the screensaver runs before stopping. Set to 0 for unlimited. Example: 60000000 = 1 minute."></span></label>
 
       
 <input class="api" type="text" name="name22" data-type="uint64" data-key="22"
+  data-section="output_a"
+  data-name="max_time_us"
   onchange="valueChangedHandler(this)"
   />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+    <label>Screen Transitions<span class="tip" data-tip="Coordinate ranges where cursor can move between monitors. Y-ranges for horizontal layouts, X-ranges for vertical layouts. Use RightShift + F12 + Y hotkey; see manual for more details."></span></label>
+    <table class="transition-table">
+      <thead>
+        <tr>
+          <th rowspan="2"></th>
+          <th colspan="2">→ (From)</th>
+          <th colspan="2">← (To)</th>
+        </tr>
+        <tr>
+          <th>Start</th>
+          <th>End</th>
+          <th>Start</th>
+          <th>End</th>
+        </tr>
+      </thead>
+      <tbody>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>1 ↔ 2</td>
+          <td>
+<input class="api" type="text" name="name23" data-type="int16" data-key="23"
+  data-section="output_a"
+  data-name="transitions.1_2.from_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name24" data-type="int16" data-key="24"
+  data-section="output_a"
+  data-name="transitions.1_2.from_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name25" data-type="int16" data-key="25"
+  data-section="output_a"
+  data-name="transitions.1_2.to_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name26" data-type="int16" data-key="26"
+  data-section="output_a"
+  data-name="transitions.1_2.to_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>2 ↔ 3</td>
+          <td>
+<input class="api" type="text" name="name27" data-type="int16" data-key="27"
+  data-section="output_a"
+  data-name="transitions.2_3.from_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name28" data-type="int16" data-key="28"
+  data-section="output_a"
+  data-name="transitions.2_3.from_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name29" data-type="int16" data-key="29"
+  data-section="output_a"
+  data-name="transitions.2_3.to_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name30" data-type="int16" data-key="30"
+  data-section="output_a"
+  data-name="transitions.2_3.to_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+      </tbody>
+    </table>
 
   
 
@@ -1092,7 +1382,10 @@ img {
             <h3>Output B</h3>
 
             
+            
               
+
+
 
 
 
@@ -1103,9 +1396,9 @@ img {
 
   
     
-<label class=""> Screen Count</label>
+<label class="">Screen Count</label>
 
-    <select class="api" data-type="uint32" data-key="41" required>
+    <select class="api" data-type="uint32" data-key="41" data-section="output_b" data-name="screen_count" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
@@ -1129,21 +1422,85 @@ img {
 
 
 
+
+
+  
+    
+<label class="">Monitor Layout<span class="tip" data-tip="How monitors are arranged on this computer: Horizontal (side-by-side) or Vertical (stacked top-to-bottom)."></span></label>
+
+    <select class="api" data-type="uint8" data-key="44" data-section="output_b" data-name="monitor_layout" onchange="valueChangedHandler(this)" required>
+    <option disabled selected value></option>
+
+    
+    <option value="0">Horizontal</option>
+    
+    <option value="1">Vertical</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+    
+<label class="">Border Monitor Index<span class="tip" data-tip="Which monitor can switch to the other computer. Numbering: 1=left/top, 2=middle, 3=right/bottom. Only applies when monitor orientation differs from computer orientation (e.g., side-by-side monitors with a stacked computer arrangement)."></span></label>
+
+    <select class="api" data-type="uint8" data-key="45" data-section="output_b" data-name="border_monitor_index" onchange="valueChangedHandler(this)" required>
+    <option disabled selected value></option>
+
+    
+    <option value="1">1</option>
+    
+    <option value="2">2</option>
+    
+    <option value="3">3</option>
+    
+    </select><br />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
   
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Speed X=</label>
+<label class="label-inline">Speed X=</label>
 
 
       
 <input class="input-inline" type="number" name="aInput42" data-type="int32" data-key="42"
+  data-section="output_b"
+  data-name="speed_x"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange42.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange42" data-type="int32" data-key="42"
+  data-section="output_b"
+  data-name="speed_x"
   onchange="valueChangedHandler(this)"
 
         min="1" max="100" oninput="this.form.aInput42.value=this.value" />
@@ -1163,21 +1520,27 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Speed Y=</label>
+<label class="label-inline">Speed Y=</label>
 
 
       
 <input class="input-inline" type="number" name="aInput43" data-type="int32" data-key="43"
+  data-section="output_b"
+  data-name="speed_y"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange43.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange43" data-type="int32" data-key="43"
+  data-section="output_b"
+  data-name="speed_y"
   onchange="valueChangedHandler(this)"
 
         min="1" max="100" oninput="this.form.aInput43.value=this.value" />
@@ -1197,53 +1560,13 @@ img {
 
 
 
-  
-      
-<label class=""> Border Top</label>
-
-      
-<input class="api" type="text" name="name44" data-type="int32" data-key="44"
-  onchange="valueChangedHandler(this)"
-  />
-
-  
-
-            
-              
-
-
-
-
-
-
-
-
-  
-      
-<label class=""> Border Bottom</label>
-
-      
-<input class="api" type="text" name="name45" data-type="int32" data-key="45"
-  onchange="valueChangedHandler(this)"
-  />
-
-  
-
-            
-              
-
-
-
-
-
-
 
 
   
     
-<label class=""> Operating System</label>
+<label class="">Operating System</label>
 
-    <select class="api" data-type="uint8" data-key="46" required>
+    <select class="api" data-type="uint8" data-key="46" data-section="output_b" data-name="operating_system" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
@@ -1271,17 +1594,23 @@ img {
 
 
 
+
+
   
     
-<label class=""> Screen Position</label>
+<label class="">Screen Position<span class="tip" data-tip="Position of this output in your setup. Use Left/Right for side-by-side setups, Top/Bottom for stacked setups. The inter-computer border is on the opposite side (e.g., Right position = border on left edge)."></span></label>
 
-    <select class="api" data-type="uint8" data-key="47" required>
+    <select class="api" data-type="uint8" data-key="47" data-section="output_b" data-name="screen_position" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
     <option value="1">Left</option>
     
     <option value="2">Right</option>
+    
+    <option value="4">Top</option>
+    
+    <option value="5">Bottom</option>
     
     </select><br />
 
@@ -1297,11 +1626,13 @@ img {
 
 
 
+
+
   
     
-<label class=""> Cursor Park Position</label>
+<label class="">Cursor Park Position<span class="tip" data-tip="Where the cursor appears when switching to this computer. Use 'Previous' to remember the last position, or set Top/Bottom for a consistent starting point."></span></label>
 
-    <select class="api" data-type="uint8" data-key="48" required>
+    <select class="api" data-type="uint8" data-key="48" data-section="output_b" data-name="cursor_park_position" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
@@ -1325,9 +1656,11 @@ img {
 
 
 
+
+
   
     
-<label class=""> Screensaver</label>
+<label class="">Screensaver</label>
 
 
   
@@ -1342,11 +1675,13 @@ img {
 
 
 
+
+
   
     
-<label class=""> Mode</label>
+<label class="">Mode<span class="tip" data-tip="Moves the cursor automatically to prevent screen sleep. Pong bounces smoothly across the screen; Jitter makes small random movements."></span></label>
 
-    <select class="api" data-type="uint8" data-key="49" required>
+    <select class="api" data-type="uint8" data-key="49" data-section="output_b" data-name="mode" onchange="valueChangedHandler(this)" required>
     <option disabled selected value></option>
 
     
@@ -1370,13 +1705,17 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
-<label class="label-inline"> Only If Inactive</label>
+<label class="label-inline">Only If Inactive<span class="tip" data-tip="Only activate screensaver when no mouse/keyboard input is detected. Disable to run screensaver continuously regardless of activity."></span></label>
 
     
 <input class="api" type="checkbox" name="name50" data-type="uint8" data-key="50"
+  data-section="output_b"
+  data-name="only_if_inactive"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1394,12 +1733,16 @@ img {
 
 
 
+
+
   
       
-<label class=""> Idle Time (μs)</label>
+<label class="">Idle Time (μs)<span class="tip" data-tip="How long to wait (in microseconds) after last input before starting the screensaver. Example: 5000000 = 5 seconds."></span></label>
 
       
 <input class="api" type="text" name="name51" data-type="uint64" data-key="51"
+  data-section="output_b"
+  data-name="idle_time_us"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1415,14 +1758,154 @@ img {
 
 
 
+
+
   
       
-<label class=""> Max Time (μs)</label>
+<label class="">Max Time (μs)<span class="tip" data-tip="Maximum duration (in microseconds) the screensaver runs before stopping. Set to 0 for unlimited. Example: 60000000 = 1 minute."></span></label>
 
       
 <input class="api" type="text" name="name52" data-type="uint64" data-key="52"
+  data-section="output_b"
+  data-name="max_time_us"
   onchange="valueChangedHandler(this)"
   />
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+    <label>Screen Transitions<span class="tip" data-tip="Coordinate ranges where cursor can move between monitors. Y-ranges for horizontal layouts, X-ranges for vertical layouts. Use RightShift + F12 + Y hotkey; see manual for more details."></span></label>
+    <table class="transition-table">
+      <thead>
+        <tr>
+          <th rowspan="2"></th>
+          <th colspan="2">→ (From)</th>
+          <th colspan="2">← (To)</th>
+        </tr>
+        <tr>
+          <th>Start</th>
+          <th>End</th>
+          <th>Start</th>
+          <th>End</th>
+        </tr>
+      </thead>
+      <tbody>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>1 ↔ 2</td>
+          <td>
+<input class="api" type="text" name="name53" data-type="int16" data-key="53"
+  data-section="output_b"
+  data-name="transitions.1_2.from_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name54" data-type="int16" data-key="54"
+  data-section="output_b"
+  data-name="transitions.1_2.from_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name55" data-type="int16" data-key="55"
+  data-section="output_b"
+  data-name="transitions.1_2.to_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name56" data-type="int16" data-key="56"
+  data-section="output_b"
+  data-name="transitions.1_2.to_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>2 ↔ 3</td>
+          <td>
+<input class="api" type="text" name="name57" data-type="int16" data-key="57"
+  data-section="output_b"
+  data-name="transitions.2_3.from_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name58" data-type="int16" data-key="58"
+  data-section="output_b"
+  data-name="transitions.2_3.from_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name59" data-type="int16" data-key="59"
+  data-section="output_b"
+  data-name="transitions.2_3.to_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name60" data-type="int16" data-key="60"
+  data-section="output_b"
+  data-name="transitions.2_3.to_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+      </tbody>
+    </table>
 
   
 
@@ -1444,7 +1927,10 @@ img {
           <h3>Common Config</h3>
 
             
+            
               
+
+
 
 
 
@@ -1455,7 +1941,7 @@ img {
 
   
     
-<label class=""> Mouse</label>
+<label class="">Mouse</label>
 
 
   
@@ -1470,13 +1956,17 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
-<label class="label-inline"> Force Mouse Boot Mode</label>
+<label class="label-inline">Force Mouse Boot Mode<span class="tip" data-tip="Not recommended for most users. Uses a simpler protocol that may fix compatibility issues, but the mouse may lose some features."></span></label>
 
     
 <input class="api" type="checkbox" name="name71" data-type="uint8" data-key="71"
+  data-section="common"
+  data-name="force_mouse_boot_mode"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1486,6 +1976,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1497,10 +1989,12 @@ img {
   
   <div class="clearfix">
     
-<label class="label-inline"> Enable Acceleration</label>
+<label class="label-inline">Enable Acceleration<span class="tip" data-tip="Makes the cursor move faster the quicker you move the mouse. Disable for precise 1:1 movement, e.g. for gaming or design work."></span></label>
 
     
 <input class="api" type="checkbox" name="name75" data-type="uint8" data-key="75"
+  data-section="common"
+  data-name="enable_acceleration"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1510,6 +2004,8 @@ img {
 
             
               
+
+
 
 
 
@@ -1522,17 +2018,21 @@ img {
   <div class="clearfix">
     <form>
       
-<label class="label-inline"> Jump Threshold=</label>
+<label class="label-inline">Jump Threshold=</label>
 
 
       
 <input class="input-inline" type="number" name="aInput77" data-type="uint16" data-key="77"
+  data-section="common"
+  data-name="jump_threshold"
   onchange="valueChangedHandler(this)"
 
         readonly oninput="this.form.aRange77.value=this.value" />
 
       
 <input class="range api" type="range" name="aRange77" data-type="uint16" data-key="77"
+  data-section="common"
+  data-name="jump_threshold"
   onchange="valueChangedHandler(this)"
 
         min="0" max="3000" oninput="this.form.aInput77.value=this.value" />
@@ -1552,9 +2052,11 @@ img {
 
 
 
+
+
   
     
-<label class=""> Keyboard</label>
+<label class="">Keyboard</label>
 
 
   
@@ -1569,13 +2071,17 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
-<label class="label-inline"> Force KBD Boot Protocol</label>
+<label class="label-inline">Force KBD Boot Protocol<span class="tip" data-tip="Enable if your keyboard isn't working correctly. Some keyboards with media keys or macro features need this simpler protocol."></span></label>
 
     
 <input class="api" type="checkbox" name="name72" data-type="uint8" data-key="72"
+  data-section="common"
+  data-name="force_kbd_boot_protocol"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1593,13 +2099,17 @@ img {
 
 
 
+
+
   
   <div class="clearfix">
     
-<label class="label-inline"> KBD LED as Indicator</label>
+<label class="label-inline">KBD LED as Indicator<span class="tip" data-tip="Briefly flashes Caps/Scroll/Num Lock LEDs when switching outputs, giving visual feedback of which computer is active."></span></label>
 
     
 <input class="api" type="checkbox" name="name73" data-type="uint8" data-key="73"
+  data-section="common"
+  data-name="kbd_led_as_indicator"
   onchange="valueChangedHandler(this)"
   />
 
@@ -1617,17 +2127,154 @@ img {
 
 
 
+
+
+  
+  <div class="clearfix">
+    <form>
+      
+<label class="label-inline">Hold Threshold (ms)=<span class="tip" data-tip="Time in milliseconds to distinguish tap (permanent switch) from hold (temporary switch). Set to 0 to disable hold-to-switch."></span></label>
+
+
+      
+<input class="input-inline" type="number" name="aInput87" data-type="uint16" data-key="87"
+  data-section="common"
+  data-name="hold_threshold_ms"
+  onchange="valueChangedHandler(this)"
+
+        readonly oninput="this.form.aRange87.value=this.value" />
+
+      
+<input class="range api" type="range" name="aRange87" data-type="uint16" data-key="87"
+  data-section="common"
+  data-name="hold_threshold_ms"
+  onchange="valueChangedHandler(this)"
+
+        min="0" max="1000" oninput="this.form.aInput87.value=this.value" />
+    </form>
+
+  </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
   
   <div class="clearfix">
     
-<label class="label-inline"> Enforce Ports</label>
+<label class="label-inline">Enforce Ports<span class="tip" data-tip="Restricts keyboard to board A and mouse to board B. Enable if your devices are being detected on the wrong board."></span></label>
 
     
 <input class="api" type="checkbox" name="name76" data-type="uint8" data-key="76"
+  data-section="common"
+  data-name="enforce_ports"
   onchange="valueChangedHandler(this)"
   />
 
   </div>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+    <label>Computer Border (A ↔ B)<span class="tip" data-tip="Coordinate range for switching between computers. Y-range for horizontal layouts (Left/Right), X-range for vertical layouts (Top/Bottom)."></span></label>
+    <table class="transition-table">
+      <thead>
+        <tr>
+          <th rowspan="2"></th>
+          <th colspan="2">→ (From)</th>
+          <th colspan="2">← (To)</th>
+        </tr>
+        <tr>
+          <th>Start</th>
+          <th>End</th>
+          <th>Start</th>
+          <th>End</th>
+        </tr>
+      </thead>
+      <tbody>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+        <tr>
+          <td>A ↔ B</td>
+          <td>
+<input class="api" type="text" name="name83" data-type="int16" data-key="83"
+  data-section="common"
+  data-name="border.from_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name84" data-type="int16" data-key="84"
+  data-section="common"
+  data-name="border.from_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name85" data-type="int16" data-key="85"
+  data-section="common"
+  data-name="border.to_start"
+  onchange="valueChangedHandler(this)" />
+</td>
+          <td>
+<input class="api" type="text" name="name86" data-type="int16" data-key="86"
+  data-section="common"
+  data-name="border.to_end"
+  onchange="valueChangedHandler(this)" />
+</td>
+        </tr>
+
+  
+
+            
+              
+
+
+
+
+
+
+
+
+
+
+  
+      </tbody>
+    </table>
 
   
 
@@ -1649,12 +2296,16 @@ img {
 
 
 
+
+
   
     
-<label class=""> Running FW version</label>
+<label class="">Running FW version</label>
 
     
 <input class="api" type="text" name="name78" data-type="uint16" data-key="78"
+  data-section="common"
+  data-name="running_fw_version"
   onchange="valueChangedHandler(this)"
  data-fw-ver readonly />
 
@@ -1670,12 +2321,16 @@ img {
 
 
 
+
+
   
     
-<label class="label-inline"> Running FW checksum:</label>
+<label class="label-inline">Running FW checksum:</label>
 
     
 <input class="content api" type="text" name="name79" data-type="uint32" data-key="79"
+  data-section="common"
+  data-name="running_fw_checksum"
   onchange="valueChangedHandler(this)"
  data-hex readonly />
 
@@ -1693,6 +2348,18 @@ img {
   <script>
   const mgmtReportId = 6;
 var device;
+
+/* Screen Position validation: both outputs must use same orientation */
+const SCREEN_POS_KEY_A = 17;  /* Output A: base 10 + offset 7 */
+const SCREEN_POS_KEY_B = 47;  /* Output B: base 40 + offset 7 */
+
+/* Conditional visibility: Monitor Layout and Border Monitor Index only shown when Screen Count > 1 */
+const SCREEN_COUNT_KEY_A = 11;      /* Output A: base 10 + offset 1 */
+const SCREEN_COUNT_KEY_B = 41;      /* Output B: base 40 + offset 1 */
+const MONITOR_LAYOUT_KEY_A = 14;    /* Output A: base 10 + offset 4 */
+const MONITOR_LAYOUT_KEY_B = 44;    /* Output B: base 40 + offset 4 */
+const BORDER_MON_IDX_KEY_A = 15;    /* Output A: base 10 + offset 5 */
+const BORDER_MON_IDX_KEY_B = 45;    /* Output B: base 40 + offset 5 */
 
 const packetType = {
   keyboardReportMsg: 1, mouseReportMsg: 2, outputSelectMsg: 3, firmwareUpgradeMsg: 4, switchLockMsg: 7,
@@ -1763,15 +2430,44 @@ function packValue(element, key, dataType, buffer) {
   return new Uint8Array(buffer);
 }
 
-window.addEventListener('load', function () {
+window.addEventListener('load', async function () {
   if (!("hid" in navigator)) {
     document.getElementById('warning').style.display = 'block';
+    return;
   }
 
   this.document.getElementById('menu-buttons').addEventListener('click', function (event) {
     window[event.target.dataset.handler]();
-  })
+  });
+
+  /* Hide Border Monitor Index by default (shown when Screen Count > 1) */
+  updateAllMultiMonitorFieldsVisibility();
+
+  // Try to auto-connect to a previously authorized device
+  await autoConnectHandler();
 });
+
+async function autoConnectHandler() {
+  // Get previously authorized devices (no user interaction required)
+  const devices = await navigator.hid.getDevices();
+
+  // Find a DeskHop device
+  const deskhopDevice = devices.find(d =>
+    d.vendorId === 0x2e8a &&
+    d.productId === 0x107c &&
+    d.collections.some(c => c.usagePage === 0xff00 && c.usage === 0x10)
+  );
+
+  if (deskhopDevice) {
+    device = deskhopDevice;
+    if (!device.opened) {
+      await device.open();
+    }
+    device.addEventListener('inputreport', handleInputReport);
+    document.querySelectorAll('.online').forEach(element => { element.style.opacity = 1.0; });
+    await readHandler();
+  }
+}
 
 document.getElementById('submitButton').addEventListener('click', async () => { await saveHandler(); });
 
@@ -1806,14 +2502,20 @@ function getValue(element) {
     return element.value;
 }
 
-function setValue(element, value) {
-  element.setAttribute('fetched-value', value);
+function setValue(element, value, updateFetchedValue = true) {
+  if (updateFetchedValue)
+    element.setAttribute('fetched-value', value);
 
   if (element.type === 'checkbox')
     element.checked = value;
   else
     element.value = value;
-    element.dispatchEvent(new Event('input', { bubbles: true }));
+  element.dispatchEvent(new Event('input', { bubbles: true }));
+
+  /* Update Border Monitor Index visibility when Screen Count changes */
+  const key = parseInt(element.getAttribute('data-key'));
+  if (key === SCREEN_COUNT_KEY_A || key === SCREEN_COUNT_KEY_B)
+    updateMultiMonitorFieldsVisibility(key);
 }
 
 
@@ -1874,12 +2576,81 @@ async function enterBootloaderHandler() {
   await sendReport(packetType.firmwareUpgradeMsg, true, true);
 }
 
+function setFieldVisibility(fieldKey, show) {
+  const element = document.querySelector(`[data-key="${fieldKey}"]`);
+  if (!element)
+    return;
+
+  const display = show ? '' : 'none';
+
+  /* Hide the element and its preceding label */
+  element.style.display = display;
+  const label = element.previousElementSibling;
+  if (label && label.tagName === 'LABEL')
+    label.style.display = display;
+  /* Also hide the <br> after the element */
+  const br = element.nextElementSibling;
+  if (br && br.tagName === 'BR')
+    br.style.display = display;
+}
+
+function updateMultiMonitorFieldsVisibility(screenCountKey) {
+  const isOutputA = (screenCountKey === SCREEN_COUNT_KEY_A);
+  const monitorLayoutKey = isOutputA ? MONITOR_LAYOUT_KEY_A : MONITOR_LAYOUT_KEY_B;
+  const borderMonKey = isOutputA ? BORDER_MON_IDX_KEY_A : BORDER_MON_IDX_KEY_B;
+
+  const screenCountEl = document.querySelector(`[data-key="${screenCountKey}"]`);
+
+  /* Hide by default if Screen Count not set or <= 1 */
+  const screenCount = screenCountEl ? parseInt(screenCountEl.value) : 0;
+  const show = screenCount > 1;
+
+  setFieldVisibility(monitorLayoutKey, show);
+  setFieldVisibility(borderMonKey, show);
+}
+
+function updateAllMultiMonitorFieldsVisibility() {
+  updateMultiMonitorFieldsVisibility(SCREEN_COUNT_KEY_A);
+  updateMultiMonitorFieldsVisibility(SCREEN_COUNT_KEY_B);
+}
+
+function isVerticalPosition(value) {
+  /* TOP=4, BOTTOM=5 are vertical; LEFT=1, RIGHT=2 are horizontal */
+  return value == 4 || value == 5;
+}
+
+function validateScreenPositions() {
+  const elementA = document.querySelector(`[data-key="${SCREEN_POS_KEY_A}"]`);
+  const elementB = document.querySelector(`[data-key="${SCREEN_POS_KEY_B}"]`);
+
+  if (!elementA || !elementB || !elementA.value || !elementB.value)
+    return true;  /* Not both set yet, allow */
+
+  const aVertical = isVerticalPosition(elementA.value);
+  const bVertical = isVerticalPosition(elementB.value);
+
+  if (aVertical !== bVertical) {
+    const aOrientation = aVertical ? "vertical (Top/Bottom)" : "horizontal (Left/Right)";
+    const bOrientation = bVertical ? "vertical (Top/Bottom)" : "horizontal (Left/Right)";
+
+    alert(`Screen Position mismatch!\n\nOutput A is set to ${aOrientation}, but Output B is set to ${bOrientation}.\n\nBoth outputs must use the same orientation (both horizontal or both vertical).`);
+    return false;
+  }
+
+  return true;
+}
+
 async function valueChangedHandler(element) {
   var key = element.getAttribute('data-key');
   var dataType = element.getAttribute('data-type');
+  var keyInt = parseInt(key);
 
   var origValue = element.getAttribute('fetched-value');
   var newValue = getValue(element);
+
+  /* Update Border Monitor Index visibility when Screen Count changes */
+  if (keyInt === SCREEN_COUNT_KEY_A || keyInt === SCREEN_COUNT_KEY_B)
+    updateMultiMonitorFieldsVisibility(keyInt);
 
   if (origValue != newValue) {
     uintBuffer = packValue(element, key, dataType);
@@ -1898,6 +2669,10 @@ async function saveHandler() {
   if (!device || !device.opened)
     return;
 
+  /* Validate Screen Position orientation before saving */
+  if (!validateScreenPositions())
+    return;
+
   for (const element of elements) {
     var origValue = element.getAttribute('fetched-value')
 
@@ -1912,6 +2687,83 @@ async function saveHandler() {
 
 async function wipeConfigHandler() {
   await sendReport(packetType.wipeConfigMsg, [], true);
+}
+
+function setNestedValue(obj, path, value) {
+  const parts = path.split('.');
+  let current = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!(parts[i] in current)) current[parts[i]] = {};
+    current = current[parts[i]];
+  }
+  current[parts[parts.length - 1]] = value;
+}
+
+function getNestedValue(obj, path) {
+  const parts = path.split('.');
+  let current = obj;
+  for (const part of parts) {
+    if (current === undefined || current === null) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+const configVersion = 11;
+
+function exportConfigHandler() {
+  const config = { version: configVersion, output_a: {}, output_b: {}, common: {} };
+
+  document.querySelectorAll('.api').forEach(el => {
+    if (el.hasAttribute('readonly')) return;
+
+    const name = el.getAttribute('data-name');
+    const section = el.getAttribute('data-section');
+
+    if (name && section && config[section]) {
+      setNestedValue(config[section], name, getValue(el));
+    }
+  });
+
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'deskhop-config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importConfigHandler() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const config = JSON.parse(text);
+
+      document.querySelectorAll('.api').forEach(el => {
+        if (el.hasAttribute('readonly')) return;
+
+        const name = el.getAttribute('data-name');
+        const section = el.getAttribute('data-section');
+
+        if (name && section && config[section]) {
+          const value = getNestedValue(config[section], name);
+          if (value !== undefined) {
+            setValue(el, value, false);
+          }
+        }
+      });
+    } catch (err) {
+      alert('Failed to import config: ' + err.message);
+    }
+  };
+  input.click();
 }
   </script>
 </body>

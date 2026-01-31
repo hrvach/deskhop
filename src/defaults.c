@@ -10,6 +10,9 @@
  */
 #include "main.h"
 
+_Static_assert(MAX_SCREEN_COUNT == 3,
+    "Update screen_transition defaults in defaults.c when MAX_SCREEN_COUNT changes");
+
 /* Default configuration */
 const config_t default_config = {
     .magic_header = 0xB00B1E5,
@@ -19,14 +22,18 @@ const config_t default_config = {
             .number = OUTPUT_A,
             .speed_x = MOUSE_SPEED_A_FACTOR_X,
             .speed_y = MOUSE_SPEED_A_FACTOR_Y,
-            .border = {
-                .top = 0,
-                .bottom = MAX_SCREEN_COORD,
+            .screen_transition = {
+                [0] = { .from = { .start = 0, .end = MAX_SCREEN_COORD },
+                        .to   = { .start = 0, .end = MAX_SCREEN_COORD } },
+                [1] = { .from = { .start = 0, .end = MAX_SCREEN_COORD },
+                        .to   = { .start = 0, .end = MAX_SCREEN_COORD } },
             },
             .screen_count = 1,
             .screen_index = 1,
             .os = OUTPUT_A_OS,
             .pos = RIGHT,
+            .monitor_layout = LAYOUT_HORIZONTAL,
+            .border_monitor_index = 1,
             .screensaver = {
                 .mode = SCREENSAVER_A_MODE,
                 .only_if_inactive = SCREENSAVER_A_ONLY_IF_INACTIVE,
@@ -39,14 +46,18 @@ const config_t default_config = {
             .number = OUTPUT_B,
             .speed_x = MOUSE_SPEED_B_FACTOR_X,
             .speed_y = MOUSE_SPEED_B_FACTOR_Y,
-            .border = {
-                .top = 0,
-                .bottom = MAX_SCREEN_COORD,
+            .screen_transition = {
+                [0] = { .from = { .start = 0, .end = MAX_SCREEN_COORD },
+                        .to   = { .start = 0, .end = MAX_SCREEN_COORD } },
+                [1] = { .from = { .start = 0, .end = MAX_SCREEN_COORD },
+                        .to   = { .start = 0, .end = MAX_SCREEN_COORD } },
             },
             .screen_count = 1,
             .screen_index = 1,
             .os = OUTPUT_B_OS,
             .pos = LEFT,
+            .monitor_layout = LAYOUT_HORIZONTAL,
+            .border_monitor_index = 1,
             .screensaver = {
                 .mode = SCREENSAVER_B_MODE,
                 .only_if_inactive = SCREENSAVER_B_ONLY_IF_INACTIVE,
@@ -61,4 +72,9 @@ const config_t default_config = {
     .hotkey_toggle = HOTKEY_TOGGLE,
     .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
     .jump_threshold = JUMP_THRESHOLD,
+    .hold_threshold_ms = HOTKEY_HOLD_THRESHOLD_MS,
+    .computer_border = {
+        .from = { .start = 0, .end = MAX_SCREEN_COORD },
+        .to   = { .start = 0, .end = MAX_SCREEN_COORD },
+    },
 };

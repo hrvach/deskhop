@@ -54,9 +54,44 @@ void blink_led(device_t *state) {
     state->last_led_change = time_us_32();
 }
 
+/* Check if a firmware upgrade is currently active (either receiving or sending) */
+static bool is_firmware_upgrade_active(device_t *state) {
+    const uint32_t FW_SEND_TIMEOUT_US = 1000000;  /* 1 second */
+
+    /* Receiving firmware from the other board */
+    if (state->fw.upgrade_in_progress)
+        return true;
+
+    /* Sending firmware to the other board (if we received a request within last second) */
+    if (state->fw.last_request_time != 0 &&
+        (time_us_32() - state->fw.last_request_time) < FW_SEND_TIMEOUT_US)
+        return true;
+
+    return false;
+}
+
 void led_blinking_task(device_t *state) {
     const int blink_interval_us = 80000; /* 80 ms off, 80 ms on */
     static uint8_t leds;
+    static bool was_upgrading = false;
+
+    /* Handle firmware upgrade LED indication */
+    bool is_upgrading = is_firmware_upgrade_active(state);
+
+    if (is_upgrading) {
+        /* Keep LEDs on during firmware upgrade */
+        gpio_put(GPIO_LED_PIN, 1);
+        if (state->keyboard_connected)
+            set_keyboard_leds(0x07, state);  /* Numlock, capslock, scrollock */
+        was_upgrading = true;
+        return;
+    }
+
+    /* Firmware upgrade just finished - trigger completion blink */
+    if (was_upgrading) {
+        was_upgrading = false;
+        blink_led(state);
+    }
 
     /* If there is no more blinking to be done, exit immediately */
     if (state->blinks_left == 0)
