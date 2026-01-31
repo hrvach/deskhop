@@ -35,6 +35,8 @@ typedef struct {
     uint8_t only_if_inactive;
     uint64_t idle_time_us;
     uint64_t max_time_us;
+    uint8_t enable_system_timeout;
+    uint64_t max_system_idle_time_us;
 } screensaver_t;
 
 typedef struct {

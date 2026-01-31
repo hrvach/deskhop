@@ -52,7 +52,9 @@ OUTPUT_ = [
     FormField(9, "Mode", 0, {0: "Disabled", 1: "Pong", 2: "Jitter"}, "uint8"),
     FormField(10, "Only If Inactive", None, {}, "uint8", "checkbox"),
     FormField(11, "Idle Time (μs)", None, {}, "uint64"),
-    FormField(12, "Max Time (μs)", None, {}, "uint64"),
+    FormField(12, "Enable System Timeout", None, {}, "uint8", "checkbox"),
+    FormField(13, "Max System Idle Time (μs)", None, {}, "uint64"),
+    FormField(14, "Max Time (μs)", None, {}, "uint64"),
 ]
 
 def generate_output(base, data):

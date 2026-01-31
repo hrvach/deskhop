@@ -256,11 +256,11 @@ void send_key(hid_keyboard_report_t *report, device_t *state) {
     /* Create a combined report from all device states */
     hid_keyboard_report_t combined_report;
     combine_kbd_states(state, &combined_report);
+    state->last_activity[state->active_output] = time_us_64();
 
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
         /* Queue the combined report */
         queue_kbd_report(&combined_report, state);
-        state->last_activity[BOARD_ROLE] = time_us_64();
     } else {
         /* Send the combined report to ensure all keys are included */
         queue_packet((uint8_t *)&combined_report, KEYBOARD_REPORT_MSG, KBD_REPORT_LENGTH);
@@ -269,19 +269,21 @@ void send_key(hid_keyboard_report_t *report, device_t *state) {
 
 /* Decide if consumer control reports go local or to the other board */
 void send_consumer_control(uint8_t *raw_report, device_t *state) {
+    state->last_activity[state->active_output] = time_us_64();
+
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
         queue_cc_packet(raw_report, state);
-        state->last_activity[BOARD_ROLE] = time_us_64();
     } else {
         queue_packet((uint8_t *)raw_report, CONSUMER_CONTROL_MSG, CONSUMER_CONTROL_LENGTH);
     }
 }
 
-/* Decide if consumer control reports go local or to the other board */
+/* Decide if system control reports go local or to the other board */
 void send_system_control(uint8_t *raw_report, device_t *state) {
+    state->last_activity[state->active_output] = time_us_64();
+
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
         queue_system_packet(raw_report, state);
-        state->last_activity[BOARD_ROLE] = time_us_64();
     } else {
         queue_packet((uint8_t *)raw_report, SYSTEM_CONTROL_MSG, SYSTEM_CONTROL_LENGTH);
     }

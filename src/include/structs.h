@@ -91,7 +91,7 @@ typedef struct {
  *  Device State
  *==============================================================================*/
 typedef struct {
-    uint8_t kbd_dev_addr; // Address of the Keyboard device
+    uint8_t kbd_dev_addr; // Address of the Keyboard devicelast_activitylast_activitylast_activity
     uint8_t kbd_instance; // Keyboard instance (d'uh - isn't this a useless comment)
 
     uint8_t keyboard_leds[NUM_SCREENS];  // State of keyboard LEDs (index 0 = A, index 1 = B)

@@ -103,6 +103,8 @@ void save_config(device_t *state) {
     state->config.checksum = checksum;
 
     /* Copy the config to buffer and pad the rest with zeros */
+    static_assert ( (sizeof(state->page_buffer) > sizeof(config_t)),
+                    "config_t structure has grown beyond a flash page");
     memcpy(state->page_buffer, raw_config, sizeof(config_t));
     memset(state->page_buffer + sizeof(config_t), 0, FLASH_PAGE_SIZE - sizeof(config_t));
 

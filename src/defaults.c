@@ -32,6 +32,8 @@ const config_t default_config = {
                 .only_if_inactive = SCREENSAVER_A_ONLY_IF_INACTIVE,
                 .idle_time_us = (uint64_t)SCREENSAVER_A_IDLE_TIME_SEC * 1000000,
                 .max_time_us = (uint64_t)SCREENSAVER_A_MAX_TIME_SEC * 1000000,
+                .enable_system_timeout = SCREENSAVER_A_ENABLE_SYSTEM_TIMEOUT,
+                .max_system_idle_time_us = (uint64_t)SCREENSAVER_A_MAX_SYSTEM_IDLE_TIME_SEC * 1000000
             }
         },
     .output[OUTPUT_B] =
@@ -52,6 +54,8 @@ const config_t default_config = {
                 .only_if_inactive = SCREENSAVER_B_ONLY_IF_INACTIVE,
                 .idle_time_us = (uint64_t)SCREENSAVER_B_IDLE_TIME_SEC * 1000000,
                 .max_time_us = (uint64_t)SCREENSAVER_B_MAX_TIME_SEC * 1000000,
+                .enable_system_timeout = SCREENSAVER_B_ENABLE_SYSTEM_TIMEOUT,
+                .max_system_idle_time_us = (uint64_t)SCREENSAVER_B_MAX_SYSTEM_IDLE_TIME_SEC * 1000000
             }
         },
     .enforce_ports = ENFORCE_PORTS,
