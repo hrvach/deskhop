@@ -1,2 +1,0 @@
-pico_simple_hardware_target(gpio)
-pico_mirrored_target_link_libraries(hardware_gpio INTERFACE hardware_irq)

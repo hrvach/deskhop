@@ -1,6 +1,0 @@
-# don't use pico_add_library here as picotool includes it directly
-add_library(pico_usb_reset_interface_headers INTERFACE)
-add_library(pico_usb_reset_interface INTERFACE)
-target_link_libraries(pico_usb_reset_interface INTERFACE pico_usb_reset_interface_headers)
-
-target_include_directories(pico_usb_reset_interface_headers INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)

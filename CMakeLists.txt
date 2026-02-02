@@ -9,14 +9,17 @@ set(VERSION_MINOR 77)
 option(DH_DEBUG "Build a debug version" OFF)
 option(DH_DEBUG_CDC_FLASH "Enable CDC command to trigger bootloader mode" OFF)
 
-## Hardware Configuration
+## Hardware Configuration for PICO
 set(DP_PIN_DEFAULT 14 CACHE STRING "Default USB D+ Pin Number")
-set(PIO_USE_TINYUSB 1 CACHE STRING "Make TinyUSB Manage the PIO USB Port")
-set(PICO_BOARD "pico")
+set(PICO_BOARD pico CACHE STRING "Board type")
+
+## Hardware Configuration for Feather RP2040 USB Host
+#set(DP_PIN_DEFAULT 16 CACHE STRING "Default USB D+ Pin Number")
+#set(PICO_BOARD adafruit_feather_rp2040_usb_host CACHE STRING "Board type")
 
 ## Pico SDK Configuration
 set(PICO_SDK_FETCH_FROM_GIT off)
-set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/pico-sdk)
+set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/lib/pico-sdk)
 set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 include(${PICO_SDK_PATH}/pico_sdk_import.cmake)
 
@@ -33,7 +36,7 @@ set(CMAKE_C_FLAGS "-Ofast -Wall -mcpu=cortex-m0plus -mtune=cortex-m0plus -fstack
 pico_sdk_init()
 
 ## PIO USB Library Setup
-set(PICO_PIO_USB_DIR ${CMAKE_CURRENT_LIST_DIR}/Pico-PIO-USB)
+set(PICO_PIO_USB_DIR ${CMAKE_CURRENT_LIST_DIR}/lib/Pico-PIO-USB)
 
 add_library(Pico-PIO-USB STATIC
   ${PICO_PIO_USB_DIR}/src/pio_usb.c
@@ -88,6 +91,7 @@ set(COMMON_LINK_LIBRARIES
   hardware_gpio
   hardware_pio
   hardware_dma
+  hardware_clocks
 
   tinyusb_device 
   tinyusb_host
@@ -155,4 +159,3 @@ target_link_options(${binary} PRIVATE
   -Xlinker
   --print-memory-usage
 )
-
