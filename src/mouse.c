@@ -20,6 +20,8 @@
 enum screen_pos_e is_screen_switch_needed(device_t *state, int position, int offset) {
     output_t *output = &state->config.output[state->active_output];
 
+    /* Apply jump threshold only when crossing physical PC boundaries (screen_index == 1 and 
+       moving towards the other PC). Switching virtual desktops on the same PC has a 0 threshold. */
     int left_threshold = (output->pos != LEFT && output->screen_index == 1) ? state->config.jump_threshold : 0;
     if (position + offset < MIN_SCREEN_COORD - left_threshold)
         return LEFT;
@@ -201,6 +203,9 @@ void switch_virtual_desktop_macos(device_t *state, int direction) {
     mouse_report_t move_relative_one = {
         .x = move,
         .mode = RELATIVE,
+        /* Force buttons to 0 for relative movement to avoid duplicating the button 
+           press state, which would leave the relative HID mouse permanently stuck 
+           down if the user is dragging an item while switching desktops. */
         .buttons = 0,
     };
 
