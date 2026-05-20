@@ -325,6 +325,16 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     /* Interpret the mouse HID report, extract and save values we need. */
     extract_report_values(raw_report, len, state, &values, iface);
 
+    /* If nothing changed, don't send a report. This prevents composite keyboards
+       (e.g. QMK, Perixx) that expose a mouse HID interface from generating spurious
+       absolute position reports when they send zero-movement mouse reports during
+       keyboard events like layer changes or media key presses. */
+    if (values.move_x == 0 && values.move_y == 0 &&
+        values.wheel == 0 && values.pan == 0 &&
+        values.buttons == state->mouse_buttons) {
+        return;
+    }
+
     /* Calculate and update mouse pointer movement. */
     enum screen_pos_e switch_direction = update_mouse_position(state, &values);
 
