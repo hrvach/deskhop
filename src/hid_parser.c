@@ -141,6 +141,29 @@ void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *if
     *parser->p_usage = *(parser->p_usage - parser->usage_count);
 }
 
+/* Detect Resolution Multiplier in Feature items, store logical_max+1 as divider.
+   First occurrence only — subsequent multipliers for horizontal scroll are ignored. */
+static void detect_resolution_multiplier(parser_state_t *parser, hid_interface_t *iface) {
+    if (parser->global_usage != HID_USAGE_DESKTOP_MOUSE)
+        return;
+
+    for (int i = 0; i < parser->usage_count; i++) {
+        if (parser->usages[i] == HID_USAGE_DESKTOP_RESOLUTION_MULTIPLIER) {
+            if (iface->mouse.has_resolution_multiplier)
+                return;
+
+            int32_t logical_max = parser->globals[RI_GLOBAL_LOGICAL_MAX].val;
+
+            if (logical_max < 0 || logical_max > 254)
+                return;
+
+            iface->mouse.has_resolution_multiplier = true;
+            iface->mouse.wheel_divider = (uint8_t)(logical_max + 1);
+            return;
+        }
+    }
+}
+
 void handle_main_item(parser_state_t *parser, item_t *item, hid_interface_t *iface) {
     switch (item->hdr.tag) {
         case RI_MAIN_COLLECTION:
@@ -153,6 +176,10 @@ void handle_main_item(parser_state_t *parser, item_t *item, hid_interface_t *ifa
 
         case RI_MAIN_INPUT:
             handle_main_input(parser, item, iface);
+            break;
+
+        case RI_MAIN_FEATURE:
+            detect_resolution_multiplier(parser, iface);
             break;
     }
 
