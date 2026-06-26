@@ -16,12 +16,36 @@
 #define MACOS_SWITCH_MOVE_COUNT 5
 #define ACCEL_POINTS 7
 
+uint16_t get_jump_threshold(output_t *output, enum screen_pos_e direction) {
+    const uint16_t NO_JUMP_THRESHOLD = 0;
+
+    /* If on non-main local screen, every possible switch is local */
+    if (output->screen_index > 1)
+        return NO_JUMP_THRESHOLD;
+
+    /* If on main screen but going away from the border, switch is local */
+    if (output->pos == direction && output->screen_index == 1)
+        return NO_JUMP_THRESHOLD;
+
+    /* ... in all other cases, switch is non-local (jump to another pc) */
+    return global_state.config.jump_threshold;
+}
+
 /* Check if our upcoming mouse movement would result in having to switch outputs */
-enum screen_pos_e is_screen_switch_needed(int position, int offset) {
-    if (position + offset < MIN_SCREEN_COORD - global_state.config.jump_threshold)
+enum screen_pos_e is_screen_switch_needed(output_t *output, int position, int offset) {
+    enum screen_pos_e direction = (offset < 0) ? LEFT : RIGHT;
+
+    /* No position offset implies no switch needed. */
+    if (offset == 0)
+        return NONE;
+
+    /* Local switches (virtual desktop changes) have no gap, only cross-output jumps use threshold */
+    uint16_t threshold = get_jump_threshold(output, direction);
+
+    if (position + offset < MIN_SCREEN_COORD - threshold)
         return LEFT;
 
-    if (position + offset > MAX_SCREEN_COORD + global_state.config.jump_threshold)
+    if (position + offset > MAX_SCREEN_COORD + threshold)
         return RIGHT;
 
     return NONE;
@@ -109,7 +133,7 @@ enum screen_pos_e update_mouse_position(device_t *state, mouse_values_t *values)
     int offset_y = round(values->move_y * acceleration_factor * (current->speed_y >> reduce_speed));
 
     /* Determine if our upcoming movement would stay within the screen */
-    enum screen_pos_e switch_direction = is_screen_switch_needed(state->pointer_x, offset_x);
+    enum screen_pos_e switch_direction = is_screen_switch_needed(current, state->pointer_x, offset_x);
 
     /* Update movement */
     state->pointer_x = move_and_keep_on_screen(state->pointer_x, offset_x);
@@ -197,7 +221,10 @@ void switch_virtual_desktop_macos(device_t *state, int direction) {
     mouse_report_t move_relative_one = {
         .x = move,
         .mode = RELATIVE,
-        .buttons = state->mouse_buttons,
+        /* Force buttons to 0 for relative movement to avoid duplicating the button 
+           press state, which would leave the relative HID mouse permanently stuck 
+           down if the user is dragging an item while switching desktops. */
+        .buttons = 0,
     };
 
     output_mouse_report(&edge_position, state);
@@ -328,7 +355,7 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     /* If nothing changed, don't send a report. This prevents composite keyboards
        (e.g. QMK) that expose a mouse HID interface from generating spurious
        absolute position reports when they send zero-movement mouse reports during
-       keyboard events . */
+       keyboard events. */
     if (values.move_x == 0 && values.move_y == 0 &&
         values.wheel == 0 && values.pan == 0 &&
         values.buttons == state->mouse_buttons) {
