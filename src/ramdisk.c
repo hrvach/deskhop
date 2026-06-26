@@ -59,11 +59,17 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
 
 /* Simple firmware write routine, we get 512-byte uf2 blocks with 256 byte payload */
 int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
+    const uint32_t MAX_BLOCK_NO = (STAGING_IMAGE_SIZE / FLASH_PAGE_SIZE) - 1;
     uf2_t *uf2 = (uf2_t *)&buffer[0];
-    bool is_final_block = uf2->blockNo == (STAGING_IMAGE_SIZE / FLASH_PAGE_SIZE) - 1;
+
+    bool is_final_block = (uf2->blockNo == MAX_BLOCK_NO);
     uint32_t flash_addr = (uint32_t)ADDR_FW_RUNNING + uf2->blockNo * FLASH_PAGE_SIZE - XIP_BASE;
 
     if (lba >= NUMBER_OF_BLOCKS)
+        return -1;
+
+    /* Enforce block number size */
+    if (uf2->blockNo > MAX_BLOCK_NO)
         return -1;
 
     /* If we're not detecting UF2 magic constants, we have nothing to do... */

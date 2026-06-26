@@ -54,7 +54,7 @@ int32_t get_report_value(uint8_t *report, int len, report_val_t *val) {
 void handle_consumer_control_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
     keyboard_t *keyboard = get_keyboard(iface, src->report_id);
 
-    if (src->offset > MAX_CC_BUTTONS) {
+    if (src->offset >= MAX_CC_BUTTONS) {
         return;
     }
 
@@ -70,7 +70,7 @@ void handle_consumer_control_values(report_val_t *src, report_val_t *dst, hid_in
 void handle_system_control_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
     keyboard_t *keyboard = get_keyboard(iface, src->report_id);
 
-    if (src->offset > MAX_SYS_BUTTONS) {
+    if (src->offset >= MAX_SYS_BUTTONS) {
         return;
     }
 
@@ -275,6 +275,9 @@ int32_t _extract_kbd_other(uint8_t *raw_report, int len, hid_interface_t *iface,
 
     if (iface->uses_report_id)
         src++;
+
+    if (kb->modifier.offset_idx >= len)
+        return -1;
 
     report->modifier = src[kb->modifier.offset_idx];
     for (int i=0, j=0; i < MAX_KEYS && j < KEYS_IN_USB_REPORT; i++) {

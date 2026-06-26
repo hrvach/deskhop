@@ -41,13 +41,12 @@ pin_went_low:
 .wrap
 
 pin_still_high:
-    mov x, isr [2] 
-    jmp x-- eop	     		    ; Jump to eop if jmp_pin and in_pin are high because both inputs are inverted
+    mov x, isr [1]
+    jmp x-- eop         ; Jump to eop if jmp_pin and in_pin are high because both inputs are inverted
 ; Jump to here on rising edge
 pin_went_high:
-    mov isr, null
-    in pins, 1                  ; Capture the pin to check eop.
-    irq DECODER_TRIGGER			; Trigger NRZI decoder
+    mov isr, null [1]
+    irq DECODER_TRIGGER            ; Trigger NRZI decoder
     jmp pin pin_still_high
     jmp pin_went_low            ; To adjust interval of decoder trigger, jump to pin_went_low (not pin_low)
 
@@ -75,15 +74,15 @@ pin_went_low:
 .wrap
 
 pin_still_high:
-    mov x, isr [2] 			side db1
-    jmp x-- eop	     		side db1     ; Jump to eop if jmp_pin and in_pin are high because both inputs are inverted
+    mov x, isr [1]              side db1
+    jmp x-- eop                 side db1     ; Jump to eop if jmp_pin and in_pin are high because both inputs are inverted
 ; Jump to here on rising edge
 pin_went_high:
-    mov isr, null			side db1
-    in pins, 1				side db0     ; Capture the pin to check eop.
-    irq DECODER_TRIGGER		side db0     ; Trigger NRZI decoder
-    jmp pin pin_still_high  side db0
-    jmp pin_went_low 		side db1     ; To adjust interval of decoder trigger, jump to pin_went_low (not pin_low)
+    mov isr, null [1]           side db1
+    in pins, 1                  side db0     ; Capture the pin to check eop.
+    irq DECODER_TRIGGER         side db0     ; Trigger NRZI decoder
+    jmp pin pin_still_high      side db0
+    jmp pin_went_low            side db1     ; To adjust interval of decoder trigger, jump to pin_went_low (not pin_low)
 
 ; USB NRZI data decoder
 ; 15 instruction
@@ -235,7 +234,7 @@ static inline void eop_detect_fs_program_init(PIO pio, uint sm, uint offset,
 
   sm_config_set_clkdiv(&c, div);
 
-  pio_sm_init(pio, sm, offset + 1, &c);
+  pio_sm_init(pio, sm, offset, &c);
   pio_sm_set_enabled(pio, sm, true);
 }
 

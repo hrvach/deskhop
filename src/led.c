@@ -20,12 +20,14 @@ void set_keyboard_leds(uint8_t requested_led_state, device_t *state) {
 
     new_led_value = requested_led_state;
     if (state->keyboard_connected) {
-        tuh_hid_set_report(state->kbd_dev_addr,
-                           state->kbd_instance,
-                           0,
-                           HID_REPORT_TYPE_OUTPUT,
-                           &new_led_value,
-                           sizeof(uint8_t));
+        if(tuh_hid_set_report(state->kbd_dev_addr,
+                              state->kbd_instance,
+                              0,
+                              HID_REPORT_TYPE_OUTPUT,
+                              &new_led_value,
+                              sizeof(uint8_t)))
+
+            state->keyboard_leds_actual[BOARD_ROLE] = requested_led_state;
     }
 }
 
@@ -36,7 +38,7 @@ void restore_leds(device_t *state) {
 
     /* Light up appropriate keyboard leds (if it's connected locally) */
     if (state->keyboard_connected) {
-        uint8_t leds = state->keyboard_leds[state->active_output];
+        uint8_t leds = state->keyboard_leds_desired[state->active_output];
         set_keyboard_leds(leds, state);
     }
 }
@@ -52,6 +54,16 @@ void blink_led(device_t *state) {
     /* Since LEDs might be ON previously, we go OFF, ON, OFF, ON, OFF */
     state->blinks_left     = 5;
     state->last_led_change = time_us_32();
+}
+
+void led_sync_task(device_t *state) {
+    /* Check if keyboard LEDs need to be updated */
+    if (state->keyboard_connected) {
+        uint8_t desired_leds = state->keyboard_leds_desired[state->active_output];
+
+        if (state->keyboard_leds_actual[BOARD_ROLE] != desired_leds)
+            set_keyboard_leds(desired_leds, state);
+    }
 }
 
 void led_blinking_task(device_t *state) {

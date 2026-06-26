@@ -26,6 +26,7 @@ void firmware_upgrade_task(device_t *);
 void heartbeat_output_task(device_t *);
 void kick_watchdog_task(device_t *);
 void led_blinking_task(device_t *);
+void led_sync_task(device_t *);
 void packet_receiver_task(device_t *);
 void process_hid_queue_task(device_t *);
 void process_kbd_queue_task(device_t *);

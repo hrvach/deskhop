@@ -360,6 +360,9 @@ void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 }
 
 void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
+    if (length <= SYSTEM_CONTROL_LENGTH)
+        return;
+
     uint16_t new_report = raw_report[1];
     uint8_t *report_ptr = (uint8_t *)&new_report;
     device_t *state = &global_state;

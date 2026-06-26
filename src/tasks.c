@@ -28,15 +28,15 @@ void task_scheduler(device_t *state, task_t *task) {
 void kick_watchdog_task(device_t *state) {
     /* Read the timer AFTER duplicating the core1 timestamp,
        so it doesn't get updated in the meantime. */
-    uint64_t core1_last_loop_pass = state->core1_last_loop_pass;
-    uint64_t current_time         = time_us_64();
+    uint32_t core1_last_loop_pass = state->core1_last_loop_pass;
+    uint32_t current_time         = time_us_32();
 
     /* If a reboot is requested, we'll stop updating watchdog */
     if (state->reboot_requested)
         return;
 
     /* If core1 stops updating the timestamp, we'll stop kicking the watchog and reboot */
-    if (current_time - core1_last_loop_pass < CORE1_HANG_TIMEOUT_US)
+    if ((uint32_t)(current_time - core1_last_loop_pass) < CORE1_HANG_TIMEOUT_US)
         watchdog_update();
 }
 
@@ -87,7 +87,7 @@ void screensaver_task(device_t *state) {
         5000,     /* PONG, move mouse every 5 ms for a high framerate */
         10000000, /* JITTER, once every 10 sec is more than enough */
     };
-    static int last_pointer_move = 0;
+    static uint32_t last_pointer_move = 0;
     screensaver_t *screensaver = &state->config.output[BOARD_ROLE].screensaver;
     uint64_t inactivity_period = time_us_64() - state->last_activity[BOARD_ROLE];
 

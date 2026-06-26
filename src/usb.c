@@ -76,7 +76,7 @@ void tud_hid_set_report_cb(uint8_t instance,
             leds |= KEYBOARD_LED_CAPSLOCK;
     }
 
-    global_state.keyboard_leds[BOARD_ROLE] = leds;
+    global_state.keyboard_leds_desired[BOARD_ROLE] = leds;
 
     /* If the board has a keyboard connected directly, restore those leds. */
     if (global_state.keyboard_connected && CURRENT_BOARD_IS_ACTIVE_OUTPUT)
@@ -271,7 +271,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 
 /* Set protocol in a callback. This is tied to an interface, not a specific report ID */
 void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol) {
-    if (dev_addr > MAX_DEVICES || idx > MAX_INTERFACES)
+    if (dev_addr > MAX_DEVICES || idx >= MAX_INTERFACES)
         return;
 
     hid_interface_t *iface = &global_state.iface[dev_addr-1][idx];

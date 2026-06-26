@@ -14,7 +14,7 @@
  *  Board Roles
  *==============================================================================*/
 
- #define BOARD_ROLE (global_state.board_role)
+#define BOARD_ROLE (global_state.board_role)
 #define OTHER_ROLE (BOARD_ROLE == OUTPUT_A ? OUTPUT_B : OUTPUT_A)
 
 /*==============================================================================

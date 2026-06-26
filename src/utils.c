@@ -79,7 +79,7 @@ void load_config(device_t *state) {
     memcpy(running_config, config, sizeof(config_t));
 
     /* Calculate and update checksum, size without checksum */
-    uint8_t checksum = calc_crc32((uint8_t *)running_config, sizeof(config_t) - sizeof(uint32_t));
+    uint32_t checksum = calc_crc32((uint8_t *)running_config, sizeof(config_t) - sizeof(uint32_t));
 
     /* We expect a certain byte to start the config header */
     bool magic_header_fail = (running_config->magic_header != 0xB00B1E5);
@@ -99,7 +99,7 @@ void save_config(device_t *state) {
     uint8_t *raw_config = (uint8_t *)&state->config;
 
     /* Calculate and update checksum, size without checksum */
-    uint8_t checksum       = calc_crc32(raw_config, sizeof(config_t) - sizeof(uint32_t));
+    uint32_t checksum       = calc_crc32(raw_config, sizeof(config_t) - sizeof(uint32_t));
     state->config.checksum = checksum;
 
     /* Copy the config to buffer and pad the rest with zeros */
