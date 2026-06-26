@@ -332,7 +332,7 @@ int32_t extract_kbd_data(
 
     /* If we're getting 8 bytes of report (optionally prefixed with a 1-byte report ID),
        it's safe to assume standard modifier + reserved + keys */
-    if (len == KBD_REPORT_LENGTH || len == KBD_REPORT_LENGTH + 1)
+    if (!iface->uses_report_id && len == KBD_REPORT_LENGTH || len == KBD_REPORT_LENGTH + 1)
         return _extract_kbd_boot(raw_report, len, report);
 
     /* This is something completely different, look at the report  */
