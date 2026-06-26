@@ -320,9 +320,15 @@ int32_t extract_kbd_data(
     if (iface->protocol == HID_PROTOCOL_BOOT)
         return _extract_kbd_boot(raw_report, len, report);
 
-    /* NKRO is a special case */
-    if (keyboard->is_nkro)
-        return _extract_kbd_nkro(raw_report, len, iface, report);
+    /* NKRO is a special case. If extraction fails (descriptor parsed as NKRO but the
+       actual report layout doesn't match — e.g. wireless dongles that advertise an NKRO
+       collection but transmit standard boot-style reports), fall through to other extractors. */
+    if (keyboard->is_nkro) {
+        int32_t ret = _extract_kbd_nkro(raw_report, len, iface, report);
+        if (ret >= 0)
+            return ret;
+        memset(report, 0, KBD_REPORT_LENGTH);
+    }
 
     /* If we're getting 8 bytes of report, it's safe to assume standard modifier + reserved + keys */
     if (!iface->uses_report_id && (len == KBD_REPORT_LENGTH || len == KBD_REPORT_LENGTH + 1))
