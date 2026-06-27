@@ -48,4 +48,9 @@ typedef struct {
     uint8_t pos;               // Screen position on this output
     uint8_t mouse_park_pos;    // Where the mouse goes after switch
     screensaver_t screensaver; // Screensaver parameters for this output
+    
+    // Gaming mode edge switching per output (except enabled flag which is global)
+    uint32_t gaming_edge_threshold;
+    uint32_t gaming_edge_window_ms;
+    uint32_t gaming_edge_max_vertical;  // M2aximum allowed vertical movement
 } output_t;

@@ -213,6 +213,7 @@ void initial_setup(device_t *state) {
 
     /* Search the persistent storage sector in flash for valid config or use defaults */
     load_config(state);
+    state->gaming_mode = state->config.gaming_mode_on_boot;
 
     /* Init and enable the on-board LED GPIO as output */
     gpio_init(GPIO_LED_PIN);

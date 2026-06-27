@@ -30,9 +30,14 @@ const field_map_t api_field_map[] = {
     { 19, false, UINT8,  1, offsetof(device_t, config.output[0].screensaver.mode) },
     { 20, false, UINT8,  1, offsetof(device_t, config.output[0].screensaver.only_if_inactive) },
 
-    /* Until we increase the payload size from 8 bytes, clamp to avoid exceeding the field size */
-    { 21, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.idle_time_us) },
-    { 22, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.max_time_us) },
+    /* Screensaver idle and max times (64-bit values) */
+    { 21, false, UINT64, 8, offsetof(device_t, config.output[0].screensaver.idle_time_us) },
+    { 22, false, UINT64, 8, offsetof(device_t, config.output[0].screensaver.max_time_us) },
+
+    /* Gaming edge settings for Output A */
+    { 23, false, UINT32, 4, offsetof(device_t, config.output[0].gaming_edge_threshold) },
+    { 24, false, UINT32, 4, offsetof(device_t, config.output[0].gaming_edge_window_ms) },
+    { 25, false, UINT32, 4, offsetof(device_t, config.output[0].gaming_edge_max_vertical) },
 
     /* Output B */
     { 40, false, UINT32, 4, offsetof(device_t, config.output[1].number) },
@@ -46,8 +51,14 @@ const field_map_t api_field_map[] = {
     { 48, false, UINT8,  1, offsetof(device_t, config.output[1].mouse_park_pos) },
     { 49, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.mode) },
     { 50, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.only_if_inactive) },
-    { 51, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.idle_time_us) },
-    { 52, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.max_time_us) },
+    /* Screensaver idle and max times (64-bit values) */
+    { 51, false, UINT64, 8, offsetof(device_t, config.output[1].screensaver.idle_time_us) },
+    { 52, false, UINT64, 8, offsetof(device_t, config.output[1].screensaver.max_time_us) },
+
+    /* Gaming edge settings for Output B */
+    { 53, false, UINT32, 4, offsetof(device_t, config.output[1].gaming_edge_threshold) },
+    { 54, false, UINT32, 4, offsetof(device_t, config.output[1].gaming_edge_window_ms) },
+    { 55, false, UINT32, 4, offsetof(device_t, config.output[1].gaming_edge_max_vertical) },
 
     /* Common config */
     { 70, false, UINT32, 4, offsetof(device_t, config.version) },
@@ -58,6 +69,8 @@ const field_map_t api_field_map[] = {
     { 75, false, UINT8,  1, offsetof(device_t, config.enable_acceleration) },
     { 76, false, UINT8,  1, offsetof(device_t, config.enforce_ports) },
     { 77, false, UINT16, 2, offsetof(device_t, config.jump_threshold) },
+    { 83, false, UINT8,  1, offsetof(device_t, config.gaming_mode_on_boot) },
+    { 84, false, UINT8,  1, offsetof(device_t, config.gaming_edge_enabled) },
 
     /* Firmware */
     { 78, true,  UINT16, 2, offsetof(device_t, _running_fw.version) },
