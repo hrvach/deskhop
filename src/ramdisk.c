@@ -68,10 +68,6 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
     if (lba >= NUMBER_OF_BLOCKS)
         return -1;
 
-    /* Enforce block number size */
-    if (uf2->blockNo > MAX_BLOCK_NO)
-        return -1;
-
     /* If we're not detecting UF2 magic constants, we have nothing to do... */
     if (uf2->magicStart0 != UF2_MAGIC_START0 || uf2->magicStart1 != UF2_MAGIC_START1 || uf2->magicEnd != UF2_MAGIC_END)
         return (int32_t)bufsize;
