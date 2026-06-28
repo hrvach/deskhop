@@ -110,6 +110,10 @@ typedef struct {
 
     bool is_found;
     bool uses_report_id;
+
+    /* High-resolution scroll detection from mouse HID descriptor */
+    bool has_resolution_multiplier;
+    uint8_t wheel_divider;
 } mouse_t;
 
 typedef struct hid_interface_t hid_interface_t;
