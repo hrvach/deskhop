@@ -7,7 +7,7 @@
 from jinja2 import Environment, FileSystemLoader
 from form import *
 import base64
-import zlib
+import gzip
 
 # Input and output
 TEMPLATE_PATH = "templates/"
@@ -28,8 +28,8 @@ def write_file(payload, filename=OUTPUT_FILENAME):
 
 
 def encode_file(payload):
-    # Compress using raw DEFLATE
-    compressed_data = zlib.compress(payload.encode('utf-8'))[2:-4]
+    # Compress using gzip (native browser DecompressionStream support)
+    compressed_data = gzip.compress(payload.encode('utf-8'), compresslevel=9)
 
     # Encode to base64
     base64_compressed_data = base64.b64encode(compressed_data).decode('utf-8')
