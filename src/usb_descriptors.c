@@ -69,13 +69,28 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
 
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan) {
     mouse_report_t report = {.buttons = buttons, .wheel = wheel, .x = x, .y = y, .mode = mode, .pan = pan};
-    uint8_t instance = ITF_NUM_HID;
-    uint8_t report_id = REPORT_ID_MOUSE;
 
-    if (mode == RELATIVE) {
-        instance = ITF_NUM_HID_REL_M;
-        report_id = REPORT_ID_RELMOUSE;
+    /* When using absolute positioning, send buttons/wheel/pan via the relative mouse interface.
+     * Some devices (e.g., iPad) only accept clicks from relative mice. */
+    if (mode == ABSOLUTE) {
+        mouse_report_t rel_report = {
+            .buttons = buttons,
+            .wheel   = wheel,
+            .pan     = pan,
+            .x       = 0,
+            .y       = 0,
+            .mode    = RELATIVE,
+        };
+        tud_hid_n_report(ITF_NUM_HID_REL_M, REPORT_ID_RELMOUSE, &rel_report, sizeof(rel_report));
+
+        /* Clear these from absolute report since we sent them via relative */
+        report.buttons = 0;
+        report.wheel   = 0;
+        report.pan     = 0;
     }
+
+    uint8_t instance  = (mode == RELATIVE) ? ITF_NUM_HID_REL_M : ITF_NUM_HID;
+    uint8_t report_id = (mode == RELATIVE) ? REPORT_ID_RELMOUSE : REPORT_ID_MOUSE;
 
     return tud_hid_n_report(instance, report_id, &report, sizeof(report));
 }
