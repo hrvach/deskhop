@@ -108,6 +108,23 @@ void screensaver_task(device_t *state) {
     if (screensaver->only_if_inactive && CURRENT_BOARD_IS_ACTIVE_OUTPUT)
         return;
 
+    /*
+     * If a system timeout is enabled, determine the last activity from any output
+     * and return if the idle time is exceeded
+     */
+    if ( (screensaver->enable_system_timeout   == 1) &&
+         (screensaver->max_system_idle_time_us != 0) )
+    {
+        /* Determine the length of time all devices/screens have been inactive */
+        uint64_t combined_last_activity = state->last_activity[OUTPUT_A] > state->last_activity[OUTPUT_B] ?
+            state->last_activity[OUTPUT_A] : state->last_activity[OUTPUT_B];
+        uint64_t combined_inactivity_period = time_us_64() - combined_last_activity;
+
+        /* We exceeded the maximum permitted inactivity to play screensaver */
+        if ( combined_inactivity_period > screensaver->max_system_idle_time_us )
+            return;
+    }
+
     /* We're active! Now check if it's time to move the cursor yet. */
     if (time_us_32() - last_pointer_move < delays[screensaver->mode])
         return;

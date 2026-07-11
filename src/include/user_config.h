@@ -151,6 +151,28 @@
 
 /**================================================== *
  *
+ * SCREENSAVER_{A|B}_ENABLE_SYSTEM_TIMEOUT: If true, the screensaver will
+ * stop if there is not activity on any of the outputs exceeding the
+ * idle time defined below.
+ *
+ * */
+
+#define SCREENSAVER_A_ENABLE_SYSTEM_TIMEOUT 1
+#define SCREENSAVER_B_ENABLE_SYSTEM_TIMEOUT 1
+
+/**================================================== *
+ *
+ * SCREENSAVER_{A|B}_MAX_SYSTEM_IDLE_TIME_SEC: Number of seconds that the
+ * screensaver will run on an output without any activity on any screen
+ * before being deactivated. 0 for indefinitely.
+ *
+ * */
+
+#define SCREENSAVER_A_MAX_SYSTEM_IDLE_TIME_SEC 300
+#define SCREENSAVER_B_MAX_SYSTEM_IDLE_TIME_SEC 300
+
+/**================================================== *
+ *
  * SCREENSAVER_{A|B}_ONLY_IF_INACTIVE: [0 or 1] 1 means the
  * screensaver will activate only if the output is inactive.
  *

@@ -32,7 +32,9 @@ const field_map_t api_field_map[] = {
 
     /* Until we increase the payload size from 8 bytes, clamp to avoid exceeding the field size */
     { 21, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.idle_time_us) },
-    { 22, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.max_time_us) },
+    { 22, false, UINT8,  1, offsetof(device_t, config.output[0].screensaver.enable_system_timeout) },
+    { 23, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.max_system_idle_time_us) },
+    { 24, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.max_time_us) },
 
     /* Output B */
     { 40, false, UINT32, 4, offsetof(device_t, config.output[1].number) },
@@ -47,7 +49,9 @@ const field_map_t api_field_map[] = {
     { 49, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.mode) },
     { 50, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.only_if_inactive) },
     { 51, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.idle_time_us) },
-    { 52, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.max_time_us) },
+    { 52, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.enable_system_timeout) },
+    { 53, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.max_system_idle_time_us) },
+    { 54, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.max_time_us) },
 
     /* Common config */
     { 70, false, UINT32, 4, offsetof(device_t, config.version) },
