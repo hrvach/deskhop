@@ -18,7 +18,7 @@
  *  Data Extraction
  *==============================================================================*/
 
-int32_t    extract_bit_variable(report_val_t *, uint8_t *, int, uint8_t *);
+int32_t    extract_bit_variable(nkro_block_t *, uint8_t *, int, uint8_t *, int);
 int32_t    extract_kbd_data(uint8_t *, int, uint8_t, hid_interface_t *, hid_keyboard_report_t *);
 keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id);
 

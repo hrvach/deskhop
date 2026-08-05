@@ -108,10 +108,18 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
         keyboard->key_array[src->offset_idx] = (src->data_type == ARRAY);
     }
 
-    /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped. */
-    if (src->size > 32 && src->data_type == VARIABLE) {
+    /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped.
+       The bitmap may be split across several usage ranges (Wooting keyboards use three,
+       with padding in between to keep each one byte-aligned), so collect every block
+       instead of keeping only the last one we saw. */
+    if (src->size > 32 && src->data_type == VARIABLE && keyboard->nkro_count < MAX_NKRO_BLOCKS) {
         keyboard->is_nkro = true;
-        keyboard->nkro    = *src;
+        keyboard->nkro[keyboard->nkro_count++] = (nkro_block_t){
+            .offset    = src->offset,
+            .size      = src->size,
+            .usage_min = src->usage_min,
+            .usage_max = src->usage_max,
+        };
     }
 
     /* We found a keyboard on this interface for a specific report id. */
@@ -248,13 +256,19 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
     }
 }
 
-int32_t extract_bit_variable(report_val_t *kbd, uint8_t *raw_report, int len, uint8_t *dst) {
+/* Walk one NKRO bitmap block, appending every pressed usage to dst. raw_report points at the
+   start of the report payload (report ID already skipped) and len is that payload's length. */
+int32_t extract_bit_variable(nkro_block_t *block, uint8_t *raw_report, int len, uint8_t *dst, int max_keys) {
     int key_count = 0;
-    int bit_offset = kbd->offset & 0b111;
 
-    for (int i = kbd->usage_min, j = bit_offset; i <= kbd->usage_max && key_count < len; i++, j++) {
+    for (int i = block->usage_min, j = block->offset; i <= block->usage_max && key_count < max_keys;
+         i++, j++) {
         int byte_index = j >> 3;
         int bit_index  = j & 0b111;
+
+        /* Report is shorter than the descriptor claims, don't read past the end of it */
+        if (byte_index >= len)
+            break;
 
         if (raw_report[byte_index] & (1 << bit_index)) {
             dst[key_count++] = i;
@@ -297,25 +311,37 @@ int32_t _extract_kbd_other(uint8_t *raw_report, int len, hid_interface_t *iface,
 int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, hid_keyboard_report_t *report) {
     keyboard_t *kb = get_keyboard(iface, raw_report[0]);
     uint8_t *ptr = raw_report;
+    int key_count = 0;
 
     /* Skip report ID */
-    if (iface->uses_report_id)
+    if (iface->uses_report_id) {
         ptr++;
+        len--;
+    }
 
-    /* We expect array of bits mapping 1:1 from usage_min to usage_max, otherwise panic */
-    if ((kb->nkro.usage_max - kb->nkro.usage_min + 1) != kb->nkro.size)
+    if (kb->nkro_count == 0)
         return -1;
+
+    /* We expect every block to be an array of bits mapping 1:1 from usage_min to
+       usage_max, otherwise panic */
+    for (int i = 0; i < kb->nkro_count; i++) {
+        if ((kb->nkro[i].usage_max - kb->nkro[i].usage_min + 1) != kb->nkro[i].size)
+            return -1;
+    }
 
     /* We expect modifier to be 8 bits long, otherwise we'll fallback to boot mode */
-    if (kb->modifier.size == MODIFIER_BIT_LENGTH) {
-        report->modifier = ptr[kb->modifier.offset_idx];
-    } else
+    if (kb->modifier.size != MODIFIER_BIT_LENGTH || kb->modifier.offset_idx >= len)
         return -1;
 
-    /* Move the pointer to the nkro offset's byte index */
-    ptr = &ptr[kb->nkro.offset_idx];
+    report->modifier = ptr[kb->modifier.offset_idx];
 
-    return extract_bit_variable(&kb->nkro, ptr, KEYS_IN_USB_REPORT, report->keycode);
+    /* Collect keys from every bitmap block until the outgoing 6KRO report is full */
+    for (int i = 0; i < kb->nkro_count && key_count < KEYS_IN_USB_REPORT; i++) {
+        key_count += extract_bit_variable(
+            &kb->nkro[i], ptr, len, &report->keycode[key_count], KEYS_IN_USB_REPORT - key_count);
+    }
+
+    return key_count;
 }
 
 int32_t extract_kbd_data(

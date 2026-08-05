@@ -23,6 +23,7 @@
 #define MAX_DEVICES                 4
 #define MAX_INTERFACES              12  // Per device; allows for complex devices like QMK
 #define MAX_KEYS                    32
+#define MAX_NKRO_BLOCKS             4
 #define MAX_REPORTS_PER_IFACE       24
 #define REPORT_ID_MAP_SIZE         256
 #define MAX_KEYBOARDS               5
@@ -124,16 +125,27 @@ typedef enum {
     REPORT_RECEIVER_SYSTEM,
 } receiver_id_t;
 
+/* One contiguous run of NKRO bitmap bits. Keyboards often split the bitmap into several
+   usage ranges with padding in between (to keep sections byte-aligned), so a single
+   offset/usage_min/usage_max triplet can't describe the whole thing. */
+typedef struct TU_ATTR_PACKED {
+    uint16_t offset;    // In bits, from the start of the report (report ID excluded)
+    uint16_t size;      // In bits
+    uint16_t usage_min;
+    uint16_t usage_max;
+} nkro_block_t;
+
 /* Defines information about HID report format for the keyboard. */
 typedef struct {
     report_val_t modifier;
-    report_val_t nkro;
+    nkro_block_t nkro[MAX_NKRO_BLOCKS];
     uint16_t cc_array[MAX_CC_BUTTONS];
     uint16_t sys_array[MAX_SYS_BUTTONS];
     bool key_array[MAX_KEYS];
 
     uint8_t report_id;
     uint8_t key_array_idx;
+    uint8_t nkro_count;
 
     bool uses_report_id;
     bool is_found;
