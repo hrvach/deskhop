@@ -109,10 +109,25 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
     }
 
     /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped.
-       The bitmap may be split across several usage ranges (Wooting keyboards use three,
+       The bitmap may be split across several usage ranges (Wooting keyboards use four,
        with padding in between to keep each one byte-aligned), so collect every block
-       instead of keeping only the last one we saw. */
-    if (src->size > 32 && src->data_type == VARIABLE && keyboard->nkro_count < MAX_NKRO_BLOCKS) {
+       instead of keeping only the last one we saw.
+
+       Recognise a block by its usage range mapping one usage per bit, which is what the
+       extraction below requires of it anyway. A size threshold is not good enough: one
+       of the Wooting ranges is only 8 bits wide, so a threshold drops it silently and
+       takes those keys with it. The modifier is the one small range that also maps one
+       usage per bit, and it is handled above, so leave it out here. Requiring a
+       non-empty range keeps out items that never carried a Usage Minimum/Maximum, where
+       both ends are still zero. */
+    bool maps_usage_per_bit = src->usage_max > src->usage_min
+                              && (src->usage_max - src->usage_min + 1) == (int32_t)src->size;
+
+    bool is_modifier = src->size <= MODIFIER_BIT_LENGTH && LEFT_CTRL >= src->usage_min
+                       && LEFT_CTRL <= src->usage_max;
+
+    if (maps_usage_per_bit && !is_modifier && src->data_type == VARIABLE
+        && keyboard->nkro_count < MAX_NKRO_BLOCKS) {
         keyboard->is_nkro = true;
         keyboard->nkro[keyboard->nkro_count++] = (nkro_block_t){
             .offset    = src->offset,
