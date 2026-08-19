@@ -111,15 +111,32 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
     /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped.
        The bitmap may be split across several usage ranges (Wooting keyboards use four,
        with padding in between to keep each one byte-aligned), so collect every block
-       instead of keeping only the last one we saw.
+       instead of keeping only the last one we saw. MAX_NKRO_BLOCKS is 4 and the Wooting
+       declares exactly 4, so there is no headroom: a keyboard splitting its bitmap five
+       ways still loses the last section, silently.
 
-       Recognise a block by its usage range mapping one usage per bit, which is what the
-       extraction below requires of it anyway. A size threshold is not good enough: one
-       of the Wooting ranges is only 8 bits wide, so a threshold drops it silently and
-       takes those keys with it. The modifier is the one small range that also maps one
-       usage per bit, and it is handled above, so leave it out here. Requiring a
-       non-empty range keeps out items that never carried a Usage Minimum/Maximum, where
-       both ends are still zero. */
+       A block is a run of keyboard usages laid out one per bit, which is what the
+       extraction below needs of it. The modifier is the one small run that also maps one
+       usage per bit, and it is handled above, so leave it out here. Requiring a non-empty
+       range keeps out items that never carried a Usage Minimum/Maximum, where both ends
+       are still zero.
+
+       The one-per-bit test is deliberately exact. Relaxing it to >= would admit the
+       Keychron Ultra-Link (19 00 2A 98 00 with 95 98: 153 usages over 152 bits), whose
+       bitmap is dropped here today - but that keyboard puts a 6KRO collection on report
+       ID 7 and its NKRO one on 0x11, and get_keyboard() collapses both onto a single
+       keyboard_t, because it answers with keyboards[PRIMARY_KEYBOARD] whenever
+       num_keyboards is 1 and num_keyboards can never reach 2 (is_found is only ever set
+       on slot 0). Recording the bitmap therefore sets is_nkro on the entry that also
+       carries report 7's key array, and every 6KRO report on that interface decodes as
+       bitmap bits instead - trading a keyboard that half works for one that does not.
+       Fix the collapse first; relaxing this without it is a regression.
+
+       Whether this keyboard *is* NKRO is then decided on the total width rather than per
+       block. Deciding per block would flag any keyboard carrying a stray keyboard-page
+       bit field - which routes it through _extract_kbd_nkro and leaves its ordinary key
+       array unread - while a per-block threshold big enough to avoid that would drop the
+       8-bit Wooting range and the keys in it. The sum separates the two cleanly. */
     bool maps_usage_per_bit = src->usage_max > src->usage_min
                               && (src->usage_max - src->usage_min + 1) == (int32_t)src->size;
 
@@ -128,13 +145,14 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
 
     if (maps_usage_per_bit && !is_modifier && src->data_type == VARIABLE
         && keyboard->nkro_count < MAX_NKRO_BLOCKS) {
-        keyboard->is_nkro = true;
         keyboard->nkro[keyboard->nkro_count++] = (nkro_block_t){
             .offset    = src->offset,
             .size      = src->size,
             .usage_min = src->usage_min,
             .usage_max = src->usage_max,
         };
+        keyboard->nkro_bits += src->size;
+        keyboard->is_nkro = (keyboard->nkro_bits > NKRO_MIN_BITS);
     }
 
     /* We found a keyboard on this interface for a specific report id. */
@@ -272,12 +290,16 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
 }
 
 /* Walk one NKRO bitmap block, appending every pressed usage to dst. raw_report points at the
-   start of the report payload (report ID already skipped) and len is that payload's length. */
+   start of the report payload (report ID already skipped) and len is that payload's length.
+
+   Bounded by the block's bit count rather than by usage_max: a range declaring more usages
+   than the block has bits for is accepted at parse time, and the surplus has nowhere to
+   live. */
 int32_t extract_bit_variable(nkro_block_t *block, uint8_t *raw_report, int len, uint8_t *dst, int max_keys) {
     int key_count = 0;
 
-    for (int i = block->usage_min, j = block->offset; i <= block->usage_max && key_count < max_keys;
-         i++, j++) {
+    for (int bit = 0; bit < block->size && key_count < max_keys; bit++) {
+        int j          = block->offset + bit;
         int byte_index = j >> 3;
         int bit_index  = j & 0b111;
 
@@ -286,7 +308,7 @@ int32_t extract_bit_variable(nkro_block_t *block, uint8_t *raw_report, int len, 
             break;
 
         if (raw_report[byte_index] & (1 << bit_index)) {
-            dst[key_count++] = i;
+            dst[key_count++] = (uint8_t)(block->usage_min + bit);
         }
     }
 
@@ -337,12 +359,8 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
     if (kb->nkro_count == 0)
         return -1;
 
-    /* We expect every block to be an array of bits mapping 1:1 from usage_min to
-       usage_max, otherwise panic */
-    for (int i = 0; i < kb->nkro_count; i++) {
-        if ((kb->nkro[i].usage_max - kb->nkro[i].usage_min + 1) != kb->nkro[i].size)
-            return -1;
-    }
+    /* No 1:1 recheck here. handle_keyboard_descriptor_values applies exactly this test
+       before a block is ever recorded, so repeating it can only ever agree. */
 
     /* We expect modifier to be 8 bits long, otherwise we'll fallback to boot mode */
     if (kb->modifier.size != MODIFIER_BIT_LENGTH || kb->modifier.offset_idx >= len)

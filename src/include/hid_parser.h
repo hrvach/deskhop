@@ -24,6 +24,11 @@
 #define MAX_INTERFACES              12  // Per device; allows for complex devices like QMK
 #define MAX_KEYS                    32
 #define MAX_NKRO_BLOCKS             4
+/* Total bitmap width, across every block, below which a keyboard is not treated as
+   NKRO. Restates the threshold the single-block code used, but applied to the sum:
+   one narrow block is padding or a stray bit field, several adding up to this are a
+   real key bitmap. */
+#define NKRO_MIN_BITS               32
 #define MAX_REPORTS_PER_IFACE       24
 #define REPORT_ID_MAP_SIZE         256
 #define MAX_KEYBOARDS               5
@@ -146,6 +151,7 @@ typedef struct {
     uint8_t report_id;
     uint8_t key_array_idx;
     uint8_t nkro_count;
+    uint16_t nkro_bits;   // Sum of nkro[].size, what is_nkro is decided on
 
     bool uses_report_id;
     bool is_found;
