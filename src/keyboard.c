@@ -383,18 +383,54 @@ void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_int
     }
 }
 
+/* Which keyboard on this interface owns this report ID? Lookup only: an ID we have
+   never seen falls back to the primary keyboard rather than claiming a slot, because
+   this also runs at decode time, where a stray or corrupted leading byte must not
+   consume one. Parse time wants the opposite and calls get_or_add_keyboard below.
+
+   The old version short-circuited on `num_keyboards == 1` before it looked at the
+   report ID at all. Since num_keyboards reaches 1 on the first collection and the
+   allocation path was never reached, it could never exceed 1 on an interface using
+   report IDs, so every later collection was handed keyboards[0] and wrote over the
+   first one. MAX_KEYBOARDS was unreachable. */
 keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id) {
-    /* When we have just one keyboard (most cases), or don't use report ID */
-    if (iface->num_keyboards == 1 || !iface->uses_report_id)
+    /* No report IDs on this interface, so there is only ever one keyboard. */
+    if (!iface->uses_report_id)
         return &iface->keyboards[PRIMARY_KEYBOARD];
 
-    /* Go through known keyboards and match on report ID, return pointer to keyboard_t */
     for (int i = 0; i < iface->num_keyboards && i < MAX_KEYBOARDS; i++) {
-        if (iface->keyboards[i].report_id == report_id) {
+        if (iface->keyboards[i].report_id == report_id)
             return &iface->keyboards[i];
-        }
     }
 
     /* If nothing else is matched, return the primary keyboard. */
     return &iface->keyboards[PRIMARY_KEYBOARD];
+}
+
+/* Parse-time counterpart: the same lookup, but an unseen report ID claims the next
+   free slot. Keyboards are registered here rather than by the caller, so that the
+   slot a collection is given while the descriptor is read is the same slot
+   get_keyboard() hands back when its reports arrive.
+
+   Runs out of slots by returning the primary keyboard, which is what the code did
+   for every collection before, so a keyboard declaring more than MAX_KEYBOARDS
+   collections degrades to the old behaviour rather than to something new. */
+keyboard_t *get_or_add_keyboard(hid_interface_t *iface, uint8_t report_id) {
+    if (!iface->uses_report_id)
+        return &iface->keyboards[PRIMARY_KEYBOARD];
+
+    for (int i = 0; i < iface->num_keyboards && i < MAX_KEYBOARDS; i++) {
+        if (iface->keyboards[i].report_id == report_id)
+            return &iface->keyboards[i];
+    }
+
+    if (iface->num_keyboards >= MAX_KEYBOARDS)
+        return &iface->keyboards[PRIMARY_KEYBOARD];
+
+    keyboard_t *kb = &iface->keyboards[iface->num_keyboards];
+
+    kb->report_id      = report_id;
+    kb->uses_report_id = true;
+
+    return kb;
 }
