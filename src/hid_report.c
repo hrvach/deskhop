@@ -112,17 +112,25 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
 
     /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped. The bitmap
        may be split across several usage ranges (Wooting keyboards use four, with padding
-       between them), so record every block that maps one usage per bit. The modifier is
-       the one small run that also does, and it is handled above. Whether the keyboard is
-       NKRO is decided on the total width: one narrow block is a stray bit field, several
-       adding up to NKRO_MIN_BITS are a key bitmap. */
-    bool maps_usage_per_bit = src->usage_max > src->usage_min
-                              && (src->usage_max - src->usage_min + 1) == (int32_t)src->size;
+       between them), so record every block that is a key bitmap: one usage per bit
+       exactly, or at least NKRO_MIN_BITS wide with a usage range that covers it, which is
+       how the Keychron Ultra-Link, declaring one usage too many, keeps its bitmap. The
+       modifier is the one small run that also maps one usage per bit, and it is handled
+       above. Whether the keyboard is NKRO is decided on the total width: one narrow block
+       is a stray bit field, several adding up to NKRO_MIN_BITS are a key bitmap. */
+    bool has_usage_range = src->usage_max > src->usage_min;
+    int32_t usage_span   = has_usage_range ? src->usage_max - src->usage_min + 1 : 0;
+
+    /* Keep the subtraction behind the ordering guard rather than hoisting it: evaluated
+       unconditionally it is a signed overflow a hostile 4-byte Usage Minimum can reach. */
+    bool covers_every_bit = has_usage_range && usage_span >= (int32_t)src->size;
+    bool is_key_bitmap    = covers_every_bit && (usage_span == (int32_t)src->size
+                                                 || src->size >= NKRO_MIN_BITS);
 
     bool is_modifier = src->size <= MODIFIER_BIT_LENGTH && LEFT_CTRL >= src->usage_min
                        && LEFT_CTRL <= src->usage_max;
 
-    if (maps_usage_per_bit && !is_modifier && src->data_type == VARIABLE
+    if (is_key_bitmap && !is_modifier && src->data_type == VARIABLE
         && keyboard->nkro_count < MAX_NKRO_BLOCKS) {
         keyboard->nkro[keyboard->nkro_count++] = (nkro_block_t){
             .offset    = src->offset,
