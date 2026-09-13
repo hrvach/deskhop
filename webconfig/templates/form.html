@@ -3,7 +3,7 @@
 {% set key = item.key %}
 
 {% macro input(item, type='text', class='api', name='name') %}
-<input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}"
+<input class="{{ class }}" type="{{ type }}" name="{{ name }}{{ key }}" data-type="{{ item.type }}" data-key="{{ key }}"{% if item.scale != 1 %} data-scale="{{ item.scale }}"{% endif %}
   onchange="valueChangedHandler(this)"
 {% endmacro %}
 

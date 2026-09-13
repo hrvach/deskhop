@@ -43,6 +43,13 @@ function makeReport(type, payload, proxy=false) {
   return report;
 }
 
+/* How many of the units the device stores go into one of the units the form shows, so
+   a field can be presented in something a person thinks in and still be sent as what the
+   firmware expects. Set from form.py; 1 for everything that needs no conversion. */
+function scaleOf(element) {
+  return Number(element.getAttribute('data-scale')) || 1;
+}
+
 function packValue(element, key, dataType, buffer) {
   const dataOffset = 1;
   var buffer = new ArrayBuffer(8);
@@ -63,7 +70,7 @@ function packValue(element, key, dataType, buffer) {
     if (element.type === 'checkbox')
       view.setUint8(dataOffset, element.checked ? 1 : 0, true);
     else
-      method.call(view, dataOffset, element.value, true);
+      method.call(view, dataOffset, element.value * scaleOf(element), true);
   }
 
   view.setUint8(0, key);
@@ -144,7 +151,7 @@ function updateElement(key, event) {
   dataType = element.getAttribute('data-type');
 
   if (dataType in methods) {
-    var value = methods[dataType].call(event.data, dataOffset, true);
+    var value = methods[dataType].call(event.data, dataOffset, true) / scaleOf(element);
     setValue(element, value);
 
     if (element.hasAttribute('data-hex'))
