@@ -200,6 +200,26 @@ void switch_to_another_pc(
     set_active_output(state, output_to);
     state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
     state->pointer_y = scale_y_coordinate(output->number, 1 - output->number, state);
+
+    /* Tell the other board where the cursor actually ended up. There is only one
+       cursor but each board tracks it separately, and a pointing device may well be
+       attached to the other board (e.g. a keyboard with an integrated trackball).
+       This also overwrites the parking coordinates the hidden_pointer report above
+       just left there, which would otherwise be picked up as a real cursor position. */
+    sync_pointer_position(state);
+}
+
+/* Send our current cursor position to the other board so both agree where it is */
+void sync_pointer_position(device_t *state) {
+    uart_packet_t packet = {
+        .type = POINTER_SYNC_MSG,
+        .data16 = {
+            [0] = (uint16_t)state->pointer_x,
+            [1] = (uint16_t)state->pointer_y,
+        },
+    };
+
+    queue_try_add(&state->uart_tx_queue, &packet);
 }
 
 void switch_virtual_desktop_macos(device_t *state, int direction) {
@@ -370,6 +390,16 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
 
     /* Move the mouse, depending where the output is supposed to go */
     output_mouse_report(&report, state);
+
+    /* There is one cursor, but each board tracks its position separately. When we are
+       not the active output, output_mouse_report already forwarded the full report and
+       the other board adopts our position from it. When we ARE the active output the
+       report stays local, so the other board would keep a stale position and any
+       pointing device attached to it (e.g. a keyboard with an integrated trackball)
+       would make the cursor jump back to wherever that board last thought it was.
+       Publish our position so both boards stay in agreement. */
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT)
+        sync_pointer_position(state);
 
     /* We use the mouse to switch outputs, if switch_direction is LEFT or RIGHT */
     if (switch_direction != NONE)
