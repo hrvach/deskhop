@@ -118,14 +118,10 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
        modifier is the one small run that also maps one usage per bit, and it is handled
        above. Whether the keyboard is NKRO is decided on the total width: one narrow block
        is a stray bit field, several adding up to NKRO_MIN_BITS are a key bitmap. */
-    bool has_usage_range = src->usage_max > src->usage_min;
-    int32_t usage_span   = has_usage_range ? src->usage_max - src->usage_min + 1 : 0;
-
-    /* Keep the subtraction behind the ordering guard rather than hoisting it: evaluated
-       unconditionally it is a signed overflow a hostile 4-byte Usage Minimum can reach. */
-    bool covers_every_bit = has_usage_range && usage_span >= (int32_t)src->size;
-    bool is_key_bitmap    = covers_every_bit && (usage_span == (int32_t)src->size
-                                                 || src->size >= NKRO_MIN_BITS);
+    /* 64-bit, so a hostile 4-byte usage range cannot overflow the span. */
+    int64_t span       = (int64_t)src->usage_max - src->usage_min + 1;
+    bool is_key_bitmap = src->usage_max > src->usage_min && span >= src->size
+                         && (span == src->size || src->size >= NKRO_MIN_BITS);
 
     bool is_modifier = src->size <= MODIFIER_BIT_LENGTH && LEFT_CTRL >= src->usage_min
                        && LEFT_CTRL <= src->usage_max;
