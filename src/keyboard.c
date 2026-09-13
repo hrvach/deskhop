@@ -235,8 +235,15 @@ void process_kbd_queue_task(device_t *state) {
     if (!tud_hid_n_ready(ITF_NUM_HID))
         return;
 
-    /* ... try sending it to the host, if it's successful */
-    bool succeeded = tud_hid_keyboard_report(REPORT_ID_KEYBOARD, report.modifier, report.keycode);
+    /* ... try sending it to the host, if it's successful.
+       In boot protocol (UEFI/BIOS/BitLocker) the host expects the fixed 8-byte
+       boot keyboard report with NO report ID, so send the raw report struct
+       (modifier, reserved, 6 keycodes). Otherwise use the normal report-ID path. */
+    bool succeeded;
+    if (tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT)
+        succeeded = tud_hid_n_report(ITF_NUM_HID, 0, &report, sizeof(report));
+    else
+        succeeded = tud_hid_keyboard_report(REPORT_ID_KEYBOARD, report.modifier, report.keycode);
 
     /* ... then we can remove it from the queue. Race conditions shouldn't happen [tm] */
     if (succeeded)
