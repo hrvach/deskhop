@@ -159,10 +159,16 @@ void heartbeat_output_task(device_t *state) {
         reset_usb_boot(1 << PICO_DEFAULT_LED_PIN, 0);
 #endif
 
+    /* Worked out again rather than read out of state->local_mouse_buttons, because that
+       copy is only refreshed when a mouse report arrives and an interface can also just go
+       away (tuh_hid_umount_cb). Sent whether it changed or not: MOUSE_BUTTONS_MSG carries
+       the edge, and this is the level that repairs a dropped one or a board that came back
+       up since. */
     uart_packet_t packet = {
         .type = HEARTBEAT_MSG,
         .data16 = {
             [0] = state->_running_fw.version,
+            [1] = refresh_local_mouse_buttons(state),
             [2] = state->active_output,
         },
     };
