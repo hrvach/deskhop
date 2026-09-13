@@ -186,6 +186,15 @@ int16_t scale_y_coordinate(int screen_from, int screen_to, device_t *state) {
     return ((state->pointer_y - from->border.top) * MAX_SCREEN_COORD) / size_from;
 }
 
+/* Clear any pending edge double-tap arming. Called whenever the active screen
+   changes so a tap registered at one screen's edge can never carry over and
+   complete a switch at a different screen or edge. */
+static void reset_edge_tap(device_t *state) {
+    state->edge_in_contact         = false;
+    state->last_edge_tap_time      = 0;
+    state->last_edge_tap_direction = NONE;
+}
+
 void switch_to_another_pc(
     device_t *state, output_t *output, int output_to, int direction) {
     uint8_t *mouse_park_pos = &state->config.output[state->active_output].mouse_park_pos;
@@ -200,6 +209,9 @@ void switch_to_another_pc(
     set_active_output(state, output_to);
     state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
     state->pointer_y = scale_y_coordinate(output->number, 1 - output->number, state);
+
+    /* New screen -> forget any half-completed double-tap. */
+    reset_edge_tap(state);
 }
 
 void switch_virtual_desktop_macos(device_t *state, int direction) {
@@ -255,6 +267,47 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
 
     state->pointer_x       = (direction == RIGHT) ? MIN_SCREEN_COORD : MAX_SCREEN_COORD;
     output->screen_index = new_index;
+
+    /* New screen -> forget any half-completed double-tap so a tap armed at the
+       output border can't complete after crossing between virtual desktops. */
+    reset_edge_tap(state);
+}
+
+/* Returns true if an actual-output switch is allowed to proceed right now.
+
+   When the "double tap" feature is enabled, the first time the cursor presses
+   against the edge only "arms" the switch - the user has to pull away from the
+   edge and press against it again (in the same direction) within the configured
+   time window for the switch to actually happen. This only gates switches
+   between physical outputs; virtual desktop switching never calls this. */
+static bool edge_double_tap_ready(device_t *state, int direction) {
+    /* Feature disabled -> always allow immediately (classic behavior). */
+    if (!state->config.switch_double_tap_enable)
+        return true;
+
+    /* Still pressed against the edge from an earlier report; a fresh tap only
+       counts once the cursor has been pulled away from the edge again. */
+    if (state->edge_in_contact)
+        return false;
+
+    /* We just (re)made contact with the edge - remember it so that continuously
+       pushing against the edge is treated as a single tap, not many. */
+    state->edge_in_contact = true;
+
+    uint64_t now       = time_us_64();
+    uint64_t window_us = (uint64_t)state->config.switch_double_tap_ms * 1000;
+
+    /* Second tap in the same direction within the time window -> switch now. */
+    if (state->last_edge_tap_direction == direction && (now - state->last_edge_tap_time) <= window_us) {
+        state->last_edge_tap_time      = 0;
+        state->last_edge_tap_direction = NONE;
+        return true;
+    }
+
+    /* Otherwise this is the first tap: record it and wait for the second one. */
+    state->last_edge_tap_time      = now;
+    state->last_edge_tap_direction = direction;
+    return false;
 }
 
 /*                               BORDER
@@ -277,6 +330,10 @@ void do_screen_switch(device_t *state, int direction) {
         if (output->screen_index == 1) { /* We are at the border -> switch outputs */
             /* No switching allowed if mouse button is held. Should only apply to the border! */
             if (state->mouse_buttons)
+                return;
+
+            /* Optionally require a "double tap" against the edge before switching. */
+            if (!edge_double_tap_ready(state, direction))
                 return;
 
             switch_to_another_pc(state, output, 1 - state->active_output, direction);
@@ -370,6 +427,16 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
 
     /* Move the mouse, depending where the output is supposed to go */
     output_mouse_report(&report, state);
+
+    /* Release the edge only once the cursor has actually been pulled back onto
+       the screen by at least the configured margin. While it stays pinned
+       against the edge (even with vertical jitter) it remains "in contact", so
+       continuously leaning on the edge is treated as a single tap and won't
+       switch on its own. */
+    int16_t margin = state->config.switch_double_tap_margin;
+    if (state->pointer_x > MIN_SCREEN_COORD + margin &&
+        state->pointer_x < MAX_SCREEN_COORD - margin)
+        state->edge_in_contact = false;
 
     /* We use the mouse to switch outputs, if switch_direction is LEFT or RIGHT */
     if (switch_direction != NONE)

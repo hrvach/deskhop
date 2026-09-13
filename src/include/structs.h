@@ -79,6 +79,12 @@ typedef struct {
     uint8_t enforce_ports;
     uint16_t jump_threshold;
 
+    /* Require a "double tap" against the screen edge before switching actual
+       outputs (does not affect virtual desktop switching). */
+    uint8_t switch_double_tap_enable;
+    uint16_t switch_double_tap_ms;
+    uint16_t switch_double_tap_margin;  // How far (screen coords) to pull back before re-tapping
+
     output_t output[NUM_SCREENS];
     uint32_t _reserved;
 
@@ -108,6 +114,11 @@ typedef struct {
     int16_t pointer_x; // Store and update the location of our mouse pointer
     int16_t pointer_y;
     int16_t mouse_buttons; // Store and update the state of mouse buttons
+
+    /* Edge "double tap" to switch actual outputs */
+    uint64_t last_edge_tap_time;         // Timestamp of the last registered edge tap
+    uint8_t last_edge_tap_direction;     // Direction of the last registered edge tap
+    bool edge_in_contact;                // True while cursor is continuously pressed against the edge
 
     config_t config;       // Device configuration, loaded from flash or defaults used
     queue_t hid_queue_out; // Queue that stores outgoing hid messages

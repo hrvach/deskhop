@@ -83,6 +83,29 @@
 #define ENABLE_ACCELERATION 1
 
 /**================================================== *
+ * ===========  Edge Double-Tap to Switch  ========= *
+ * ================================================== *
+ *
+ * When enabled, switching to the other computer (actual output) requires
+ * you to "double tap" the screen edge: push the cursor against the edge,
+ * pull away, then push against it again within a short time window. This
+ * helps prevent accidental switches. It only affects switches between
+ * physical outputs - virtual desktop switching is unaffected.
+ *
+ * SWITCH_DOUBLE_TAP_ENABLE: [0, 1] - 1 enables the double-tap requirement
+ * SWITCH_DOUBLE_TAP_MS: [0-2000] - max milliseconds allowed between the two taps
+ * SWITCH_DOUBLE_TAP_MARGIN: [0-32767] - how far (in screen coordinates) the
+ *   cursor must be pulled back from the edge before pressing against it again
+ *   counts as a second tap. Smaller = re-tap registers sooner. The full screen
+ *   width is 32767, so e.g. 1000 is roughly 3% of the screen.
+ *
+ * */
+
+#define SWITCH_DOUBLE_TAP_ENABLE 0
+#define SWITCH_DOUBLE_TAP_MS 300
+#define SWITCH_DOUBLE_TAP_MARGIN 1000
+
+/**================================================== *
  * ==============  Screensaver Config  ============== *
  * ================================================== *
  *
