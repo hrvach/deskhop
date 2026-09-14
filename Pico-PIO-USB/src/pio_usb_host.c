@@ -19,6 +19,14 @@
 #include "usb_rx.pio.h"
 #include "usb_tx.pio.h"
 
+// A transfer fails only after this many consecutive failed transactions (bad
+// handshake, CRC or timeout). Each retry runs at the endpoint's next slot:
+// the next frame for control, the next polling interval for interrupt
+// endpoints. Backported from upstream 9c8df30, 92ea116, ace22e0.
+enum {
+  TRANSACTION_MAX_RETRY = 3,
+};
+
 static alarm_pool_t *_alarm_pool = NULL;
 static repeating_timer_t sof_rt;
 // The sof_count may be incremented and then read on different cores.
@@ -509,7 +517,13 @@ static int __no_inline_not_in_flash_func(usb_in_transaction)(pio_port_t *pp,
     if ((pp->pio_usb_rx->irq & IRQ_RX_COMP_MASK) == 0) {
       res = -2;
     }
-    pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_ERROR_BITS);
+    if (++ep->failed_count >= TRANSACTION_MAX_RETRY) {
+      pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_ERROR_BITS);
+    }
+  }
+
+  if (res == 0) {
+    ep->failed_count = 0; // a sound response ends the run of failures
   }
 
   pio_sm_set_enabled(pp->pio_usb_rx, pp->sm_rx, false);
@@ -546,7 +560,14 @@ static int __no_inline_not_in_flash_func(usb_out_transaction)(pio_port_t *pp,
   } else if (receive_token == USB_PID_STALL) {
     pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_STALLED_BITS);
   } else {
-    pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_ERROR_BITS);
+    res = -1;
+    if (++ep->failed_count >= TRANSACTION_MAX_RETRY) {
+      pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_ERROR_BITS);
+    }
+  }
+
+  if (res == 0) {
+    ep->failed_count = 0; // a sound response ends the run of failures
   }
 
   pio_sm_set_enabled(pp->pio_usb_rx, pp->sm_rx, false);
@@ -578,13 +599,21 @@ static int __no_inline_not_in_flash_func(usb_setup_transaction)(
   pio_usb_bus_start_receive(pp);
   pio_usb_bus_wait_handshake(pp);
 
-  ep->actual_len = 8;
-
   if (pp->usb_rx_buffer[0] == USB_SYNC && pp->usb_rx_buffer[1] == USB_PID_ACK) {
+    ep->actual_len = 8;
     pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_COMPLETE_BITS);
   } else {
     res = -1;
-    pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_ERROR_BITS);
+    // data_id was set to DATA0 above; put SETUP back so the next frame's
+    // dispatch in pio_usb_host_frame() retries as a SETUP, not an OUT
+    ep->data_id = USB_PID_SETUP;
+    if (++ep->failed_count >= TRANSACTION_MAX_RETRY) {
+      pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_ERROR_BITS);
+    }
+  }
+
+  if (res == 0) {
+    ep->failed_count = 0; // a sound response ends the run of failures
   }
 
   pp->usb_rx_buffer[1] = 0; // reset buffer

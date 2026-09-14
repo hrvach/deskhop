@@ -386,6 +386,7 @@ bool __no_inline_not_in_flash_func(pio_usb_ll_transfer_start)(endpoint_t *ep,
   ep->app_buf = buffer;
   ep->total_len = buflen;
   ep->actual_len = 0;
+  ep->failed_count = 0;
 
   if (ep->is_tx) {
     prepare_tx_data(ep);
