@@ -383,18 +383,40 @@ void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_int
     }
 }
 
+/* Lookup only: an unseen report ID falls back to the primary keyboard rather than
+   claiming a slot, since this also runs at decode time. */
 keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id) {
-    /* When we have just one keyboard (most cases), or don't use report ID */
-    if (iface->num_keyboards == 1 || !iface->uses_report_id)
+    /* No report IDs on this interface, so there is only ever one keyboard. */
+    if (!iface->uses_report_id)
         return &iface->keyboards[PRIMARY_KEYBOARD];
 
-    /* Go through known keyboards and match on report ID, return pointer to keyboard_t */
     for (int i = 0; i < iface->num_keyboards && i < MAX_KEYBOARDS; i++) {
-        if (iface->keyboards[i].report_id == report_id) {
+        if (iface->keyboards[i].report_id == report_id)
             return &iface->keyboards[i];
-        }
     }
 
     /* If nothing else is matched, return the primary keyboard. */
     return &iface->keyboards[PRIMARY_KEYBOARD];
+}
+
+/* Parse-time counterpart: an unseen report ID claims the next free slot, or the primary
+   keyboard once the slots are gone. */
+keyboard_t *get_or_add_keyboard(hid_interface_t *iface, uint8_t report_id) {
+    if (!iface->uses_report_id)
+        return &iface->keyboards[PRIMARY_KEYBOARD];
+
+    for (int i = 0; i < iface->num_keyboards && i < MAX_KEYBOARDS; i++) {
+        if (iface->keyboards[i].report_id == report_id)
+            return &iface->keyboards[i];
+    }
+
+    if (iface->num_keyboards >= MAX_KEYBOARDS)
+        return &iface->keyboards[PRIMARY_KEYBOARD];
+
+    keyboard_t *kb = &iface->keyboards[iface->num_keyboards];
+
+    kb->report_id      = report_id;
+    kb->uses_report_id = true;
+
+    return kb;
 }

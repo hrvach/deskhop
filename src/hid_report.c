@@ -85,7 +85,9 @@ void handle_system_control_values(report_val_t *src, report_val_t *dst, hid_inte
 /* After processing the descriptor, assign the values so we can later use them to interpret reports */
 void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
     const int LEFT_CTRL = 0xE0;
-    keyboard_t *keyboard = get_keyboard(iface, src->report_id);
+
+    /* Parse time: an unseen report ID claims its own keyboard_t. */
+    keyboard_t *keyboard = get_or_add_keyboard(iface, src->report_id);
 
     /* Constants are normally used for padding, so skip'em */
     if (src->item_type == CONSTANT)
@@ -108,10 +110,28 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
         keyboard->key_array[src->offset_idx] = (src->data_type == ARRAY);
     }
 
-    /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped. */
-    if (src->size > 32 && src->data_type == VARIABLE) {
-        keyboard->is_nkro = true;
-        keyboard->nkro    = *src;
+    /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped. The bitmap
+       may be split across several usage ranges (Wooting keyboards use four, with padding
+       between them), so record every block that maps one usage per bit. The modifier is
+       the one small run that also does, and it is handled above. Whether the keyboard is
+       NKRO is decided on the total width: one narrow block is a stray bit field, several
+       adding up to NKRO_MIN_BITS are a key bitmap. */
+    bool maps_usage_per_bit = src->usage_max > src->usage_min
+                              && (src->usage_max - src->usage_min + 1) == (int32_t)src->size;
+
+    bool is_modifier = src->size <= MODIFIER_BIT_LENGTH && LEFT_CTRL >= src->usage_min
+                       && LEFT_CTRL <= src->usage_max;
+
+    if (maps_usage_per_bit && !is_modifier && src->data_type == VARIABLE
+        && keyboard->nkro_count < MAX_NKRO_BLOCKS) {
+        keyboard->nkro[keyboard->nkro_count++] = (nkro_block_t){
+            .offset    = src->offset,
+            .size      = src->size,
+            .usage_min = src->usage_min,
+            .usage_max = src->usage_max,
+        };
+        keyboard->nkro_bits += src->size;
+        keyboard->is_nkro = (keyboard->nkro_bits > NKRO_MIN_BITS);
     }
 
     /* We found a keyboard on this interface for a specific report id. */
@@ -149,14 +169,6 @@ static uint8_t *get_consumer_id(hid_interface_t *iface) {
 
 static uint8_t *get_system_id(hid_interface_t *iface) {
     return &iface->system.report_id;
-}
-
-static uint8_t *get_next_keyboard_id(hid_interface_t *iface) {
-    if (iface->num_keyboards < MAX_KEYBOARDS)
-        return &iface->keyboards[iface->num_keyboards].report_id;
-
-    /* In case we are out of bounds, return the last keyboard's ID */
-    return &iface->keyboards[MAX_KEYBOARDS - 1].report_id;
 }
 
 const process_report_f report_receivers[] = {
@@ -211,8 +223,7 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
         {.usage_page   = HID_USAGE_PAGE_KEYBOARD,
          .global_usage = HID_USAGE_DESKTOP_KEYBOARD,
          .handler      = handle_keyboard_descriptor_values,
-         .receiver_id  = REPORT_RECEIVER_KEYBOARD,
-         .get_id       = get_next_keyboard_id},
+         .receiver_id  = REPORT_RECEIVER_KEYBOARD},
 
         {.usage_page   = HID_USAGE_PAGE_CONSUMER,
          .global_usage = HID_USAGE_CONSUMER_CONTROL,
@@ -239,7 +250,9 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
         bool usage_pages_match   = (val->usage_page == hay->usage_page) || (hay->usage_page == 0);
 
         if (global_usages_match && usages_match && usage_pages_match) {
-            *(hay->get_id(iface)) = val->report_id;
+            /* Keyboards claim their slot in the handler, where the report ID is known. */
+            if (hay->get_id != NULL)
+                *(hay->get_id(iface)) = val->report_id;
 
             hay->handler(val, hay->dst, iface);
 
@@ -248,16 +261,22 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
     }
 }
 
-int32_t extract_bit_variable(report_val_t *kbd, uint8_t *raw_report, int len, uint8_t *dst) {
+/* Walk one bitmap block, appending every pressed usage to dst. raw_report points at the
+   payload (report ID already skipped) and len is its length. */
+int32_t extract_bit_variable(nkro_block_t *block, uint8_t *raw_report, int len, uint8_t *dst, int max_keys) {
     int key_count = 0;
-    int bit_offset = kbd->offset & 0b111;
 
-    for (int i = kbd->usage_min, j = bit_offset; i <= kbd->usage_max && key_count < len; i++, j++) {
+    for (int bit = 0; bit < block->size && key_count < max_keys; bit++) {
+        int j          = block->offset + bit;
         int byte_index = j >> 3;
         int bit_index  = j & 0b111;
 
+        /* Report is shorter than the descriptor claims, don't read past the end of it */
+        if (byte_index >= len)
+            break;
+
         if (raw_report[byte_index] & (1 << bit_index)) {
-            dst[key_count++] = i;
+            dst[key_count++] = (uint8_t)(block->usage_min + bit);
         }
     }
 
@@ -297,25 +316,30 @@ int32_t _extract_kbd_other(uint8_t *raw_report, int len, hid_interface_t *iface,
 int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, hid_keyboard_report_t *report) {
     keyboard_t *kb = get_keyboard(iface, raw_report[0]);
     uint8_t *ptr = raw_report;
+    int key_count = 0;
 
     /* Skip report ID */
-    if (iface->uses_report_id)
+    if (iface->uses_report_id) {
         ptr++;
+        len--;
+    }
 
-    /* We expect array of bits mapping 1:1 from usage_min to usage_max, otherwise panic */
-    if ((kb->nkro.usage_max - kb->nkro.usage_min + 1) != kb->nkro.size)
+    if (kb->nkro_count == 0)
         return -1;
 
     /* We expect modifier to be 8 bits long, otherwise we'll fallback to boot mode */
-    if (kb->modifier.size == MODIFIER_BIT_LENGTH) {
-        report->modifier = ptr[kb->modifier.offset_idx];
-    } else
+    if (kb->modifier.size != MODIFIER_BIT_LENGTH || kb->modifier.offset_idx >= len)
         return -1;
 
-    /* Move the pointer to the nkro offset's byte index */
-    ptr = &ptr[kb->nkro.offset_idx];
+    report->modifier = ptr[kb->modifier.offset_idx];
 
-    return extract_bit_variable(&kb->nkro, ptr, KEYS_IN_USB_REPORT, report->keycode);
+    /* Collect keys from every bitmap block until the outgoing 6KRO report is full */
+    for (int i = 0; i < kb->nkro_count && key_count < KEYS_IN_USB_REPORT; i++) {
+        key_count += extract_bit_variable(
+            &kb->nkro[i], ptr, len, &report->keycode[key_count], KEYS_IN_USB_REPORT - key_count);
+    }
+
+    return key_count;
 }
 
 int32_t extract_kbd_data(
