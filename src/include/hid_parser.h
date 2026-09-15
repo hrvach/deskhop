@@ -24,7 +24,8 @@
 #define MAX_INTERFACES              12  // Per device; allows for complex devices like QMK
 #define MAX_KEYS                    32
 #define MAX_NKRO_BLOCKS             4
-/* Total bitmap width, across every block, below which a keyboard is not NKRO. */
+/* Bitmap width below which a keyboard is not NKRO: asked of the sum of all blocks, and
+   of a single block whose usage range is wider than its bits. */
 #define NKRO_MIN_BITS               32
 #define MAX_REPORTS_PER_IFACE       24
 #define REPORT_ID_MAP_SIZE         256
