@@ -383,10 +383,8 @@ void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_int
     }
 }
 
-/* Lookup only: an unseen report ID falls back to the primary keyboard rather than
-   claiming a slot, since this also runs at decode time. */
+/* Look up a registered report ID, falling back to the primary keyboard if unknown. */
 keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id) {
-    /* No report IDs on this interface, so there is only ever one keyboard. */
     if (!iface->uses_report_id)
         return &iface->keyboards[PRIMARY_KEYBOARD];
 
@@ -399,8 +397,8 @@ keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id) {
     return &iface->keyboards[PRIMARY_KEYBOARD];
 }
 
-/* Parse-time counterpart: an unseen report ID claims the next free slot, or the primary
-   keyboard once the slots are gone. */
+/* Parse-time counterpart: return the next free slot for an unseen report ID. The caller
+    commits that slot by increasing num_keyboards after processing a descriptor value. */
 keyboard_t *get_or_add_keyboard(hid_interface_t *iface, uint8_t report_id) {
     if (!iface->uses_report_id)
         return &iface->keyboards[PRIMARY_KEYBOARD];

@@ -21,13 +21,12 @@
 #define HID_MAX_USAGES              128
 #define MAX_CC_BUTTONS              16
 #define MAX_DEVICES                 4
-#define MAX_INTERFACES              12  // Per device; allows for complex devices like QMK
+#define MAX_INTERFACES              12  /* Per device; allows for complex devices like QMK */
 #define MAX_KEYS                    32
 #define MAX_NKRO_BLOCKS             4
-/* Total bitmap width, across every block, below which a keyboard is not NKRO. */
-#define NKRO_MIN_BITS               32
+#define NKRO_MIN_BITS               32  /* Minimum cumulative bitmap width to treat as NKRO */
 #define MAX_REPORTS_PER_IFACE       24
-#define REPORT_ID_MAP_SIZE         256
+#define REPORT_ID_MAP_SIZE          256
 #define MAX_KEYBOARDS               5
 #define MAX_SYS_BUTTONS             8
 #define PRIMARY_KEYBOARD            0
@@ -75,7 +74,7 @@ typedef enum {
     NONLINEAR,
 } data_type_e;
 
-// Extended precision mouse movement information
+/* Extended precision mouse movement information */
 typedef struct {
     int32_t move_x;
     int32_t move_y;
@@ -86,9 +85,9 @@ typedef struct {
 
 /* Describes where can we find a value in a HID report */
 typedef struct TU_ATTR_PACKED {
-    uint16_t offset;     // In bits
-    uint16_t offset_idx; // In bytes
-    uint16_t size;       // In bits
+    uint16_t offset;     /* In bits */
+    uint16_t offset_idx; /* In bytes */
+    uint16_t size;       /* In bits */
 
     int32_t usage_min;
     int32_t usage_max;
@@ -127,12 +126,11 @@ typedef enum {
     REPORT_RECEIVER_SYSTEM,
 } receiver_id_t;
 
-/* One contiguous run of NKRO bitmap bits. Keyboards often split the bitmap into several
-   usage ranges with padding in between (to keep sections byte-aligned), so a single
-   offset/usage_min/usage_max triplet can't describe the whole thing. */
+/* One contiguous run of NKRO bitmap bits. Offsets are relative to the report payload,
+   after any report ID, and usage ranges may be separated by padding. */
 typedef struct TU_ATTR_PACKED {
-    uint16_t offset;    // In bits, from the start of the report (report ID excluded)
-    uint16_t size;      // In bits
+    uint16_t offset_bits;
+    uint16_t size_bits;
     uint16_t usage_min;
     uint16_t usage_max;
 } nkro_block_t;
@@ -147,8 +145,8 @@ typedef struct {
 
     uint8_t report_id;
     uint8_t key_array_idx;
-    uint8_t nkro_count;
-    uint16_t nkro_bits;   // Sum of nkro[].size, what is_nkro is decided on
+    uint8_t nkro_count;      /* Number of separate NKRO bitmap blocks */
+    uint16_t nkro_bit_count; /* Total bits across all bitmap blocks */
 
     bool uses_report_id;
     bool is_found;
@@ -188,11 +186,9 @@ typedef struct {
     report_offset_map_t report_offsets[MAX_REPORTS_PER_IFACE];
     uint8_t num_report_offsets;
 
-    /* as tag is 4 bits, there can be 16 different tags in global header type */
+    /* Global and local item tags are 4 bits wide, so each table has 16 slots. */
     item_t globals[16];
-
-    /* as tag is 4 bits, there can be 16 different tags in local header type */
     item_t locals[16];
 } parser_state_t;
 
-///////////////
+/*=============================================================================*/

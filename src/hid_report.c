@@ -82,10 +82,61 @@ void handle_system_control_values(report_val_t *src, report_val_t *dst, hid_inte
     iface->system.is_array |= (src->data_type == ARRAY);
 }
 
-/* After processing the descriptor, assign the values so we can later use them to interpret reports */
-void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
-    const int LEFT_CTRL = 0xE0;
+static bool is_modifier_descriptor(const report_val_t *value) {
+    const int left_ctrl_usage = 0xE0;
 
+    return value->size <= MODIFIER_BIT_LENGTH
+           && left_ctrl_usage >= value->usage_min
+           && left_ctrl_usage <= value->usage_max;
+}
+
+static bool maps_usage_to_bitmap_bits(const report_val_t *value) {
+    return value->usage_max > value->usage_min
+           && (value->usage_max - value->usage_min + 1) == (int32_t)value->size;
+}
+
+static void store_modifier(keyboard_t *keyboard, const report_val_t *value) {
+    if (is_modifier_descriptor(value) && value->data_type == VARIABLE)
+        keyboard->modifier = *value;
+}
+
+/* An array field contains one of several possible usages, so its report position
+   contains a keycode that can be copied into the 6KRO keyboard report. */
+static void store_key_field(keyboard_t *keyboard, const report_val_t *value) {
+    if (value->offset_idx < MAX_KEYS)
+        keyboard->key_array[value->offset_idx] = value->data_type == ARRAY;
+}
+
+static void store_nkro_block(
+    keyboard_t *keyboard, const report_val_t *value, bool is_modifier) {
+    /* Modifier bits are stored separately, not as ordinary NKRO keys. */
+    if (is_modifier)
+        return;
+
+    /* NKRO uses variable fields: one bit represents one key. */
+    if (value->data_type != VARIABLE)
+        return;
+
+    /* An NKRO bitmap must contain one consecutive usage for every bit. */
+    if (!maps_usage_to_bitmap_bits(value))
+        return;
+
+    /* Prevent overflowing available storage for NKRO blocks. */
+    if (keyboard->nkro_count >= MAX_NKRO_BLOCKS)
+        return;
+
+    keyboard->nkro[keyboard->nkro_count++] = (nkro_block_t){
+        .offset_bits = value->offset,
+        .size_bits   = value->size,
+        .usage_min = value->usage_min,
+        .usage_max = value->usage_max,
+    };
+    keyboard->nkro_bit_count += value->size;
+    keyboard->is_nkro = keyboard->nkro_bit_count > NKRO_MIN_BITS;
+}
+
+/* Store descriptor values so they can later be used to interpret reports. */
+void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid_interface_t *iface) {
     /* Parse time: an unseen report ID claims its own keyboard_t. */
     keyboard_t *keyboard = get_or_add_keyboard(iface, src->report_id);
 
@@ -97,42 +148,12 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
     if (iface->num_keyboards >= MAX_KEYBOARDS)
         return;
 
-    /* Detect and handle modifier keys. <= if modifier is less + constant padding? */
-    if (src->size <= MODIFIER_BIT_LENGTH && src->data_type == VARIABLE) {
-        /* To make sure this really is the modifier key, we expect e.g. left control to be
-           within the usage interval */
-        if (LEFT_CTRL >= src->usage_min && LEFT_CTRL <= src->usage_max)
-            keyboard->modifier = *src;
-    }
+    bool is_modifier = is_modifier_descriptor(src);
 
-    /* If we have an array member, that's most likely a key (0x00 - 0xFF, 1 byte) */
-    if (src->offset_idx < MAX_KEYS) {
-        keyboard->key_array[src->offset_idx] = (src->data_type == ARRAY);
-    }
+    store_modifier(keyboard, src);
 
-    /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped. The bitmap
-       may be split across several usage ranges (Wooting keyboards use four, with padding
-       between them), so record every block that maps one usage per bit. The modifier is
-       the one small run that also does, and it is handled above. Whether the keyboard is
-       NKRO is decided on the total width: one narrow block is a stray bit field, several
-       adding up to NKRO_MIN_BITS are a key bitmap. */
-    bool maps_usage_per_bit = src->usage_max > src->usage_min
-                              && (src->usage_max - src->usage_min + 1) == (int32_t)src->size;
-
-    bool is_modifier = src->size <= MODIFIER_BIT_LENGTH && LEFT_CTRL >= src->usage_min
-                       && LEFT_CTRL <= src->usage_max;
-
-    if (maps_usage_per_bit && !is_modifier && src->data_type == VARIABLE
-        && keyboard->nkro_count < MAX_NKRO_BLOCKS) {
-        keyboard->nkro[keyboard->nkro_count++] = (nkro_block_t){
-            .offset    = src->offset,
-            .size      = src->size,
-            .usage_min = src->usage_min,
-            .usage_max = src->usage_max,
-        };
-        keyboard->nkro_bits += src->size;
-        keyboard->is_nkro = (keyboard->nkro_bits > NKRO_MIN_BITS);
-    }
+    store_key_field(keyboard, src);
+    store_nkro_block(keyboard, src, is_modifier);
 
     /* We found a keyboard on this interface for a specific report id. */
     if (!keyboard->is_found) {
@@ -261,22 +282,22 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
     }
 }
 
-/* Walk one bitmap block, appending every pressed usage to dst. raw_report points at the
-   payload (report ID already skipped) and len is its length. */
-int32_t extract_bit_variable(nkro_block_t *block, uint8_t *raw_report, int len, uint8_t *dst, int max_keys) {
+/* Append pressed usages from one bitmap block. The report pointer excludes any report ID. */
+int32_t extract_bit_variable(
+    const nkro_block_t *block, const uint8_t *raw_report, int report_length, uint8_t *dst, int max_keys) {
     int key_count = 0;
 
-    for (int bit = 0; bit < block->size && key_count < max_keys; bit++) {
-        int j          = block->offset + bit;
-        int byte_index = j >> 3;
-        int bit_index  = j & 0b111;
+    for (int block_bit = 0; block_bit < block->size_bits && key_count < max_keys; block_bit++) {
+        int report_bit  = block->offset_bits + block_bit;
+        int byte_index  = report_bit >> 3;
+        int bit_index   = report_bit & 0b111;
 
         /* Report is shorter than the descriptor claims, don't read past the end of it */
-        if (byte_index >= len)
+        if (byte_index >= report_length)
             break;
 
         if (raw_report[byte_index] & (1 << bit_index)) {
-            dst[key_count++] = (uint8_t)(block->usage_min + bit);
+            dst[key_count++] = (uint8_t)(block->usage_min + block_bit);
         }
     }
 
@@ -353,9 +374,7 @@ int32_t extract_kbd_data(
     if (iface->protocol == HID_PROTOCOL_BOOT)
         return _extract_kbd_boot(raw_report, len, report);
 
-    /* NKRO is a special case. If extraction fails (descriptor parsed as NKRO but the
-       actual report layout doesn't match — e.g. wireless dongles that advertise an NKRO
-       collection but transmit standard boot-style reports), fall through to other extractors. */
+    /* NKRO is a special case. If extraction fails, fall through to other extractors. */
     if (keyboard->is_nkro) {
         int32_t ret = _extract_kbd_nkro(raw_report, len, iface, report);
         if (ret >= 0)
