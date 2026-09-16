@@ -90,9 +90,18 @@ static bool is_modifier_descriptor(const report_val_t *value) {
            && left_ctrl_usage <= value->usage_max;
 }
 
+/* A key bitmap maps one usage to each bit. Ordinary NKRO sections declare exactly that;
+   the Keychron Ultra-Link declares one usage too many, 153 over 152 bits, so a block at
+   least NKRO_MIN_BITS wide is also taken when its range covers the bits, the surplus
+   being unreachable. Narrower blocks keep the exact test, or a lazily declared range
+   like 19 00 29 FF would pass any stray field off as a bitmap. The span is 64-bit so a
+   4-byte usage range cannot overflow it. */
 static bool maps_usage_to_bitmap_bits(const report_val_t *value) {
+    int64_t span = (int64_t)value->usage_max - value->usage_min + 1;
+
     return value->usage_max > value->usage_min
-           && (value->usage_max - value->usage_min + 1) == (int32_t)value->size;
+           && span >= value->size
+           && (span == value->size || value->size >= NKRO_MIN_BITS);
 }
 
 static void store_modifier(keyboard_t *keyboard, const report_val_t *value) {
