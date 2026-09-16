@@ -90,18 +90,26 @@ static bool is_modifier_descriptor(const report_val_t *value) {
            && left_ctrl_usage <= value->usage_max;
 }
 
-/* A key bitmap maps one usage to each bit. Ordinary NKRO sections declare exactly that;
-   the Keychron Ultra-Link declares one usage too many, 153 over 152 bits, so a block at
-   least NKRO_MIN_BITS wide is also taken when its range covers the bits, the surplus
-   being unreachable. Narrower blocks keep the exact test, or a lazily declared range
-   like 19 00 29 FF would pass any stray field off as a bitmap. The span is 64-bit so a
-   4-byte usage range cannot overflow it. */
-static bool maps_usage_to_bitmap_bits(const report_val_t *value) {
-    int64_t span = (int64_t)value->usage_max - value->usage_min + 1;
+/* NKRO key field maps one usage to each bit. Sometimes keyboards are dumb, so allow for some slack */
+static bool is_nkro_key_field(const report_val_t *value)
+{
+    const int64_t usage_count = (int64_t)value->usage_max - value->usage_min + 1;
+    const int64_t key_bits = value->size;
 
-    return value->usage_max > value->usage_min
-           && span >= value->size
-           && (span == value->size || value->size >= NKRO_MIN_BITS);
+    /* A NKRO key field must be some non-trivial usage range. */
+    if (value->usage_max <= value->usage_min)
+        return false;
+    
+    /* Every key bit must have a corresponding usage. */
+    if (usage_count < key_bits)
+        return false;
+
+    /* The happy path - exactly one key usage per bit. */
+    if (usage_count == key_bits)
+        return true;
+
+    /* Tolerate extra declared usages only for plausible NKRO fields. */
+    return key_bits >= NKRO_MIN_BITS;
 }
 
 static void store_modifier(keyboard_t *keyboard, const report_val_t *value) {
@@ -127,7 +135,7 @@ static void store_nkro_block(
         return;
 
     /* An NKRO bitmap must contain one consecutive usage for every bit. */
-    if (!maps_usage_to_bitmap_bits(value))
+    if (!is_nkro_key_field(value))
         return;
 
     /* Prevent overflowing available storage for NKRO blocks. */
