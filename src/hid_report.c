@@ -90,9 +90,26 @@ static bool is_modifier_descriptor(const report_val_t *value) {
            && left_ctrl_usage <= value->usage_max;
 }
 
-static bool maps_usage_to_bitmap_bits(const report_val_t *value) {
-    return value->usage_max > value->usage_min
-           && (value->usage_max - value->usage_min + 1) == (int32_t)value->size;
+/* NKRO key field maps one usage to each bit. Sometimes keyboards are dumb, so allow for some slack */
+static bool is_nkro_key_field(const report_val_t *value)
+{
+    const int64_t usage_count = (int64_t)value->usage_max - value->usage_min + 1;
+    const int64_t key_bits = value->size;
+
+    /* A NKRO key field must be some non-trivial usage range. */
+    if (value->usage_max <= value->usage_min)
+        return false;
+    
+    /* Every key bit must have a corresponding usage. */
+    if (usage_count < key_bits)
+        return false;
+
+    /* The happy path - exactly one key usage per bit. */
+    if (usage_count == key_bits)
+        return true;
+
+    /* Tolerate extra declared usages only for plausible NKRO fields. */
+    return key_bits >= NKRO_MIN_BITS;
 }
 
 static void store_modifier(keyboard_t *keyboard, const report_val_t *value) {
@@ -118,7 +135,7 @@ static void store_nkro_block(
         return;
 
     /* An NKRO bitmap must contain one consecutive usage for every bit. */
-    if (!maps_usage_to_bitmap_bits(value))
+    if (!is_nkro_key_field(value))
         return;
 
     /* Prevent overflowing available storage for NKRO blocks. */
