@@ -320,6 +320,13 @@ void extract_report_values(uint8_t *raw_report, int len, device_t *state, mouse_
     extract_value(uses_id, &values->wheel, &mouse->wheel, raw_report, len);
     extract_value(uses_id, &values->pan, &mouse->pan, raw_report, len);
 
+    /* Normalize hi-res scroll to standard notches. Standard mice have
+       wheel_divider == 0 (memset), pass through unchanged. */
+    if (mouse->has_resolution_multiplier && mouse->wheel_divider > 1u) {
+        values->wheel /= (int32_t)mouse->wheel_divider;
+        values->pan   /= (int32_t)mouse->wheel_divider;
+    }
+
     if (!extract_value(uses_id, &values->buttons, &mouse->buttons, raw_report, len)) {
         values->buttons = state->mouse_buttons;
     }
