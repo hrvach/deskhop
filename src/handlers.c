@@ -180,11 +180,29 @@ void handle_mouse_abs_uart_msg(uart_packet_t *packet, device_t *state) {
     mouse_report_t *mouse_report = (mouse_report_t *)packet->data;
     queue_mouse_report(mouse_report, state);
 
+    /* The buttons in this report are already the union across both boards, so it goes to
+       the host as it arrived. state->mouse_buttons is not touched here: MOUSE_BUTTONS_MSG
+       below is what maintains it, and one owner is what keeps the two halves in step. */
     state->pointer_x       = mouse_report->x;
     state->pointer_y       = mouse_report->y;
-    state->mouse_buttons   = mouse_report->buttons;
 
     state->last_activity[BOARD_ROLE] = time_us_64();
+}
+
+/* Take note of which mouse buttons are held down on devices attached to the other board.
+
+   There is one cursor and one set of buttons, but a pointing device may be attached to
+   either board (a keyboard with mouse keys on one, a trackball on the other), and each
+   report carries only its own sender's buttons. Each board sends its local union here
+   whenever it changes, and both then hold the same combined answer. That matters beyond
+   the report itself: do_screen_switch refuses to switch outputs while a button is held, and
+   it can now see a button held on the other board.
+
+   This one arrives on the edge, so it is what makes a press felt immediately. The
+   heartbeat below carries the same value as a level once a second, which is what makes a
+   missed edge heal. */
+void handle_mouse_buttons_msg(uart_packet_t *packet, device_t *state) {
+    set_remote_mouse_buttons(state, packet->data[0]);
 }
 
 /* Function handles request to switch output  */
@@ -360,6 +378,16 @@ void handle_response_byte_msg(uart_packet_t *packet, device_t *state) {
 /* Process a request to read a firmware package from flash */
 void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
     uint16_t other_running_version = packet->data16[0];
+
+    /* Before the early returns below, and deliberately. MOUSE_BUTTONS_MSG only arrives
+       when the other board's half of the union changes, so nothing repairs a message that
+       was dropped, or a board that restarted or lost its mouse while a button was held:
+       this side would go on holding a button nobody is pressing, telling its computer so
+       on every move of its own and refusing to hand the cursor over. This is the same
+       number sent as a level once a second, so any of those heals within a second. A board
+       on older firmware leaves the field zero, which is the right answer for one that never
+       announces buttons at all. */
+    set_remote_mouse_buttons(state, (uint8_t)packet->data16[1]);
 
     if (state->fw.upgrade_in_progress)
         return;
