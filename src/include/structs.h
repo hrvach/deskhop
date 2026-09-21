@@ -94,9 +94,10 @@ typedef struct {
     uint8_t kbd_dev_addr; // Address of the Keyboard device
     uint8_t kbd_instance; // Keyboard instance (d'uh - isn't this a useless comment)
 
-    uint8_t keyboard_leds[NUM_SCREENS];  // State of keyboard LEDs (index 0 = A, index 1 = B)
+    uint8_t keyboard_leds_desired[NUM_SCREENS];  // Desired state of keyboard LEDs (index 0 = A, index 1 = B)
+    uint8_t keyboard_leds_actual[NUM_SCREENS];   // Actual state of keyboard LEDs
     uint64_t last_activity[NUM_SCREENS]; // Timestamp of the last input activity (-||-)
-    uint64_t core1_last_loop_pass;       // Timestamp of last core1 loop execution
+    uint32_t core1_last_loop_pass;       // Timestamp of last core1 loop execution
     uint8_t active_output;               // Currently selected output (0 = A, 1 = B)
     uint8_t board_role;                  // Which board are we running on? (0 = A, 1 = B, etc.)
 
@@ -146,8 +147,8 @@ typedef struct {
     bool digitizer_active;   // True when digitizer Win/Mac workaround is active
 
     /* Onboard LED blinky (provide feedback when e.g. mouse connected) */
-    int32_t blinks_left;     // How many blink transitions are left
-    int32_t last_led_change; // Timestamp of the last time led state transitioned
+    int32_t  blinks_left;     // How many blink transitions are left
+    uint32_t last_led_change; // Timestamp of the last time led state transitioned
 } device_t;
 /*==============================================================================*/
 

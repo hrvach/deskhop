@@ -47,7 +47,7 @@ typedef struct {
 #define RUNNING_FIRMWARE_SLOT     0
 #define STAGING_FIRMWARE_SLOT     1
 #define STAGING_PAGES_CNT         1024
-#define STAGING_IMAGE_SIZE        STAGING_PAGES_CNT * FLASH_PAGE_SIZE
+#define STAGING_IMAGE_SIZE        (STAGING_PAGES_CNT * FLASH_PAGE_SIZE)
 
 /*==============================================================================
 *  Lookup Tables

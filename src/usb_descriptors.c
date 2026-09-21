@@ -176,9 +176,13 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
 #define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN)
 
 #else
-#define ITF_NUM_CDC 4
-#define ITF_NUM_TOTAL 3
-#define ITF_NUM_TOTAL_CONFIG 5
+/* CDC uses 2 interfaces (control + data). In normal mode, place it right after
+   the 2 HID interfaces (at 2, 3). In config mode, place it after HID_VENDOR (2)
+   and MSC (3), so at 4, 5. */
+#define ITF_NUM_CDC 2
+#define ITF_NUM_CDC_CONFIG 4
+#define ITF_NUM_TOTAL 4
+#define ITF_NUM_TOTAL_CONFIG 6
 
 #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
 #define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN + TUD_CDC_DESC_LEN)
@@ -197,7 +201,7 @@ uint8_t const desc_configuration[] = {
     // Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
     TUD_HID_DESCRIPTOR(ITF_NUM_HID,
                        STRID_PRODUCT,
-                       HID_ITF_PROTOCOL_NONE,
+                       HID_ITF_PROTOCOL_KEYBOARD,
                        sizeof(desc_hid_report),
                        EPNUM_HID,
                        CFG_TUD_HID_EP_BUFSIZE,
@@ -224,7 +228,7 @@ uint8_t const desc_configuration_config[] = {
     // Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
     TUD_HID_DESCRIPTOR(ITF_NUM_HID,
                        STRID_PRODUCT,
-                       HID_ITF_PROTOCOL_NONE,
+                       HID_ITF_PROTOCOL_KEYBOARD,
                        sizeof(desc_hid_report),
                        EPNUM_HID,
                        CFG_TUD_HID_EP_BUFSIZE,
@@ -254,7 +258,7 @@ uint8_t const desc_configuration_config[] = {
 #ifdef DH_DEBUG
     // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
     TUD_CDC_DESCRIPTOR(
-        ITF_NUM_CDC, STRID_DEBUG, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, CFG_TUD_CDC_EP_BUFSIZE),
+        ITF_NUM_CDC_CONFIG, STRID_DEBUG, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, CFG_TUD_CDC_EP_BUFSIZE),
 #endif
 };
 

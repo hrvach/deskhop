@@ -19,6 +19,8 @@
 typedef void (*value_handler_f)(report_val_t *, report_val_t *, hid_interface_t *);
 typedef uint8_t *(*report_id_getter_f)(hid_interface_t *iface);
 
+extern const process_report_f report_receivers[];
+
 /*==============================================================================
  *  Data Structures
  *==============================================================================*/
@@ -29,6 +31,6 @@ typedef struct {
     int usage;
     report_val_t *dst;
     value_handler_f handler;
-    process_report_f receiver;
+    receiver_id_t receiver_id;
     report_id_getter_f get_id;
 } usage_map_t;

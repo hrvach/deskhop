@@ -255,7 +255,7 @@ void initial_setup(device_t *state) {
     state->_running_fw = _firmware_metadata;
 
     /* Update the core1 initial pass timestamp before enabling the watchdog */
-    state->core1_last_loop_pass = time_us_64();
+    state->core1_last_loop_pass = time_us_32();
 
     /* Setup the watchdog so we reboot and recover from a crash */
     watchdog_enable(WATCHDOG_TIMEOUT, WATCHDOG_PAUSE_ON_DEBUG);

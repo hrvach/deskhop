@@ -40,7 +40,7 @@ uint32_t *get_or_create_report_offset(parser_state_t *parser, uint8_t report_id)
         }
     }
 
-    if (parser->num_report_offsets < MAX_REPORTS) {
+    if (parser->num_report_offsets < MAX_REPORTS_PER_IFACE) {
         parser->report_offsets[parser->num_report_offsets].report_id = report_id;
         parser->report_offsets[parser->num_report_offsets].offset_in_bits = 0;
         return &parser->report_offsets[parser->num_report_offsets++].offset_in_bits;
@@ -54,13 +54,27 @@ uint32_t get_current_offset(parser_state_t *parser) {
     return offset ? *offset : 0;
 }
 
-void update_usage(parser_state_t *parser, int i) {
-    /* If we don't have as many usages as elements, the usage for the previous element applies */
-    if (i > 0 && i >= parser->usage_count && i < HID_MAX_USAGES)
-        *(parser->p_usage + i) = *(parser->p_usage + i - 1);
+/* Return the usage for element i. Once the local usage list is exhausted
+   the last declared usage repeats (HID spec). */
+uint16_t get_usage(parser_state_t *parser, int i) {
+    int idx;
+
+    if (parser->usage_count == 0) {
+        idx = 0;                      /* use carried/default usage */
+    } else if (i >= parser->usage_count) {
+        idx = parser->usage_count - 1;
+    } else {
+        idx = i;
+    }
+
+    uint16_t *slot = parser->p_usage + idx;
+    if (slot >= parser->usages + HID_MAX_USAGES)
+        slot = parser->usages + HID_MAX_USAGES - 1;
+
+    return *slot;
 }
 
-void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t data, uint16_t size, hid_interface_t *iface) {
+void store_element(parser_state_t *parser, report_val_t *val, uint16_t usage, uint32_t data, uint16_t size, hid_interface_t *iface) {
     uint32_t current_offset = get_current_offset(parser);
 
     *val = (report_val_t){
@@ -74,7 +88,7 @@ void store_element(parser_state_t *parser, report_val_t *val, int i, uint32_t da
         .item_type   = (data & 0x01) ? CONSTANT : DATA,
         .data_type   = (data & 0x02) ? VARIABLE : ARRAY,
 
-        .usage        = *(parser->p_usage + i),
+        .usage        = usage,
         .usage_page   = parser->globals[RI_GLOBAL_USAGE_PAGE].val,
         .global_usage = parser->global_usage,
         .report_id    = parser->report_id
@@ -100,7 +114,7 @@ void handle_local_item(parser_state_t *parser, item_t *item) {
         if(IS_BLOCK_END)
             parser->global_usage = item->val;
 
-        else if (parser->usage_count < HID_MAX_USAGES - 1)
+        else if (parser->p_usage + parser->usage_count + 1 < parser->usages + HID_MAX_USAGES)
             *(parser->p_usage + parser->usage_count++) = item->val;
     }
 }
@@ -124,8 +138,7 @@ void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *if
         return;
 
     for (int i = 0; i < count; i++) {
-        update_usage(parser, i);
-        store_element(parser, &val, i, item->val, size, iface);
+        store_element(parser, &val, get_usage(parser, i), item->val, size, iface);
 
         /* Use the parsed data to populate internal device structures */
         extract_data(iface, &val);
@@ -134,11 +147,20 @@ void handle_main_input(parser_state_t *parser, item_t *item, hid_interface_t *if
         *current_offset += size;
     }
 
-    /* Advance the usage array pointer by global report count and reset the count variable */
-    parser->p_usage += parser->usage_count;
+    /* If no usages were declared for this main item, nothing to carry. */
+    if (parser->usage_count == 0)
+        return;
 
-    /* Carry the last usage to the new location */
-    *parser->p_usage = *(parser->p_usage - parser->usage_count);
+    /* Advance the usage cursor and carry the last usage of this block.
+       Pin to the last slot if the array is full. */
+    if (parser->p_usage + parser->usage_count < parser->usages + HID_MAX_USAGES) {
+        parser->p_usage += parser->usage_count;
+
+        /* Carry the last usage of this block to the new location */
+        *parser->p_usage = *(parser->p_usage - 1);
+    } else {
+        parser->p_usage = parser->usages + HID_MAX_USAGES - 1;
+    }
 }
 
 void handle_main_item(parser_state_t *parser, item_t *item, hid_interface_t *iface) {

@@ -12,6 +12,8 @@
 #ifndef USB_DESCRIPTORS_H_
 #define USB_DESCRIPTORS_H_
 
+#define REPORT_ID_NONE 0
+
 // Interface 0
 #define REPORT_ID_KEYBOARD 1
 #define REPORT_ID_MOUSE    2

@@ -21,9 +21,12 @@
 #define HID_MAX_USAGES              128
 #define MAX_CC_BUTTONS              16
 #define MAX_DEVICES                 4
-#define MAX_INTERFACES              12  // Per device; allows for complex devices like QMK
+#define MAX_INTERFACES              12  /* Per device; allows for complex devices like QMK */
 #define MAX_KEYS                    32
-#define MAX_REPORTS                 24
+#define MAX_NKRO_BLOCKS             4
+#define NKRO_MIN_BITS               32 /* Minimum cumulative bitmap width to treat as NKRO */
+#define MAX_REPORTS_PER_IFACE       24
+#define REPORT_ID_MAP_SIZE          256
 #define MAX_KEYBOARDS               5
 #define MAX_SYS_BUTTONS             8
 #define PRIMARY_KEYBOARD            0
@@ -71,7 +74,7 @@ typedef enum {
     NONLINEAR,
 } data_type_e;
 
-// Extended precision mouse movement information
+/* Extended precision mouse movement information */
 typedef struct {
     int32_t move_x;
     int32_t move_y;
@@ -82,9 +85,9 @@ typedef struct {
 
 /* Describes where can we find a value in a HID report */
 typedef struct TU_ATTR_PACKED {
-    uint16_t offset;     // In bits
-    uint16_t offset_idx; // In bytes
-    uint16_t size;       // In bits
+    uint16_t offset;     /* In bits */
+    uint16_t offset_idx; /* In bytes */
+    uint16_t size;       /* In bits */
 
     int32_t usage_min;
     int32_t usage_max;
@@ -115,16 +118,35 @@ typedef struct {
 typedef struct hid_interface_t hid_interface_t;
 typedef void (*process_report_f)(uint8_t *, int, uint8_t, hid_interface_t *);
 
+typedef enum {
+    REPORT_RECEIVER_NONE,
+    REPORT_RECEIVER_MOUSE,
+    REPORT_RECEIVER_KEYBOARD,
+    REPORT_RECEIVER_CONSUMER,
+    REPORT_RECEIVER_SYSTEM,
+} receiver_id_t;
+
+/* One contiguous run of NKRO bitmap bits. Offsets are relative to the report payload,
+   after any report ID, and usage ranges may be separated by padding. */
+typedef struct TU_ATTR_PACKED {
+    uint16_t offset_bits;
+    uint16_t size_bits;
+    uint16_t usage_min;
+    uint16_t usage_max;
+} nkro_block_t;
+
 /* Defines information about HID report format for the keyboard. */
 typedef struct {
     report_val_t modifier;
-    report_val_t nkro;
+    nkro_block_t nkro[MAX_NKRO_BLOCKS];
     uint16_t cc_array[MAX_CC_BUTTONS];
     uint16_t sys_array[MAX_SYS_BUTTONS];
     bool key_array[MAX_KEYS];
 
     uint8_t report_id;
     uint8_t key_array_idx;
+    uint8_t nkro_count;      /* Number of separate NKRO bitmap blocks */
+    uint16_t nkro_bit_count; /* Total bits across all bitmap blocks */
 
     bool uses_report_id;
     bool is_found;
@@ -144,7 +166,7 @@ struct hid_interface_t {
     mouse_t mouse;
     report_t consumer;
     report_t system;
-    process_report_f report_handler[MAX_REPORTS];
+    uint8_t report_handler[REPORT_ID_MAP_SIZE];
     uint8_t protocol;
     bool uses_report_id;
 };
@@ -161,14 +183,12 @@ typedef struct {
 
     collection_t collection;
 
-    report_offset_map_t report_offsets[MAX_REPORTS];
+    report_offset_map_t report_offsets[MAX_REPORTS_PER_IFACE];
     uint8_t num_report_offsets;
 
-    /* as tag is 4 bits, there can be 16 different tags in global header type */
+    /* Global and local item tags are 4 bits wide, so each table has 16 slots. */
     item_t globals[16];
-
-    /* as tag is 4 bits, there can be 16 different tags in local header type */
     item_t locals[16];
 } parser_state_t;
 
-///////////////
+/*=============================================================================*/

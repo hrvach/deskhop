@@ -209,7 +209,7 @@ void handle_mouse_zoom_msg(uart_packet_t *packet, device_t *state) {
 /* Process request to update keyboard LEDs */
 void handle_set_report_msg(uart_packet_t *packet, device_t *state) {
     /* We got this via serial, so it's stored to the opposite of our board role */
-    state->keyboard_leds[OTHER_ROLE] = packet->data[0];
+    state->keyboard_leds_desired[OTHER_ROLE] = packet->data[0];
 
     /* If we have a keyboard we can control leds on, restore state if active */
     if (global_state.keyboard_connected && !CURRENT_BOARD_IS_ACTIVE_OUTPUT)
@@ -318,7 +318,7 @@ void handle_api_read_all_msg(uart_packet_t *packet, device_t *state) {
 void handle_request_byte_msg(uart_packet_t *packet, device_t *state) {
     uint32_t address = packet->data32[0];
 
-    if (address > STAGING_IMAGE_SIZE)
+    if (address >= STAGING_IMAGE_SIZE)
         return;
 
     /* Add requested data to bytes 4-7 in the packet and return it with a different type */

@@ -216,6 +216,15 @@ void combine_kbd_states(device_t *state, hid_keyboard_report_t *combined_report)
  * Keyboard Queue Section
  * ==================================================== */
 
+static bool send_keyboard_report(hid_keyboard_report_t *report) {
+    /* Boot protocol uses the 8-byte keyboard report without a report ID. */
+    if (tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT)
+        return tud_hid_n_report(ITF_NUM_HID, 0, report, sizeof(*report));
+
+    /* Otherwise, use the report ID for the keyboard interface */
+    return tud_hid_keyboard_report(REPORT_ID_KEYBOARD, report->modifier, report->keycode);
+}
+
 void process_kbd_queue_task(device_t *state) {
     hid_keyboard_report_t report;
 
@@ -235,8 +244,7 @@ void process_kbd_queue_task(device_t *state) {
     if (!tud_hid_n_ready(ITF_NUM_HID))
         return;
 
-    /* ... try sending it to the host, if it's successful */
-    bool succeeded = tud_hid_keyboard_report(REPORT_ID_KEYBOARD, report.modifier, report.keycode);
+    bool succeeded = send_keyboard_report(&report);
 
     /* ... then we can remove it from the queue. Race conditions shouldn't happen [tm] */
     if (succeeded)
@@ -330,26 +338,32 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 }
 
 void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
+    /* Consumer interfaces may omit the report ID. */
+    int data_len = length - iface->uses_report_id;
+
+    if (data_len <= 0)
+        return;
+
+    uint8_t *data = raw_report + iface->uses_report_id;
     uint8_t new_report[CONSUMER_CONTROL_LENGTH] = {0};
     uint16_t *report_ptr = (uint16_t *)new_report;
-
     device_t *state = &global_state;
     keyboard_t *keyboard = get_keyboard(iface, raw_report[0]);
 
     /* If consumer control is variable, read the values from cc_array and send as array. */
     if (iface->consumer.is_variable) {
-        for (int i = 0; i < MAX_CC_BUTTONS && i < 8 * (length - 1); i++) {
+        for (int i = 0; i < MAX_CC_BUTTONS && i < 8 * data_len; i++) {
             int bit_idx = i % 8;
             int byte_idx = i >> 3;
 
-            if ((raw_report[byte_idx + 1] >> bit_idx) & 1) {
+            if ((data[byte_idx] >> bit_idx) & 1) {
                 report_ptr[0] = keyboard->cc_array[i];
             }
         }
     }
     else {
-        for (int i = 0; i < length - 1 && i < CONSUMER_CONTROL_LENGTH; i++)
-            new_report[i] = raw_report[i + 1];
+        for (int i = 0; i < data_len && i < CONSUMER_CONTROL_LENGTH; i++)
+            new_report[i] = data[i];
     }
 
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
@@ -360,7 +374,13 @@ void process_consumer_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
 }
 
 void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
-    uint16_t new_report = raw_report[1];
+    int data_len = length - iface->uses_report_id;
+
+    if (data_len < SYSTEM_CONTROL_LENGTH)
+        return;
+
+    uint8_t *data = raw_report + iface->uses_report_id;
+    uint16_t new_report = data[0];
     uint8_t *report_ptr = (uint8_t *)&new_report;
     device_t *state = &global_state;
 
@@ -371,18 +391,38 @@ void process_system_report(uint8_t *raw_report, int length, uint8_t itf, hid_int
     }
 }
 
+/* Look up a registered report ID, falling back to the primary keyboard if unknown. */
 keyboard_t *get_keyboard(hid_interface_t *iface, uint8_t report_id) {
-    /* When we have just one keyboard (most cases), or don't use report ID */
-    if (iface->num_keyboards == 1 || !iface->uses_report_id)
+    if (!iface->uses_report_id)
         return &iface->keyboards[PRIMARY_KEYBOARD];
 
-    /* Go through known keyboards and match on report ID, return pointer to keyboard_t */
     for (int i = 0; i < iface->num_keyboards && i < MAX_KEYBOARDS; i++) {
-        if (iface->keyboards[i].report_id == report_id) {
+        if (iface->keyboards[i].report_id == report_id)
             return &iface->keyboards[i];
-        }
     }
 
     /* If nothing else is matched, return the primary keyboard. */
     return &iface->keyboards[PRIMARY_KEYBOARD];
+}
+
+/* Parse-time counterpart: return the next free slot for an unseen report ID. The caller
+    commits that slot by increasing num_keyboards after processing a descriptor value. */
+keyboard_t *get_or_add_keyboard(hid_interface_t *iface, uint8_t report_id) {
+    if (!iface->uses_report_id)
+        return &iface->keyboards[PRIMARY_KEYBOARD];
+
+    for (int i = 0; i < iface->num_keyboards && i < MAX_KEYBOARDS; i++) {
+        if (iface->keyboards[i].report_id == report_id)
+            return &iface->keyboards[i];
+    }
+
+    if (iface->num_keyboards >= MAX_KEYBOARDS)
+        return &iface->keyboards[PRIMARY_KEYBOARD];
+
+    keyboard_t *kb = &iface->keyboards[iface->num_keyboards];
+
+    kb->report_id      = report_id;
+    kb->uses_report_id = true;
+
+    return kb;
 }

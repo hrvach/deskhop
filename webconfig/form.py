@@ -10,6 +10,9 @@ class FormField:
     values: dict[int, str] = field(default_factory=dict)
     data_type: str = "int32"
     elem: str | None = None
+    # How many of the units the device stores go into one of the units the form shows.
+    # 1 where they are the same thing, which is everything but the screensaver timers.
+    scale: int = 1
 
 SHORTCUTS = {
     0x73: "None",
@@ -51,8 +54,8 @@ OUTPUT_ = [
     FormField(1003, "Screensaver", elem="label"),
     FormField(9, "Mode", 0, {0: "Disabled", 1: "Pong", 2: "Jitter"}, "uint8"),
     FormField(10, "Only If Inactive", None, {}, "uint8", "checkbox"),
-    FormField(11, "Idle Time (μs)", None, {}, "uint64"),
-    FormField(12, "Max Time (μs)", None, {}, "uint64"),
+    FormField(11, "Idle Time (sec)", None, {}, "uint64", scale=1000000),
+    FormField(12, "Max Time (sec)", None, {}, "uint64", scale=1000000),
 ]
 
 def generate_output(base, data):
@@ -64,6 +67,7 @@ def generate_output(base, data):
             "values": field.values,
             "type": field.data_type,
             "elem": field.elem,
+            "scale": field.scale,
         }
         for field in data
     ]
