@@ -199,9 +199,12 @@ uint8_t const desc_configuration[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 500),
 
     // Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
+    /* Declared as a boot keyboard (subclass=Boot, protocol=Keyboard) so UEFI/BIOS
+       pre-boot environments (e.g. BitLocker PIN entry) recognize it. In boot
+       protocol the keyboard send path emits the plain 8-byte report (see keyboard.c). */
     TUD_HID_DESCRIPTOR(ITF_NUM_HID,
                        STRID_PRODUCT,
-                       HID_ITF_PROTOCOL_NONE,
+                       HID_ITF_PROTOCOL_KEYBOARD,
                        sizeof(desc_hid_report),
                        EPNUM_HID,
                        CFG_TUD_HID_EP_BUFSIZE,
@@ -226,9 +229,12 @@ uint8_t const desc_configuration_config[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL_CONFIG, 0, CONFIG_TOTAL_LEN_CFG, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 500),
 
     // Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
+    /* Declared as a boot keyboard (subclass=Boot, protocol=Keyboard) so UEFI/BIOS
+       pre-boot environments (e.g. BitLocker PIN entry) recognize it. In boot
+       protocol the keyboard send path emits the plain 8-byte report (see keyboard.c). */
     TUD_HID_DESCRIPTOR(ITF_NUM_HID,
                        STRID_PRODUCT,
-                       HID_ITF_PROTOCOL_NONE,
+                       HID_ITF_PROTOCOL_KEYBOARD,
                        sizeof(desc_hid_report),
                        EPNUM_HID,
                        CFG_TUD_HID_EP_BUFSIZE,
