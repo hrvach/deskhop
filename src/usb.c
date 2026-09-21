@@ -294,16 +294,12 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         device_idx = (dev_addr - 1) % (MAX_DEVICES - 1);
     }
 
-    /* In boot protocol the device sends the fixed boot layout, which carries no report ID
-       whatever the descriptor declared, so report[0] is data there: the modifier byte on a
-       keyboard, the button byte on a mouse. The decode side already makes this distinction. */
-    bool carries_id = iface->uses_report_id && iface->protocol != HID_PROTOCOL_BOOT;
+    /* Boot protocol reports omit descriptor report IDs. */
+    bool report_has_id = iface->uses_report_id && iface->protocol != HID_PROTOCOL_BOOT;
 
-    if (carries_id || itf_protocol == HID_ITF_PROTOCOL_NONE) {
-        uint8_t report_id = 0;
-
-        if (carries_id)
-            report_id = report[0];
+    /* If the report has an ID, use its report handler. If not, choose by interface protocol. */
+    if (report_has_id || itf_protocol == HID_ITF_PROTOCOL_NONE) {
+        uint8_t report_id = report_has_id ? report[0] : REPORT_ID_NONE;
 
         process_report_f receiver = report_receivers[iface->report_handler[report_id]];
 
