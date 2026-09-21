@@ -399,14 +399,7 @@ void process_mouse_queue_task(device_t *state) {
     if (!tud_hid_n_ready(ITF_NUM_HID))
         return;
 
-    /* In boot protocol (UEFI/BIOS/BitLocker) the shared HID interface only speaks the
-       8-byte boot keyboard format; an absolute mouse report would be misread as
-       keystrokes. Drop it instead of sending garbage. Asked below the readiness check
-       and not above it: hidd_reset() clears protocol_mode to zero, which is the same
-       value as HID_PROTOCOL_BOOT, so an interface no host has configured yet reads as
-       boot whether or not anything asked for it. tud_hid_n_ready() is false until
-       hidd_open() has run, and that is the call that gives protocol_mode its real
-       default. */
+    /* If the interface is configured as a keyboard in boot protocol, discard mouse data. */
     if (report.mode == ABSOLUTE && tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT) {
         queue_try_remove(&state->mouse_queue, &report);
         return;

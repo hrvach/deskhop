@@ -19,75 +19,59 @@ _Static_assert(MAX_DEVICES <= CFG_TUH_DEVICE_MAX,
  * ===========  TinyUSB Device Callbacks  =========== *
  * ================================================== */
 
-/* Invoked when we get GET_REPORT control request.
- * We are expected to fill buffer with the report content, update reqlen
- * and return its length. We return 0 to STALL the request.
- *
- * Returning 0 for everything answered badly in two different ways. With a report
- * ID the host gets a one-byte reply carrying nothing but the ID echoed back,
- * since TinyUSB counts that byte before calling us. Without one, which is how a
- * boot-protocol host asks, the count stays at zero and the request stalls. Both
- * are wrong for a report we put in our own descriptor, and the HID spec makes
- * Get_Report mandatory. It went unnoticed while nothing bound this interface as
- * a keyboard, which a boot keyboard now does.
- *
- * Answered here: the keyboard input report and the LED output report, both on
- * ITF_NUM_HID. A boot-protocol host asks with no report ID at all and a
- * report-protocol one asks by ID, so take both. TinyUSB writes the ID byte
- * itself and shortens request_len to match whenever the ID is non-zero, so what
- * belongs in the buffer here is the payload alone either way.
- *
- * Everything else still returns 0, and stalls. Some of that is declared by this
- * device: the absolute mouse, consumer and system reports on this same
- * interface, the relative mouse on ITF_NUM_HID_REL_M and the vendor report on
- * ITF_NUM_HID_VENDOR. They stay stalled on purpose. Their idle state is all
- * zero and says nothing a host could use, and the absolute mouse report is
- * actively unsafe to answer that way: a host that feeds Get_Report answers into
- * its input path reads x = 0, y = 0 as a jump to the top left corner. */
+/* Answer GET_REPORT with the current LED state. */
+static uint16_t get_led_report(uint8_t *buffer, uint16_t request_len) {
+    /* Guardrails for size ... */
+    if (request_len < 1)
+        return 0;
+
+    /* ... to ensure we don't write to memory outside the provided buffer */
+    buffer[0] = global_state.keyboard_leds_desired[BOARD_ROLE];
+
+    /* Return the number of bytes written to the buffer. LED report is 1 byte. */
+    return 1;
+}
+
+/* Answer GET_REPORT with the current keyboard state. */
+static uint16_t get_keyboard_report(uint8_t *buffer, uint16_t request_len) {
+    hid_keyboard_report_t report = {0};
+
+    /* If the request buffer is too small, we cannot provide the report */
+    if (request_len < sizeof(report))
+        return 0;
+
+    /* Inactive output should not be able to read the keyboard state */
+    if (CURRENT_BOARD_IS_ACTIVE_OUTPUT)
+        combine_kbd_states(&global_state, &report);
+
+    memcpy(buffer, &report, sizeof(report));
+    return sizeof(report);
+}
+
+/* Return the current keyboard and LED state for GET_REPORT. */
 uint16_t tud_hid_get_report_cb(uint8_t instance,
                                uint8_t report_id,
                                hid_report_type_t report_type,
                                uint8_t *buffer,
                                uint16_t request_len) {
+    /* Only the keyboard interface answers GET reports. */
     if (instance != ITF_NUM_HID)
         return 0;
 
-    if (report_id != 0 && report_id != REPORT_ID_KEYBOARD)
+    /* Boot protocol omits the report ID, report protocol uses REPORT_ID_KEYBOARD. */
+    if (report_id != REPORT_ID_NONE && report_id != REPORT_ID_KEYBOARD)
         return 0;
 
-    if (report_type == HID_REPORT_TYPE_OUTPUT) {
-        if (request_len < 1)
+    switch (report_type) {
+        case HID_REPORT_TYPE_OUTPUT:
+            return get_led_report(buffer, request_len);
+
+        case HID_REPORT_TYPE_INPUT:
+            return get_keyboard_report(buffer, request_len);
+
+        default:
             return 0;
-
-        /* What the host last set, after the Caps Lock rewrite kbd_led_as_indicator
-           makes before the byte is stored, so it is also what the attached keyboard
-           was told. With the indicator on, a host that turned Caps Lock off and
-           reads back sees it on while this board is the active output. */
-        buffer[0] = global_state.keyboard_leds_desired[BOARD_ROLE];
-
-        return 1;
     }
-
-    if (report_type == HID_REPORT_TYPE_INPUT) {
-        hid_keyboard_report_t report = {0};
-
-        if (request_len < sizeof(report))
-            return 0;
-
-        /* Only the computer being typed into is told what is held down. Key state is tracked
-           on whichever board the keyboard is plugged into, whatever output is selected, so
-           answering this from that state alone would let an idle computer read back, over its
-           own control pipe, what is being typed into the other one. It is told what it is
-           actually receiving, which is nothing. */
-        if (CURRENT_BOARD_IS_ACTIVE_OUTPUT)
-            combine_kbd_states(&global_state, &report);
-
-        memcpy(buffer, &report, sizeof(report));
-
-        return sizeof(report);
-    }
-
-    return 0;
 }
 
 /**
@@ -123,18 +107,12 @@ void tud_hid_set_report_cb(uint8_t instance,
         process_packet(packet, &global_state);
     }
 
-    /* Only other set report we care about is LED state change, and that's exactly 1 byte long.
-       It belongs to the keyboard interface. The vendor interface declares an output report too,
-       twelve bytes wide on REPORT_ID_VENDOR and handled above, but no other interface of ours
-       has a one byte output report to offer this test, which is what makes scoping it to
-       ITF_NUM_HID sound. In boot protocol the host sends the LED report with no report ID in
-       front of it, so accept report ID 0 there too while boot protocol is the one in force. */
-    bool is_led_report = instance == ITF_NUM_HID
-                      && (report_id == REPORT_ID_KEYBOARD
-                          || (report_id == 0
-                              && tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT));
+    /* LED reports use REPORT_ID_KEYBOARD, or 0 in boot protocol (no report ID byte). */
+    if (report_id != REPORT_ID_KEYBOARD && report_id != REPORT_ID_NONE)
+        return;
 
-    if (!is_led_report || bufsize != 1 || report_type != HID_REPORT_TYPE_OUTPUT)
+    /* The LED report is exactly one byte of "output" type. */
+    if (bufsize != 1 || report_type != HID_REPORT_TYPE_OUTPUT)
         return;
 
     uint8_t leds = buffer[0];

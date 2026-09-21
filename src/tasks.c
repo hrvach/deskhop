@@ -181,14 +181,8 @@ void process_hid_queue_task(device_t *state) {
     if (!tud_hid_n_ready(packet.instance))
         return;
 
-    /* In boot protocol (UEFI/BIOS/BitLocker) the boot keyboard interface only speaks the
-       8-byte boot keyboard format; report-ID reports (consumer/system) would be misread
-       as keystrokes, so drop them while boot protocol is active. Asked below the readiness
-       check and not above it: hidd_reset() clears protocol_mode to zero, which is the same
-       value as HID_PROTOCOL_BOOT, so an interface no host has configured yet reads as boot
-       whether or not anything asked for it. tud_hid_n_ready() is false until hidd_open()
-       has run, and that is the call that gives protocol_mode its real default. */
-    if (packet.instance == ITF_NUM_HID && tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT) {
+    /* Only the keyboard interface can be in boot protocol, so discard other reports. */
+    if (tud_hid_n_get_protocol(packet.instance) == HID_PROTOCOL_BOOT) {
         queue_try_remove(&state->hid_queue_out, &packet);
         return;
     }
