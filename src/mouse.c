@@ -395,9 +395,15 @@ void process_mouse_queue_task(device_t *state) {
     if (tud_suspended())
         tud_remote_wakeup();
 
-    /* If it's not ready, we'll try on the next pass */
-    if (!tud_hid_n_ready(ITF_NUM_HID))
-        return;
+    /* Check interface readiness. In ABSOLUTE mode, we send to both interfaces
+     * (buttons via relative, position via absolute), so both must be ready. */
+    if (report.mode == ABSOLUTE) {
+        if (!tud_hid_n_ready(ITF_NUM_HID) || !tud_hid_n_ready(ITF_NUM_HID_REL_M))
+            return;
+    } else {
+        if (!tud_hid_n_ready(ITF_NUM_HID_REL_M))
+            return;
+    }
 
     /* If the interface is configured as a keyboard in boot protocol, discard mouse data. */
     if (report.mode == ABSOLUTE && tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT) {
