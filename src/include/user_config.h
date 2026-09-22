@@ -207,3 +207,19 @@
  * */
 
 #define ENFORCE_KEYBOARD_BOOT_PROTOCOL 0
+
+
+/**================================================== *
+ * ==============  Force Max Poll Rate ============== *
+ * ================================================== *
+ *
+ * If enabled, fixes input lag on some devices by polling them
+ * every 1 ms, whatever interval they ask for. A Logitech
+ * Lightspeed receiver asks for 10 ms when connected here.
+ *
+ * FORCE_MAX_POLL_RATE: [0, 1] - 1 means full speed devices are polled every 1 ms
+ *                               0 means devices are polled as often as they ask
+ *
+ * */
+
+#define FORCE_MAX_POLL_RATE 0

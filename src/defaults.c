@@ -61,4 +61,5 @@ const config_t default_config = {
     .hotkey_toggle = HOTKEY_TOGGLE,
     .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
     .jump_threshold = JUMP_THRESHOLD,
+    .force_max_poll_rate = FORCE_MAX_POLL_RATE,
 };

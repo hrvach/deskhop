@@ -80,7 +80,8 @@ typedef struct {
     uint16_t jump_threshold;
 
     output_t output[NUM_SCREENS];
-    uint32_t _reserved;
+    uint8_t force_max_poll_rate;
+    uint8_t _reserved[3];
 
     // Keep checksum at the end of the struct
     uint32_t checksum;
