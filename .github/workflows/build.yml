@@ -35,6 +35,10 @@ jobs:
       working-directory: disk
       run: ./create.sh
 
+    - name: Test boot mouse report
+      shell: bash
+      run: cc -std=c11 -Wall -Werror -Isrc/include misc/boot_mouse_test.c -o /tmp/boot_mouse_test && /tmp/boot_mouse_test
+
     - name: Build firmware
       shell: bash
       run: |

@@ -180,9 +180,11 @@ void handle_mouse_abs_uart_msg(uart_packet_t *packet, device_t *state) {
     mouse_report_t *mouse_report = (mouse_report_t *)packet->data;
     queue_mouse_report(mouse_report, state);
 
-    state->pointer_x       = mouse_report->x;
-    state->pointer_y       = mouse_report->y;
-    state->mouse_buttons   = mouse_report->buttons;
+    if (mouse_report->mode != BOOT_RELATIVE) {
+        state->pointer_x = mouse_report->x;
+        state->pointer_y = mouse_report->y;
+    }
+    state->mouse_buttons = mouse_report->buttons;
 
     state->last_activity[BOARD_ROLE] = time_us_64();
 }
@@ -275,6 +277,10 @@ void handle_toggle_gaming_msg(uart_packet_t *packet, device_t *state) {
     state->gaming_mode = packet->data[0];
 }
 
+void handle_boot_mouse_mode_msg(uart_packet_t *packet, device_t *state) {
+    state->boot_mouse_mode[OTHER_ROLE] = packet->data[0] != 0;
+}
+
 /* Process api communication messages */
 void handle_api_msgs(uart_packet_t *packet, device_t *state) {
     uint8_t value_idx = packet->data[0];
@@ -360,6 +366,9 @@ void handle_response_byte_msg(uart_packet_t *packet, device_t *state) {
 /* Process a request to read a firmware package from flash */
 void handle_heartbeat_msg(uart_packet_t *packet, device_t *state) {
     uint16_t other_running_version = packet->data16[0];
+
+    state->boot_mouse_mode[OTHER_ROLE]
+        = (packet->data16[2] & HEARTBEAT_BOOT_MOUSE_BIT) != 0;
 
     if (state->fw.upgrade_in_progress)
         return;

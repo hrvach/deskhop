@@ -10,6 +10,7 @@
  */
 
 #include "usb_descriptors.h"
+#include "boot_mouse.h"
 #include "main.h"
 #include "tusb.h"
 
@@ -67,17 +68,62 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
     }
 }
 
+static int16_t last_abs_x;
+static int16_t last_abs_y;
+
+void tud_mouse_report_reset(int16_t x, int16_t y) {
+    last_abs_x = x;
+    last_abs_y = y;
+}
+
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan) {
     mouse_report_t report = {.buttons = buttons, .wheel = wheel, .x = x, .y = y, .mode = mode, .pan = pan};
     uint8_t instance = ITF_NUM_HID;
     uint8_t report_id = REPORT_ID_MOUSE;
+    bool relative = mode == RELATIVE || mode == BOOT_RELATIVE;
+    int32_t dx = x, dy = y;
 
-    if (mode == RELATIVE) {
-        instance = ITF_NUM_HID_REL_M;
+    if (relative) {
+        instance  = ITF_NUM_HID_REL_M;
         report_id = REPORT_ID_RELMOUSE;
+    } else {
+        dx = (int32_t)x - last_abs_x;
+        dy = (int32_t)y - last_abs_y;
+        if (tud_hid_n_get_protocol(ITF_NUM_HID_REL_M) == HID_PROTOCOL_BOOT)
+            instance = ITF_NUM_HID_REL_M;
     }
 
-    return tud_hid_n_report(instance, report_id, &report, sizeof(report));
+    /* A boot keyboard cannot carry the absolute mouse collection. */
+    if (!relative && instance == ITF_NUM_HID
+        && tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT)
+        return true;
+
+    if (instance == ITF_NUM_HID_REL_M
+        && tud_hid_n_get_protocol(ITF_NUM_HID_REL_M) == HID_PROTOCOL_BOOT) {
+        if (!relative) {
+            output_t *output = &global_state.config.output[BOARD_ROLE];
+            uint8_t shift = global_state.mouse_zoom ? MOUSE_ZOOM_SCALING_FACTOR : 0;
+            int32_t speed_x = output->speed_x >> shift;
+            int32_t speed_y = output->speed_y >> shift;
+            dx /= speed_x > 0 ? speed_x : 1;
+            dy /= speed_y > 0 ? speed_y : 1;
+        }
+
+        uint8_t boot_report[3];
+        encode_boot_mouse_report(boot_report, buttons, dx, dy);
+
+        bool sent = tud_hid_n_report(instance, REPORT_ID_NONE, boot_report, sizeof(boot_report));
+        if (sent && !relative)
+            tud_mouse_report_reset(x, y);
+
+        return sent;
+    }
+
+    bool sent = tud_hid_n_report(instance, report_id, &report, sizeof(report));
+    if (sent && !relative)
+        tud_mouse_report_reset(x, y);
+
+    return sent;
 }
 
 
@@ -209,7 +255,7 @@ uint8_t const desc_configuration[] = {
 
     TUD_HID_DESCRIPTOR(ITF_NUM_HID_REL_M,
                        STRID_MOUSE,
-                       HID_ITF_PROTOCOL_NONE,
+                       HID_ITF_PROTOCOL_MOUSE,
                        sizeof(desc_hid_report_relmouse),
                        EPNUM_HID_REL_M,
                        CFG_TUD_HID_EP_BUFSIZE,
@@ -236,7 +282,7 @@ uint8_t const desc_configuration_config[] = {
 
     TUD_HID_DESCRIPTOR(ITF_NUM_HID_REL_M,
                        STRID_MOUSE,
-                       HID_ITF_PROTOCOL_NONE,
+                       HID_ITF_PROTOCOL_MOUSE,
                        sizeof(desc_hid_report_relmouse),
                        EPNUM_HID_REL_M,
                        CFG_TUD_HID_EP_BUFSIZE,

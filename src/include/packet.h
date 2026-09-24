@@ -45,6 +45,8 @@
 #define SYSTEM_CONTROL_LENGTH   1
 #define MODIFIER_BIT_LENGTH     8
 
+#define HEARTBEAT_BOOT_MOUSE_BIT 0x8000u
+
 /*==============================================================================
  *  Data Structures
  *==============================================================================*/

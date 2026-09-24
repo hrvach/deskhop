@@ -73,6 +73,7 @@ const uart_handler_t uart_handler[] = {
     {.type = GAMING_MODE_MSG, .handler = handle_toggle_gaming_msg},
     {.type = CONSUMER_CONTROL_MSG, .handler = handle_consumer_control_msg},
     {.type = SCREENSAVER_MSG, .handler = handle_screensaver_msg},
+    {.type = BOOT_MOUSE_MODE_MSG, .handler = handle_boot_mouse_mode_msg},
 
     /* Config */
     {.type = WIPE_CONFIG_MSG, .handler = handle_wipe_config_msg},

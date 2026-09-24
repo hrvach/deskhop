@@ -269,7 +269,7 @@ void do_screen_switch(device_t *state, int direction) {
     output_t *output = &state->config.output[state->active_output];
 
     /* No switching allowed if explicitly disabled or in gaming mode */
-    if (state->switch_lock || state->gaming_mode)
+    if (state->switch_lock || state->gaming_mode || state->boot_mouse_mode[state->active_output])
         return;
 
     /* We want to jump in the direction of the other computer */
@@ -336,9 +336,13 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
     };
 
     /* Workaround for Windows multiple desktops */
-    if (state->relative_mouse || state->gaming_mode) {
-        mouse_report.x = values->move_x;
-        mouse_report.y = values->move_y;
+    if (state->boot_mouse_mode[state->active_output]) {
+        mouse_report.x    = values->move_x;
+        mouse_report.y    = values->move_y;
+        mouse_report.mode = BOOT_RELATIVE;
+    } else if (state->relative_mouse || state->gaming_mode) {
+        mouse_report.x    = values->move_x;
+        mouse_report.y    = values->move_y;
         mouse_report.mode = RELATIVE;
     }
 
@@ -396,14 +400,13 @@ void process_mouse_queue_task(device_t *state) {
         tud_remote_wakeup();
 
     /* If it's not ready, we'll try on the next pass */
-    if (!tud_hid_n_ready(ITF_NUM_HID))
-        return;
+    uint8_t instance = (report.mode == RELATIVE || report.mode == BOOT_RELATIVE
+                        || tud_hid_n_get_protocol(ITF_NUM_HID_REL_M) == HID_PROTOCOL_BOOT)
+                           ? ITF_NUM_HID_REL_M
+                           : ITF_NUM_HID;
 
-    /* If the interface is configured as a keyboard in boot protocol, discard mouse data. */
-    if (report.mode == ABSOLUTE && tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT) {
-        queue_try_remove(&state->mouse_queue, &report);
+    if (!tud_hid_n_ready(instance))
         return;
-    }
 
     /* Try sending it to the host, if it's successful */
     bool succeeded

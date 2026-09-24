@@ -163,7 +163,8 @@ void heartbeat_output_task(device_t *state) {
         .type = HEARTBEAT_MSG,
         .data16 = {
             [0] = state->_running_fw.version,
-            [2] = state->active_output,
+            [2] = state->active_output
+                | (state->boot_mouse_mode[BOARD_ROLE] ? HEARTBEAT_BOOT_MOUSE_BIT : 0),
         },
     };
 
