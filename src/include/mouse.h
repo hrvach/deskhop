@@ -26,4 +26,5 @@ void      parse_report_descriptor(hid_interface_t *, uint8_t const *, int);
 void process_mouse_report(uint8_t *, int, uint8_t, hid_interface_t *);
 void queue_mouse_report(mouse_report_t *, device_t *);
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan);
+void tud_mouse_report_reset(int16_t x, int16_t y);
 void output_mouse_report(mouse_report_t *, device_t *);

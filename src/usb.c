@@ -48,13 +48,26 @@ static uint16_t get_keyboard_report(uint8_t *buffer, uint16_t request_len) {
     return sizeof(report);
 }
 
+static uint16_t get_boot_mouse_report(uint8_t *buffer, uint16_t request_len) {
+    if (request_len < 3)
+        return 0;
+
+    memset(buffer, 0, 3);
+    return 3;
+}
+
 /* Return the current keyboard and LED state for GET_REPORT. */
 uint16_t tud_hid_get_report_cb(uint8_t instance,
                                uint8_t report_id,
                                hid_report_type_t report_type,
                                uint8_t *buffer,
                                uint16_t request_len) {
-    /* Only the keyboard interface answers GET reports. */
+    if (instance == ITF_NUM_HID_REL_M && report_id == REPORT_ID_NONE
+        && report_type == HID_REPORT_TYPE_INPUT
+        && tud_hid_n_get_protocol(instance) == HID_PROTOCOL_BOOT)
+        return get_boot_mouse_report(buffer, request_len);
+
+    /* The primary HID interface answers keyboard GET reports. */
     if (instance != ITF_NUM_HID)
         return 0;
 
@@ -72,6 +85,25 @@ uint16_t tud_hid_get_report_cb(uint8_t instance,
         default:
             return 0;
     }
+}
+
+static void set_local_boot_mouse_mode(bool enabled) {
+    global_state.boot_mouse_mode[BOARD_ROLE] = enabled;
+    send_value(enabled, BOOT_MOUSE_MODE_MSG);
+}
+
+void tud_hid_set_protocol_cb(uint8_t instance, uint8_t protocol) {
+    if (instance != ITF_NUM_HID_REL_M)
+        return;
+
+    bool boot_mode = protocol == HID_PROTOCOL_BOOT;
+    set_local_boot_mouse_mode(boot_mode);
+
+    if (boot_mode)
+        tud_mouse_report_reset(global_state.pointer_x, global_state.pointer_y);
+
+    mouse_report_t release = {.mode = RELATIVE};
+    queue_mouse_report(&release, &global_state);
 }
 
 /**
@@ -138,11 +170,14 @@ void tud_hid_set_report_cb(uint8_t instance,
 /* Invoked when device is mounted */
 void tud_mount_cb(void) {
     global_state.tud_connected = true;
+    set_local_boot_mouse_mode(tud_hid_n_get_protocol(ITF_NUM_HID_REL_M) == HID_PROTOCOL_BOOT);
+    tud_mouse_report_reset(global_state.pointer_x, global_state.pointer_y);
 }
 
 /* Invoked when device is unmounted */
 void tud_umount_cb(void) {
     global_state.tud_connected = false;
+    set_local_boot_mouse_mode(false);
 }
 
 #ifdef DH_DEBUG_CDC_FLASH

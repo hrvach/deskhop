@@ -34,6 +34,7 @@
 #define ABSOLUTE 0
 #define RELATIVE 1
 #define TOUCH 2
+#define BOOT_RELATIVE 3
 
 /*==============================================================================
  *  Boolean States
