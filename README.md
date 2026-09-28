@@ -117,6 +117,10 @@ Ever tried to move that YT video slider to a specific position but your mouse mo
 If you want to lock yourself to one screen, use ```RIGHT CTRL + K```.
 This will make sure you won't accidentally leave your current screen. To turn off, press the same key combo again.
 
+### Wrap Around
+
+**Off by default**, turned on with the Wrap Around checkbox in the web config. Pushing the mouse past the outer edge of your outermost screen takes it to the far edge of the other computer's outermost screen, so you can keep moving in one direction and cycle between the two. The jump threshold applies here too. On Windows with more than one screen, the wrap only meets the far edge with acceleration off, Windows at its default pointer speed without Enhance pointer precision, Speed X at 32767 divided by the screen width (rounded down) and Speed Y at 32767 divided by the height.
+
 ### Lock Both Screens
 
 You can lock both computers at once by using ```RIGHT CTRL + L```.

@@ -102,6 +102,21 @@
 #define ENABLE_ACCELERATION 1
 
 /**================================================== *
+ * ==================  Wrap Around ================== *
+ * ================================================== *
+ *
+ * If enabled, pushing the mouse past the outer edge of your outermost screen
+ * takes it to the far edge of the other computer's outermost screen, so you
+ * can keep going in the same direction. JUMP_THRESHOLD applies here too.
+ *
+ * WRAP_AROUND: [0, 1] - 1 means the outer edges lead to the other computer
+ *                       0 means the mouse stops at the outer edges
+ *
+ * */
+
+#define WRAP_AROUND 0
+
+/**================================================== *
  * ==============  Screensaver Config  ============== *
  * ================================================== *
  *
