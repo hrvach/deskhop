@@ -169,6 +169,13 @@ struct hid_interface_t {
     uint8_t report_handler[REPORT_ID_MAP_SIZE];
     uint8_t protocol;
     bool uses_report_id;
+
+    /* Which mouse buttons this interface is currently holding down. The one member here
+       that keeps changing after the device is set up: everything above is either read out
+       of the descriptor or, in protocol's case, settled during enumeration. It lives here
+       because the interface is what identifies the device it came from, and because
+       tuh_hid_umount_cb clears the whole struct, so unplugging drops these too. */
+    uint8_t mouse_buttons;
 };
 
 typedef struct {
