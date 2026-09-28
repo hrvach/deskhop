@@ -168,6 +168,11 @@ void tud_cdc_rx_cb(uint8_t itf) {
  * ===============  USB HOST Section  =============== *
  * ================================================== */
 
+/* Invoked when a HID interface is opened, asks whether to poll its inputs every frame */
+bool tuh_hid_force_max_poll_rate_cb(uint8_t dev_addr) {
+    return global_state.config.force_max_poll_rate;
+}
+
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     uint8_t itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
 

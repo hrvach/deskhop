@@ -62,4 +62,5 @@ const config_t default_config = {
     .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
     .jump_threshold = JUMP_THRESHOLD,
     .led_mode = LED_ACTIVE_OUTPUT,
+    .force_max_poll_rate = FORCE_MAX_POLL_RATE,
 };

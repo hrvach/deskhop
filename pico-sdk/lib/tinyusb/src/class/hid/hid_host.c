@@ -489,9 +489,22 @@ bool hidh_open(uint8_t rhport, uint8_t daddr, tusb_desc_interface_t const* desc_
   p_desc = tu_desc_next(p_desc);
   tusb_desc_endpoint_t const* desc_ep = (tusb_desc_endpoint_t const*) p_desc;
 
+  // If the application asks, poll a full speed device's IN endpoints every frame, whatever
+  // bInterval they declare. This host is full speed only, so a high speed device enumerates
+  // from its full speed descriptors, where a Lightspeed receiver asks for 10 ms and lags
+  // (DeskHop #215, #285). Low speed devices keep theirs: each of their transactions costs
+  // eight times the bus time.
+  bool const poll_every_frame = tuh_speed_get(daddr) == TUSB_SPEED_FULL &&
+                                tuh_hid_force_max_poll_rate_cb && tuh_hid_force_max_poll_rate_cb(daddr);
+
   for (int i = 0; i < desc_itf->bNumEndpoints; i++) {
     TU_ASSERT(TUSB_DESC_ENDPOINT == desc_ep->bDescriptorType);
-    TU_ASSERT(tuh_edpt_open(daddr, desc_ep));
+
+    tusb_desc_endpoint_t desc_open = *desc_ep;
+    if (poll_every_frame && tu_edpt_dir(desc_open.bEndpointAddress) == TUSB_DIR_IN) {
+      desc_open.bInterval = 1;
+    }
+    TU_ASSERT(tuh_edpt_open(daddr, &desc_open));
 
     if (tu_edpt_dir(desc_ep->bEndpointAddress) == TUSB_DIR_IN) {
       p_hid->ep_in = desc_ep->bEndpointAddress;

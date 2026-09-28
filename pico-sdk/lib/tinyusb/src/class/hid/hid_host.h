@@ -168,6 +168,10 @@ TU_ATTR_WEAK void tuh_hid_set_report_complete_cb(uint8_t dev_addr, uint8_t idx, 
 // Invoked when Set Protocol request is complete
 TU_ATTR_WEAK void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol);
 
+// Invoked when a hid interface is opened, return true to poll a full speed device's
+// interrupt IN endpoints every frame, whatever bInterval they declare
+TU_ATTR_WEAK bool tuh_hid_force_max_poll_rate_cb(uint8_t dev_addr);
+
 //--------------------------------------------------------------------+
 // Internal Class Driver API
 //--------------------------------------------------------------------+

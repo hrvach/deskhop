@@ -84,7 +84,8 @@ typedef struct {
     /* If not set to zero (previously reserved), gaming mode should be active by default */
     uint8_t gaming_mode_default;
     uint8_t led_mode;
-    uint8_t _reserved[2];
+    uint8_t force_max_poll_rate;
+    uint8_t _reserved[1];
 
     // Keep checksum at the end of the struct
     uint32_t checksum;
