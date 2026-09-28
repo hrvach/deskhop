@@ -35,6 +35,9 @@ CONFIG_ = [
     FormField(75, "Enable Acceleration", None, {}, "uint8", "checkbox"),
     FormField(83, "Gaming Mode Default ON", None, {}, "uint8", "checkbox"),
     FormField(77, "Jump Threshold", 0, {"min": 0, "max": 3000}, "uint16", "range"),
+    FormField(87, "Edge Double-Tap to Switch", None, {}, "uint8", "checkbox"),
+    FormField(88, "Double-Tap Time (ms)", 300, {"min": 0, "max": 2000}, "uint16", "range"),
+    FormField(89, "Double-Tap Pull-Back Distance", 1000, {"min": 50, "max": 5000}, "uint16", "range"),
 
     FormField(1002, "Keyboard", elem="label"),
     FormField(72, "Force KBD Boot Protocol", None, {}, "uint8", "checkbox"),

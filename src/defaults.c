@@ -62,4 +62,7 @@ const config_t default_config = {
     .kbd_led_as_indicator = KBD_LED_AS_INDICATOR,
     .jump_threshold = JUMP_THRESHOLD,
     .led_mode = LED_ACTIVE_OUTPUT,
+    .switch_double_tap_enable = SWITCH_DOUBLE_TAP_ENABLE,
+    .switch_double_tap_ms = SWITCH_DOUBLE_TAP_MS,
+    .switch_double_tap_margin = SWITCH_DOUBLE_TAP_MARGIN,
 };
