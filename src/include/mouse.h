@@ -27,3 +27,4 @@ void process_mouse_report(uint8_t *, int, uint8_t, hid_interface_t *);
 void queue_mouse_report(mouse_report_t *, device_t *);
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan);
 void output_mouse_report(mouse_report_t *, device_t *);
+void sync_pointer_position(device_t *);

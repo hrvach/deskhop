@@ -187,6 +187,20 @@ void handle_mouse_abs_uart_msg(uart_packet_t *packet, device_t *state) {
     state->last_activity[BOARD_ROLE] = time_us_64();
 }
 
+/* Adopt the authoritative cursor position from the other board.
+
+   Both boards track the cursor independently, but there is only one cursor. After an
+   output switch, the board that performed the switch knows where the cursor ended up,
+   so it tells us. Without this, our stale coordinates - in particular the parking
+   position from the hidden_pointer report in switch_to_another_pc - would be used the
+   next time a pointing device on THIS board moves, making the cursor jump in from a
+   screen corner. Worse, since the parked X sits right on the screen edge, the smallest
+   movement would immediately trigger an unwanted switch back. */
+void handle_pointer_sync_msg(uart_packet_t *packet, device_t *state) {
+    state->pointer_x = (int16_t)packet->data16[0];
+    state->pointer_y = (int16_t)packet->data16[1];
+}
+
 /* Function handles request to switch output  */
 void handle_output_select_msg(uart_packet_t *packet, device_t *state) {
     state->active_output = packet->data[0];
