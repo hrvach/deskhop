@@ -93,6 +93,14 @@ void load_config(device_t *state) {
     /* On any condition failing, we fall back to default config */
     if (magic_header_fail || checksum_fail || version_fail)
         memcpy(running_config, &default_config, sizeof(config_t));
+
+    /* Configs saved before per-output acceleration existed keep the former global setting */
+    for (int i = 0; i < NUM_SCREENS; i++) {
+        output_t *output = &running_config->output[i];
+
+        if (output->mouse_accel == ACCEL_UNSET)
+            output->mouse_accel = running_config->enable_acceleration ? ACCEL_ENABLED : ACCEL_DISABLED;
+    }
 }
 
 void save_config(device_t *state) {

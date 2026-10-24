@@ -47,5 +47,6 @@ typedef struct {
     uint8_t os;                // Operating system on this output
     uint8_t pos;               // Screen position on this output
     uint8_t mouse_park_pos;    // Where the mouse goes after switch
+    uint8_t mouse_accel;       // Acceleration on this output
     screensaver_t screensaver; // Screensaver parameters for this output
 } output_t;

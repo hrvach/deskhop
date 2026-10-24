@@ -33,6 +33,7 @@ const field_map_t api_field_map[] = {
     /* Until we increase the payload size from 8 bytes, clamp to avoid exceeding the field size */
     { 21, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.idle_time_us) },
     { 22, false, UINT64, 7, offsetof(device_t, config.output[0].screensaver.max_time_us) },
+    { 23, false, UINT8,  1, offsetof(device_t, config.output[0].mouse_accel) },
 
     /* Output B */
     { 40, false, UINT32, 4, offsetof(device_t, config.output[1].number) },
@@ -48,6 +49,7 @@ const field_map_t api_field_map[] = {
     { 50, false, UINT8,  1, offsetof(device_t, config.output[1].screensaver.only_if_inactive) },
     { 51, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.idle_time_us) },
     { 52, false, UINT64, 7, offsetof(device_t, config.output[1].screensaver.max_time_us) },
+    { 53, false, UINT8,  1, offsetof(device_t, config.output[1].mouse_accel) },
 
     /* Common config */
     { 70, false, UINT32, 4, offsetof(device_t, config.version) },

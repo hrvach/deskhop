@@ -186,6 +186,12 @@ enum screensaver_mode_e {
     MAX_SS_VAL = JITTER,
 };
 
+enum mouse_accel_e {
+    ACCEL_UNSET    = 0,
+    ACCEL_ENABLED  = 1,
+    ACCEL_DISABLED = 2,
+};
+
 enum led_mode_e {
     LED_ACTIVE_OUTPUT = 0,
     LED_SHORT_IDLE    = 1,

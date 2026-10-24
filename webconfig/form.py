@@ -32,7 +32,6 @@ STATUS_ = [
 CONFIG_ = [
     FormField(1001, "Mouse", elem="label"),
     FormField(71, "Force Mouse Boot Mode", None, {}, "uint8", "checkbox"),
-    FormField(75, "Enable Acceleration", None, {}, "uint8", "checkbox"),
     FormField(83, "Gaming Mode Default ON", None, {}, "uint8", "checkbox"),
     FormField(77, "Jump Threshold", 0, {"min": 0, "max": 3000}, "uint16", "range"),
 
@@ -59,6 +58,7 @@ OUTPUT_ = [
     FormField(6, "Operating System", 1, {1: "Linux", 2: "MacOS", 3: "Windows", 4: "Android", 255: "Other"}, "uint8"),
     FormField(7, "Screen Position", 1, {1: "Left", 2: "Right"}, "uint8"),
     FormField(8, "Cursor Park Position", 0, {0: "Top", 1: "Bottom", 3: "Previous"}, "uint8"),
+    FormField(13, "Mouse Acceleration", 1, {1: "Enabled", 2: "Disabled"}, "uint8"),
     FormField(1003, "Screensaver", elem="label"),
     FormField(9, "Mode", 0, {0: "Disabled", 1: "Pong", 2: "Jitter"}, "uint8"),
     FormField(10, "Only If Inactive", None, {}, "uint8", "checkbox"),

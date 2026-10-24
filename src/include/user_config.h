@@ -84,7 +84,8 @@
  *
  * This is now configurable per-screen.
  *
- * ENABLE_ACCELERATION: [0-1], disables or enables mouse acceleration.
+ * ENABLE_ACCELERATION: [0-1], default mouse acceleration for both outputs.
+ *                      Can be changed per output in the web config.
  *
  * */
 

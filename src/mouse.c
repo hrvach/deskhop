@@ -65,6 +65,11 @@ int32_t move_and_keep_on_screen(int position, int offset) {
     return position + offset;
 }
 
+/* Acceleration is configured separately for each output */
+static bool is_acceleration_enabled(const output_t *output) {
+    return output->mouse_accel == ACCEL_ENABLED;
+}
+
 /* Implement basic mouse acceleration based on actual 2D movement magnitude.
    Returns the acceleration factor to apply to both x and y components. */
 float calculate_mouse_acceleration_factor(int32_t offset_x, int32_t offset_y) {
@@ -85,7 +90,7 @@ float calculate_mouse_acceleration_factor(int32_t offset_x, int32_t offset_y) {
     if (offset_x == 0 && offset_y == 0)
         return 1.0;
 
-    if (!global_state.config.enable_acceleration)
+    if (!is_acceleration_enabled(&global_state.config.output[global_state.active_output]))
         return 1.0;
 
     // Calculate the 2D movement magnitude
