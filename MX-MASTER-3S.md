@@ -50,3 +50,7 @@ Select **MacOS** under Operating System for each Mac output on the existing conf
 Mac clipboard history requires macOS Tahoe 26 or later, default Spotlight keyboard shortcuts, and clipboard history enabled. Earlier macOS releases need a separate clipboard manager and a corresponding firmware shortcut change. The delayed Mac shortcut is cancelled if another output is active or its OS setting changes before it runs. OS selection is manual; firmware does not detect the connected computer's OS.
 
 The OS-aware build is `firmware/deskhop-mx-os-aware.uf2`; the original Windows build remains available separately. The OS-aware build requires hardware verification after flashing.
+
+## Mac horizontal thumb wheel
+
+For outputs configured as MacOS, horizontal scrolling switches Spaces: negative/left pan sends Control+Left Arrow; positive/right pan sends Control+Right Arrow. Horizontal scroll reports are consumed on Mac, with at most one desktop switch every 400 ms per output. Vertical scrolling and Windows horizontal scrolling are unchanged. Enable the standard Move left/right a space shortcuts in macOS Mission Control settings and create multiple Spaces. Physical thumb-wheel direction should be verified on the mouse after flashing.

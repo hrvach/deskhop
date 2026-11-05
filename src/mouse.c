@@ -406,6 +406,28 @@ static uint8_t handle_button_shortcuts(device_t *state, uint8_t buttons, uint8_t
     return buttons & ~mapped_bits;
 }
 
+/* Consume Mac horizontal scrolling as Control+Arrow. Rate-limit each output
+ * so a high-resolution thumb wheel does not race through multiple Spaces. */
+static void handle_mac_desktop_scroll(device_t *state, mouse_values_t *values) {
+    static uint64_t next_switch_us[NUM_SCREENS] = {0};
+    uint8_t output = state->active_output;
+    if (state->config.output[output].os != MACOS || values->pan == 0)
+        return;
+
+    int32_t pan = values->pan;
+    values->pan = 0;
+    uint64_t now = time_us_64();
+    if (now < next_switch_us[output])
+        return;
+
+    hid_keyboard_report_t press = {0}, release = {0};
+    press.modifier = KEYBOARD_MODIFIER_LEFTCTRL;
+    press.keycode[0] = pan > 0 ? HID_KEY_ARROW_RIGHT : HID_KEY_ARROW_LEFT;
+    send_key(&press, state);
+    send_key(&release, state);
+    next_switch_us[output] = now + 400000;
+}
+
 void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interface_t *iface) {
     static uint8_t prev_raw_buttons = 0; // Raw button state from the physical mouse
     mouse_values_t values = {0};
@@ -428,6 +450,8 @@ void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interfa
     uint8_t raw_buttons = (uint8_t)values.buttons;
     values.buttons      = handle_button_shortcuts(state, raw_buttons, prev_raw_buttons);
     prev_raw_buttons    = raw_buttons;
+
+    handle_mac_desktop_scroll(state, &values);
 
     /* If nothing changed, don't send a report. This prevents composite keyboards
        (e.g. QMK) that expose a mouse HID interface from generating spurious
