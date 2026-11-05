@@ -375,6 +375,10 @@ static void send_button_shortcut(device_t *state, uint8_t modifier, uint8_t key)
     hid_keyboard_report_t press   = {0};
     hid_keyboard_report_t release = {0};
 
+    if (modifier == KEYBOARD_MODIFIER_LEFTCTRL &&
+        state->config.output[state->active_output].os == MACOS)
+        modifier = KEYBOARD_MODIFIER_LEFTGUI;
+
     press.modifier    = modifier;
     press.keycode[0]  = key;
 

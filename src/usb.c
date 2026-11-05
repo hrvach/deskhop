@@ -215,6 +215,25 @@ static uint8_t hidpp_pending = 0; /* One confirmation bit per button. */
 static uint16_t hidpp_waiting_cid = 0;
 static bool hidpp_tx_busy = false;
 static uint8_t hidpp_tx_report[20];
+static uint64_t mac_clipboard_due = 0;
+static uint8_t mac_clipboard_output;
+static void hidpp_send_shortcut(device_t *state, uint8_t key);
+
+/* Finish the Spotlight sequence without blocking USB polling. Never send the
+ * second shortcut to a different output after a computer switch. */
+static void mac_clipboard_task(device_t *state) {
+    if (!mac_clipboard_due)
+        return;
+    if (state->active_output != mac_clipboard_output ||
+        state->config.output[mac_clipboard_output].os != MACOS) {
+        mac_clipboard_due = 0;
+        return;
+    }
+    if (time_us_64() >= mac_clipboard_due) {
+        mac_clipboard_due = 0;
+        hidpp_send_shortcut(state, HID_KEY_4);
+    }
+}
 static uint64_t hidpp_next_send_us = 0;
 static uint8_t hidpp_pressed_prev  = 0;
 
@@ -284,6 +303,7 @@ static bool hidpp_send_divert(uint16_t cid) {
 
 /* Keep asking until the mouse confirms, and again after it reconnects */
 void hidpp_task(void) {
+    mac_clipboard_task(&global_state);
     if (!hidpp_pending || hidpp_dev_addr == 0)
         return;
 
@@ -359,11 +379,21 @@ static void hidpp_handle_report(device_t *state, uint8_t const *r, uint16_t len)
             blink_led(state);       /* stage 3: a new button press arrived */
 #endif
 
-        /* Thumb toggles gaming mode; top opens Windows clipboard history. */
+        /* Follow the active output's OS selection from the config page. */
         if (newly_pressed & 0x01)
             toggle_gaming_mode_handler(state, NULL);
-        if (newly_pressed & 0x02)
-            hidpp_send_shortcut(state, HID_KEY_V);
+        if (newly_pressed & 0x02) {
+            if (state->config.output[state->active_output].os == MACOS) {
+                /* Ignore repeated clicks while Spotlight is opening. */
+                if (!mac_clipboard_due) {
+                    hidpp_send_shortcut(state, HID_KEY_SPACE);
+                    mac_clipboard_output = state->active_output;
+                    mac_clipboard_due = time_us_64() + 500000;
+                }
+            } else {
+                hidpp_send_shortcut(state, HID_KEY_V);
+            }
+        }
     }
 }
 

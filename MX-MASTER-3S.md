@@ -36,3 +36,17 @@ HID++ button setup uses control SET_REPORT transfers with a persistent buffer, i
 Receiver device index **2** and REPROG_CONTROLS_V4 feature index **9** were queried and verified on this receiver. Thumb CID is `0x00C3`; top CID is `0x00C4`. These indexes remain fixed in `src/usb.c`; another pairing or receiver may require different indexes.
 
 Windows clipboard history must be available for Windows+V. Gaming mode follows the existing DeskHop behavior. Wheel click is consumed for switching instead of being sent as a middle click.
+
+## Per-output Mac configuration
+
+Select **MacOS** under Operating System for each Mac output on the existing configuration page, then save the settings. Mappings follow the active output, including when keyboard reports are forwarded between boards.
+
+- Back: Command+V (Paste) on Mac; Ctrl+V on Windows.
+- Forward: Command+C (Copy) on Mac; Ctrl+C on Windows.
+- Square: Command+Space, then Command+4 after 500 ms on Mac; Windows+V on Windows.
+- Thumb: gaming mode toggle on either OS.
+- Wheel click: switch computers on either OS.
+
+Mac clipboard history requires macOS Tahoe 26 or later, default Spotlight keyboard shortcuts, and clipboard history enabled. Earlier macOS releases need a separate clipboard manager and a corresponding firmware shortcut change. The delayed Mac shortcut is cancelled if another output is active or its OS setting changes before it runs. OS selection is manual; firmware does not detect the connected computer's OS.
+
+The OS-aware build is `firmware/deskhop-mx-os-aware.uf2`; the original Windows build remains available separately. The OS-aware build requires hardware verification after flashing.
