@@ -49,8 +49,10 @@ void usb_device_task(device_t *state) {
 }
 
 void usb_host_task(device_t *state) {
-    if (tuh_inited())
+    if (tuh_inited()) {
         tuh_task();
+        hidpp_task();
+    }
 }
 
 mouse_report_t *screensaver_pong(device_t *state) {
