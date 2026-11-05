@@ -265,6 +265,10 @@ void send_key(hid_keyboard_report_t *report, device_t *state) {
     hid_keyboard_report_t combined_report;
     combine_kbd_states(state, &combined_report);
 
+    /* Include the keys we were asked to send (e.g. mouse button shortcuts) */
+    combined_report.modifier |= report->modifier;
+    add_keys(&combined_report, report);
+
     if (CURRENT_BOARD_IS_ACTIVE_OUTPUT) {
         /* Queue the combined report */
         queue_kbd_report(&combined_report, state);

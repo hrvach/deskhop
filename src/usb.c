@@ -168,7 +168,10 @@ void tud_cdc_rx_cb(uint8_t itf) {
  * ===============  USB HOST Section  =============== *
  * ================================================== */
 
+static void hidpp_unmount(uint8_t dev_addr, uint8_t instance);
+
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
+    hidpp_unmount(dev_addr, instance);
     uint8_t itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
 
     if (dev_addr > MAX_DEVICES || instance >= MAX_INTERFACES)
@@ -194,8 +197,220 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     memset(iface, 0, sizeof(hid_interface_t));
 }
 
+/* ==================================================== *
+ * Logitech HID++ support: thumb and top mouse buttons
+ * These buttons only reach DeskHop through Logitech's
+ * private protocol on the receiver's vendor interface.
+ * ==================================================== */
+
+#define HIDPP_DEVICE_INDEX 2    /* Mouse index on the receiver (found on the test Mac) */
+#define HIDPP_REPROG_INDEX 9    /* REPROG_CONTROLS_V4 feature index on that mouse */
+#define HIDPP_CID_THUMB    0x00C3
+#define HIDPP_CID_TOP      0x00C4
+#define HIDPP_RESEND_US    2000000
+
+static uint8_t hidpp_dev_addr      = 0;     /* 0 = no HID++ interface found yet */
+static uint8_t hidpp_instance      = 0;
+static uint8_t hidpp_pending = 0; /* One confirmation bit per button. */
+static uint16_t hidpp_waiting_cid = 0;
+static bool hidpp_tx_busy = false;
+static uint8_t hidpp_tx_report[20];
+static uint64_t mac_clipboard_due = 0;
+static uint8_t mac_clipboard_output;
+static void hidpp_send_shortcut(device_t *state, uint8_t key);
+
+/* Finish the Spotlight sequence without blocking USB polling. Never send the
+ * second shortcut to a different output after a computer switch. */
+static void mac_clipboard_task(device_t *state) {
+    if (!mac_clipboard_due)
+        return;
+    if (state->active_output != mac_clipboard_output ||
+        state->config.output[mac_clipboard_output].os != MACOS) {
+        mac_clipboard_due = 0;
+        return;
+    }
+    if (time_us_64() >= mac_clipboard_due) {
+        mac_clipboard_due = 0;
+        hidpp_send_shortcut(state, HID_KEY_4);
+    }
+}
+static uint64_t hidpp_next_send_us = 0;
+static uint8_t hidpp_pressed_prev  = 0;
+
+static void hidpp_unmount(uint8_t dev_addr, uint8_t instance) {
+    if (dev_addr != hidpp_dev_addr || instance != hidpp_instance)
+        return;
+    hidpp_dev_addr = 0;
+    hidpp_tx_busy = false;
+    hidpp_pending = 0;
+    hidpp_waiting_cid = 0;
+    hidpp_pressed_prev = 0;
+}
+
+
+/* A receiver's HID++ interface starts with usage page 0xFF00 and declares report ID 0x11 */
+static bool is_hidpp_interface(uint8_t const *desc, uint16_t len) {
+    if (len < 3 || desc[0] != 0x06 || desc[1] != 0x00 || desc[2] != 0xFF)
+        return false;
+
+    /* Two HID++ interfaces exist (short and long reports). We want the long one, usage 0x02. */
+    bool has_report_11 = false;
+    bool has_usage_2   = false;
+    for (uint16_t i = 0; i + 1 < len; i++) {
+        if (desc[i] == 0x85 && desc[i + 1] == 0x11)
+            has_report_11 = true;
+        if (desc[i] == 0x09 && desc[i + 1] == 0x02)
+            has_usage_2 = true;
+    }
+    return has_report_11 && has_usage_2;
+}
+
+/* Ask the mouse to send a button's presses to DeskHop instead of hiding them */
+/* Control SET_REPORT supports receivers without an interrupt OUT endpoint.
+ * TinyUSB retains this buffer until its completion callback. */
+void tuh_hid_set_report_complete_cb(uint8_t dev_addr, uint8_t instance,
+                                  uint8_t report_id, uint8_t report_type, uint16_t len) {
+    if (dev_addr != hidpp_dev_addr || instance != hidpp_instance ||
+        report_id != 0x11 || report_type != HID_REPORT_TYPE_OUTPUT)
+        return;
+    hidpp_tx_busy = false;
+    if (len != sizeof(hidpp_tx_report))
+        hidpp_next_send_us = time_us_64() + 10000;
+}
+
+static bool hidpp_send_divert(uint16_t cid) {
+    if (hidpp_tx_busy)
+        return false;
+
+    memset(hidpp_tx_report, 0, sizeof(hidpp_tx_report));
+    hidpp_tx_report[0] = 0x11;
+    hidpp_tx_report[1] = HIDPP_DEVICE_INDEX;
+    hidpp_tx_report[2] = HIDPP_REPROG_INDEX;
+    hidpp_tx_report[3] = 0x31;
+    hidpp_tx_report[4] = cid >> 8;
+    hidpp_tx_report[5] = cid & 0xFF;
+    hidpp_tx_report[6] = 0x03; /* divert + diversion-valid bit */
+
+    hidpp_tx_busy = true;
+    if (!tuh_hid_set_report(hidpp_dev_addr, hidpp_instance, 0x11,
+                            HID_REPORT_TYPE_OUTPUT, hidpp_tx_report,
+                            sizeof(hidpp_tx_report))) {
+        hidpp_tx_busy = false;
+        return false;
+    }
+    return true;
+}
+
+/* Keep asking until the mouse confirms, and again after it reconnects */
+void hidpp_task(void) {
+    mac_clipboard_task(&global_state);
+    if (!hidpp_pending || hidpp_dev_addr == 0)
+        return;
+
+    uint64_t now = time_us_64();
+    if (now < hidpp_next_send_us)
+        return;
+
+    uint16_t cid = (hidpp_pending & 1) ? HIDPP_CID_THUMB : HIDPP_CID_TOP;
+    if (hidpp_send_divert(cid)) {
+        hidpp_waiting_cid = cid;
+        hidpp_next_send_us = now + HIDPP_RESEND_US;
+    } else {
+        /* Endpoint busy: retry later without losing this button. */
+        hidpp_next_send_us = now + 10000;
+    }
+}
+
+static void hidpp_send_shortcut(device_t *state, uint8_t key) {
+    hid_keyboard_report_t press   = {0};
+    hid_keyboard_report_t release = {0};
+
+    press.modifier   = KEYBOARD_MODIFIER_LEFTGUI;
+    press.keycode[0] = key;
+
+    send_key(&press, state);
+    send_key(&release, state);
+}
+
+static void hidpp_handle_report(device_t *state, uint8_t const *r, uint16_t len) {
+    if (len < 7 || r[1] != HIDPP_DEVICE_INDEX)
+        return;
+
+    /* Receiver says a device connected: ask again for the buttons */
+    if (r[2] == 0x41) {
+        hidpp_pending = 3;
+        hidpp_waiting_cid = 0;
+        hidpp_pressed_prev = 0;
+        hidpp_next_send_us   = 0;
+        return;
+    }
+
+    if (r[2] != HIDPP_REPROG_INDEX)
+        return;
+
+    /* Confirm only the requested CID; the other button stays pending. */
+    if (r[3] == 0x31) {
+        uint16_t cid = ((uint16_t)r[4] << 8) | r[5];
+        if (cid != hidpp_waiting_cid || (r[6] & 1) == 0)
+            return;
+        if (cid == HIDPP_CID_THUMB) hidpp_pending &= ~1u;
+        if (cid == HIDPP_CID_TOP) hidpp_pending &= ~2u;
+        hidpp_waiting_cid = 0;
+        hidpp_next_send_us = 0;
+#ifdef HIDPP_DEBUG
+        blink_led(state);           /* stage 2: mouse confirmed the request */
+#endif
+        return;
+    }
+
+    /* Button event: up to four pressed CIDs, zero means released */
+    if (r[3] == 0x00) {
+        uint8_t pressed = 0;
+        for (uint16_t i = 4; i + 1 < len && i <= 10; i += 2) {
+            uint16_t cid = (r[i] << 8) | r[i + 1];
+            if (cid == HIDPP_CID_THUMB) pressed |= 0x01;
+            if (cid == HIDPP_CID_TOP)   pressed |= 0x02;
+        }
+
+        uint8_t newly_pressed = pressed & ~hidpp_pressed_prev;
+        hidpp_pressed_prev    = pressed;
+#ifdef HIDPP_DEBUG
+        if (newly_pressed)
+            blink_led(state);       /* stage 3: a new button press arrived */
+#endif
+
+        /* Follow the active output's OS selection from the config page. */
+        if (newly_pressed & 0x01)
+            toggle_gaming_mode_handler(state, NULL);
+        if (newly_pressed & 0x02) {
+            if (state->config.output[state->active_output].os == MACOS) {
+                /* Ignore repeated clicks while Spotlight is opening. */
+                if (!mac_clipboard_due) {
+                    hidpp_send_shortcut(state, HID_KEY_SPACE);
+                    mac_clipboard_output = state->active_output;
+                    mac_clipboard_due = time_us_64() + 500000;
+                }
+            } else {
+                hidpp_send_shortcut(state, HID_KEY_V);
+            }
+        }
+    }
+}
+
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len) {
     uint8_t itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+
+    if (is_hidpp_interface(desc_report, desc_len)) {
+        hidpp_dev_addr       = dev_addr;
+        hidpp_instance       = instance;
+        hidpp_pending = 3;
+        hidpp_waiting_cid = 0;
+        hidpp_pressed_prev = 0;
+        hidpp_next_send_us   = 0;
+#ifdef HIDPP_DEBUG
+        blink_led(&global_state);   /* stage 1: found the mouse's private interface */
+#endif
+    }
 
     if (dev_addr > MAX_DEVICES || instance >= MAX_INTERFACES)
         return;
@@ -267,6 +482,15 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     if (dev_addr > MAX_DEVICES || instance >= MAX_INTERFACES)
         return;
 
+    /* Logitech HID++ interface: handle here, nothing else to do with it */
+    if (hidpp_dev_addr != 0 && dev_addr == hidpp_dev_addr && instance == hidpp_instance) {
+        if (len >= 1 && report[0] == 0x11)
+            hidpp_handle_report(&global_state, report, len);
+
+        tuh_hid_receive_report(dev_addr, instance);
+        return;
+    }
+
     hid_interface_t *iface = &global_state.iface[dev_addr-1][instance];
 
     /* Calculate a device index that distinguishes between different devices
@@ -308,6 +532,12 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 
         if (receiver != NULL)
             receiver((uint8_t *)report, len, device_idx, iface);
+
+#ifdef BUTTON_PROBE
+        /* Test build: blink when a report arrives that DeskHop doesn't handle (e.g. Logitech HID++) */
+        else if (report_has_id || itf_protocol == HID_ITF_PROTOCOL_NONE)
+            blink_led(&global_state);
+#endif
     }
     else if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD) {
         process_keyboard_report((uint8_t *)report, len, device_idx, iface);

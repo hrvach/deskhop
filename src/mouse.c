@@ -350,12 +350,108 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
     return mouse_report;
 }
 
+/* ==================================================== *
+ * Mouse button shortcuts
+ * Standard mouse buttons can send a keyboard shortcut
+ * to the active computer instead of a click.
+ * ==================================================== */
+
+typedef struct {
+    uint8_t button_bit; // Standard HID button bit (0x04 = middle, 0x08 = back, 0x10 = forward)
+    uint8_t modifier;   // Modifier to hold while pressing the key
+    uint8_t key;        // Key to press
+} button_shortcut_t;
+
+static const button_shortcut_t button_shortcuts[] = {
+    {0x08, KEYBOARD_MODIFIER_LEFTCTRL, HID_KEY_V}, // Back button    -> Ctrl+V
+    {0x10, KEYBOARD_MODIFIER_LEFTCTRL, HID_KEY_C}, // Forward button -> Ctrl+C
+};
+
+/* Middle click switches computers, same as the keyboard switching hotkey. */
+#define MIDDLE_BUTTON_BIT 0x04
+
+/* Sends a key press and release to the active computer */
+static void send_button_shortcut(device_t *state, uint8_t modifier, uint8_t key) {
+    hid_keyboard_report_t press   = {0};
+    hid_keyboard_report_t release = {0};
+
+    if (modifier == KEYBOARD_MODIFIER_LEFTCTRL &&
+        state->config.output[state->active_output].os == MACOS)
+        modifier = KEYBOARD_MODIFIER_LEFTGUI;
+
+    press.modifier    = modifier;
+    press.keycode[0]  = key;
+
+    send_key(&press, state);
+    send_key(&release, state);
+}
+
+/* Fires shortcuts for newly pressed mapped buttons, and returns the buttons
+   to report to the OS with the mapped buttons removed. */
+static uint8_t handle_button_shortcuts(device_t *state, uint8_t buttons, uint8_t prev_buttons) {
+    uint8_t newly_pressed = buttons & ~prev_buttons;
+    uint8_t mapped_bits   = MIDDLE_BUTTON_BIT;
+
+    if (newly_pressed & MIDDLE_BUTTON_BIT)
+        output_toggle_hotkey_handler(state, NULL);
+
+    for (size_t i = 0; i < sizeof(button_shortcuts) / sizeof(button_shortcuts[0]); i++) {
+        const button_shortcut_t *s = &button_shortcuts[i];
+        mapped_bits |= s->button_bit;
+
+        if (newly_pressed & s->button_bit)
+            send_button_shortcut(state, s->modifier, s->key);
+    }
+
+    return buttons & ~mapped_bits;
+}
+
+/* Consume Mac horizontal scrolling as Control+Arrow. Rate-limit each output
+ * so a high-resolution thumb wheel does not race through multiple Spaces. */
+static void handle_mac_desktop_scroll(device_t *state, mouse_values_t *values) {
+    static uint64_t next_switch_us[NUM_SCREENS] = {0};
+    uint8_t output = state->active_output;
+    if (state->config.output[output].os != MACOS || values->pan == 0)
+        return;
+
+    int32_t pan = values->pan;
+    values->pan = 0;
+    uint64_t now = time_us_64();
+    if (now < next_switch_us[output])
+        return;
+
+    hid_keyboard_report_t press = {0}, release = {0};
+    press.modifier = KEYBOARD_MODIFIER_LEFTCTRL;
+    press.keycode[0] = pan > 0 ? HID_KEY_ARROW_RIGHT : HID_KEY_ARROW_LEFT;
+    send_key(&press, state);
+    send_key(&release, state);
+    next_switch_us[output] = now + 400000;
+}
+
 void process_mouse_report(uint8_t *raw_report, int len, uint8_t itf, hid_interface_t *iface) {
+    static uint8_t prev_raw_buttons = 0; // Raw button state from the physical mouse
     mouse_values_t values = {0};
     device_t *state = &global_state;
 
     /* Interpret the mouse HID report, extract and save values we need. */
     extract_report_values(raw_report, len, state, &values, iface);
+
+#ifdef BUTTON_PROBE
+    /* Test build: blink the light when a button we don't know about changes state */
+    static int32_t prev_unknown_buttons = 0;
+    int32_t unknown_buttons = values.buttons & ~0x1F;
+    if (unknown_buttons != prev_unknown_buttons) {
+        blink_led(state);
+        prev_unknown_buttons = unknown_buttons;
+    }
+#endif
+
+    /* Turn mapped buttons into shortcuts, and hide them from the OS */
+    uint8_t raw_buttons = (uint8_t)values.buttons;
+    values.buttons      = handle_button_shortcuts(state, raw_buttons, prev_raw_buttons);
+    prev_raw_buttons    = raw_buttons;
+
+    handle_mac_desktop_scroll(state, &values);
 
     /* If nothing changed, don't send a report. This prevents composite keyboards
        (e.g. QMK) that expose a mouse HID interface from generating spurious
