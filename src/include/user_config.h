@@ -185,7 +185,7 @@
  * Defines OS an output connects to. You will need to worry about this only if you have
  * multiple desktops and one of your outputs is MacOS or Windows.
  *
- * Available options: LINUX, MACOS, WINDOWS, OTHER (check main.h for details)
+ * Available options: LINUX, MACOS, WINDOWS, ANDROID, CHROMEOS, OTHER (check main.h for details)
  *
  * OUTPUT_A_OS: OS for output A
  * OUTPUT_B_OS: OS for output B

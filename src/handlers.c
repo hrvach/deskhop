@@ -81,6 +81,7 @@ void screenlock_hotkey_handler(device_t *state, hid_keyboard_report_t *report) {
         switch (state->config.output[out].os) {
             case WINDOWS:
             case LINUX:
+            case CHROMEOS:
                 lock_report.modifier   = KEYBOARD_MODIFIER_LEFTGUI;
                 lock_report.keycode[0] = HID_KEY_L;
                 break;

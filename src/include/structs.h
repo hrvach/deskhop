@@ -169,6 +169,7 @@ enum os_type_e {
     MACOS   = 2,
     WINDOWS = 3,
     ANDROID = 4,
+    CHROMEOS = 5, /* Hides cursor for absolute pointers, so always send relative */
     OTHER   = 255,
 };
 

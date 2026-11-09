@@ -200,6 +200,15 @@ void switch_to_another_pc(
     set_active_output(state, output_to);
     state->pointer_x = (direction == LEFT) ? MAX_SCREEN_COORD : MIN_SCREEN_COORD;
     state->pointer_y = scale_y_coordinate(output->number, 1 - output->number, state);
+
+    /* Relative-only output: pin the real cursor to the entry edge so it matches pointer_x */
+    if (state->config.output[output_to].os == CHROMEOS) {
+        mouse_report_t pin_to_edge = {
+            .x    = (direction == LEFT) ? MAX_SCREEN_COORD : -MAX_SCREEN_COORD,
+            .mode = RELATIVE,
+        };
+        output_mouse_report(&pin_to_edge, state);
+    }
 }
 
 void switch_virtual_desktop_macos(device_t *state, int direction) {
@@ -247,6 +256,7 @@ void switch_virtual_desktop(device_t *state, output_t *output, int new_index, in
 
         case LINUX:
         case ANDROID:
+        case CHROMEOS:
         case OTHER:
             /* Linux should treat all desktops as a single virtual screen, so you should leave
             screen_count at 1 and it should just work */
@@ -340,8 +350,9 @@ mouse_report_t create_mouse_report(device_t *state, mouse_values_t *values) {
         .mode    = ABSOLUTE,
     };
 
-    /* Workaround for Windows multiple desktops */
-    if (state->relative_mouse || state->gaming_mode) {
+    /* Relative for Windows multiple desktops, gaming mode, and ChromeOS */
+    if (state->relative_mouse || state->gaming_mode
+        || state->config.output[state->active_output].os == CHROMEOS) {
         mouse_report.x = values->move_x;
         mouse_report.y = values->move_y;
         mouse_report.mode = RELATIVE;

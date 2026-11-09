@@ -56,7 +56,7 @@ OUTPUT_ = [
     FormField(3, "Speed Y", 16, {"min": 1, "max": 100}, "int32", "range"),
     FormField(4, "Border Top", None, {}, "int32"),
     FormField(5, "Border Bottom", None, {}, "int32"),
-    FormField(6, "Operating System", 1, {1: "Linux", 2: "MacOS", 3: "Windows", 4: "Android", 255: "Other"}, "uint8"),
+    FormField(6, "Operating System", 1, {1: "Linux", 2: "MacOS", 3: "Windows", 4: "Android", 5: "ChromeOS", 255: "Other"}, "uint8"),
     FormField(7, "Screen Position", 1, {1: "Left", 2: "Right"}, "uint8"),
     FormField(8, "Cursor Park Position", 0, {0: "Top", 1: "Bottom", 3: "Previous"}, "uint8"),
     FormField(1003, "Screensaver", elem="label"),
