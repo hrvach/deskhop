@@ -400,15 +400,16 @@ void process_mouse_queue_task(device_t *state) {
     if (tud_suspended())
         tud_remote_wakeup();
 
-    /* If it's not ready, we'll try on the next pass */
-    if (!tud_hid_n_ready(ITF_NUM_HID))
-        return;
-
-    /* If the interface is configured as a keyboard in boot protocol, discard mouse data. */
+    /* A host using the keyboard in boot protocol (BIOS, boot menus) won't read the absolute
+       mouse, so discard its data rather than let the queue stall. */
     if (report.mode == ABSOLUTE && tud_hid_n_get_protocol(ITF_NUM_HID) == HID_PROTOCOL_BOOT) {
         queue_try_remove(&state->mouse_queue, &report);
         return;
     }
+
+    /* If the interface this report goes out on isn't ready, we'll try on the next pass */
+    if (!tud_hid_n_ready(report.mode == RELATIVE ? ITF_NUM_HID_REL_M : ITF_NUM_HID_ABS_M))
+        return;
 
     /* Try sending it to the host, if it's successful */
     bool succeeded
