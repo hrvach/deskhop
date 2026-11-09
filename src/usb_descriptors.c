@@ -38,11 +38,14 @@ uint8_t const *tud_descriptor_device_cb(void) {
 
 // Relative mouse is used to overcome limitations of multiple desktops on MacOS and Windows
 
+/* The keyboard interface carries no pointer collection, so tools that take over a whole
+   keyboard interface (Karabiner-Elements on macOS) don't also capture the absolute mouse. */
 uint8_t const desc_hid_report[] = {TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(REPORT_ID_KEYBOARD)),
-                                   TUD_HID_REPORT_DESC_ABS_MOUSE(HID_REPORT_ID(REPORT_ID_MOUSE)),
                                    TUD_HID_REPORT_DESC_CONSUMER_CTRL(HID_REPORT_ID(REPORT_ID_CONSUMER)),
                                    TUD_HID_REPORT_DESC_SYSTEM_CONTROL(HID_REPORT_ID(REPORT_ID_SYSTEM))
                                    };
+
+uint8_t const desc_hid_report_absmouse[] = {TUD_HID_REPORT_DESC_ABS_MOUSE(HID_REPORT_ID(REPORT_ID_MOUSE))};
 
 uint8_t const desc_hid_report_relmouse[] = {TUD_HID_REPORT_DESC_MOUSEHELP(HID_REPORT_ID(REPORT_ID_RELMOUSE))};
 
@@ -62,6 +65,8 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
             return desc_hid_report;
         case ITF_NUM_HID_REL_M:
             return desc_hid_report_relmouse;
+        case ITF_NUM_HID_ABS_M:
+            return desc_hid_report_absmouse;
         default:
             return desc_hid_report;
     }
@@ -69,7 +74,7 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
 
 bool tud_mouse_report(uint8_t mode, uint8_t buttons, int16_t x, int16_t y, int8_t wheel, int8_t pan) {
     mouse_report_t report = {.buttons = buttons, .wheel = wheel, .x = x, .y = y, .mode = mode, .pan = pan};
-    uint8_t instance = ITF_NUM_HID;
+    uint8_t instance = ITF_NUM_HID_ABS_M;
     uint8_t report_id = REPORT_ID_MOUSE;
 
     if (mode == RELATIVE) {
@@ -164,32 +169,33 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
 #define EPNUM_HID        0x81
 #define EPNUM_HID_REL_M  0x82
 #define EPNUM_HID_VENDOR 0x83
+#define EPNUM_HID_ABS_M  0x84
 
-#define EPNUM_MSC_OUT    0x04
-#define EPNUM_MSC_IN     0x84
+#define EPNUM_MSC_OUT    0x05
+#define EPNUM_MSC_IN     0x85
 
 #ifndef DH_DEBUG
 
-#define ITF_NUM_TOTAL 2
-#define ITF_NUM_TOTAL_CONFIG 4
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN)
-#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN)
+#define ITF_NUM_TOTAL 3
+#define ITF_NUM_TOTAL_CONFIG 5
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN)
+#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 4 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN)
 
 #else
 /* CDC uses 2 interfaces (control + data). In normal mode, place it right after
-   the 2 HID interfaces (at 2, 3). In config mode, place it after HID_VENDOR (2)
-   and MSC (3), so at 4, 5. */
-#define ITF_NUM_CDC 2
-#define ITF_NUM_CDC_CONFIG 4
-#define ITF_NUM_TOTAL 4
-#define ITF_NUM_TOTAL_CONFIG 6
+   the 3 HID interfaces (at 3, 4). In config mode, place it after HID_VENDOR (3)
+   and MSC (4), so at 5, 6. */
+#define ITF_NUM_CDC 3
+#define ITF_NUM_CDC_CONFIG 5
+#define ITF_NUM_TOTAL 5
+#define ITF_NUM_TOTAL_CONFIG 7
 
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
-#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN + TUD_CDC_DESC_LEN)
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
+#define CONFIG_TOTAL_LEN_CFG (TUD_CONFIG_DESC_LEN + 4 * TUD_HID_DESC_LEN + TUD_MSC_DESC_LEN + TUD_CDC_DESC_LEN)
 
-#define EPNUM_CDC_NOTIF  0x85
-#define EPNUM_CDC_OUT    0x06
-#define EPNUM_CDC_IN     0x86
+#define EPNUM_CDC_NOTIF  0x86
+#define EPNUM_CDC_OUT    0x07
+#define EPNUM_CDC_IN     0x87
 
 #endif
 
@@ -212,6 +218,14 @@ uint8_t const desc_configuration[] = {
                        HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report_relmouse),
                        EPNUM_HID_REL_M,
+                       CFG_TUD_HID_EP_BUFSIZE,
+                       1),
+
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_ABS_M,
+                       STRID_MOUSE,
+                       HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_absmouse),
+                       EPNUM_HID_ABS_M,
                        CFG_TUD_HID_EP_BUFSIZE,
                        1),
 #ifdef DH_DEBUG
@@ -239,6 +253,14 @@ uint8_t const desc_configuration_config[] = {
                        HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report_relmouse),
                        EPNUM_HID_REL_M,
+                       CFG_TUD_HID_EP_BUFSIZE,
+                       1),
+
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_ABS_M,
+                       STRID_MOUSE,
+                       HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_absmouse),
+                       EPNUM_HID_ABS_M,
                        CFG_TUD_HID_EP_BUFSIZE,
                        1),
 
