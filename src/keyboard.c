@@ -197,8 +197,8 @@ void release_all_keys(device_t *state) {
 }
 
 
-/* Combine all keyboard states into a single report */
-void combine_kbd_states(device_t *state, hid_keyboard_report_t *combined_report) {
+/* Combine all local keyboard states into a single report */
+static void combine_local_kbd_states(device_t *state, hid_keyboard_report_t *combined_report) {
     memset(combined_report, 0, sizeof(hid_keyboard_report_t));
 
     /* Combine all local keyboards up to max_kbd_idx */
@@ -206,7 +206,12 @@ void combine_kbd_states(device_t *state, hid_keyboard_report_t *combined_report)
         combined_report->modifier |= state->local_kbd_states[i].modifier;
         add_keys(combined_report, &state->local_kbd_states[i]);
     }
-    
+}
+
+/* Combine all keyboard states into a single report */
+void combine_kbd_states(device_t *state, hid_keyboard_report_t *combined_report) {
+    combine_local_kbd_states(state, combined_report);
+
     /* Add remote keyboard */
     combined_report->modifier |= state->remote_kbd_state.modifier;
     add_keys(combined_report, &state->remote_kbd_state);
@@ -301,6 +306,7 @@ void send_system_control(uint8_t *raw_report, device_t *state) {
 
 void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_interface_t *iface) {
     hid_keyboard_report_t new_report = {0};
+    hid_keyboard_report_t local_report;
     device_t *state                  = &global_state;
     hotkey_combo_t *hotkey           = NULL;
 
@@ -316,8 +322,10 @@ void process_keyboard_report(uint8_t *raw_report, int length, uint8_t itf, hid_i
     /* Update the keyboard state for this device */
     update_kbd_state(state, &new_report, itf);
 
-    /* Check if any hotkey was pressed */
-    hotkey = check_all_hotkeys(&new_report, state);
+    /* Check if any hotkey was pressed. Use all local keyboards, since a hotkey can span
+       interfaces (e.g., Ctrl reported on one interface and Caps Lock on another) */
+    combine_local_kbd_states(state, &local_report);
+    hotkey = check_all_hotkeys(&local_report, state);
 
     /* ... and take appropriate action */
     if (hotkey != NULL) {
