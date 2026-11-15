@@ -25,6 +25,9 @@
 // endpoints. Backported from upstream 9c8df30, 92ea116, ace22e0.
 enum {
   TRANSACTION_MAX_RETRY = 3,
+  // A control IN still NAKed (or answered with the wrong DATA0/1) after this many
+  // frames (~1s) is failed, so the stack can retry it like a PC host would.
+  CTRL_IN_SILENT_RETRY_MAX = 1000,
 };
 
 static alarm_pool_t *_alarm_pool = NULL;
@@ -500,6 +503,7 @@ static int __no_inline_not_in_flash_func(usb_in_transaction)(pio_port_t *pp,
 
   int receive_len = pio_usb_bus_receive_packet_and_handshake(pp, USB_PID_ACK);
   uint8_t const receive_pid = pp->usb_rx_buffer[1];
+  bool silent_retry = false;
 
   if (receive_len >= 0) {
     if (receive_pid == expect_pid) {
@@ -507,9 +511,11 @@ static int __no_inline_not_in_flash_func(usb_in_transaction)(pio_port_t *pp,
       pio_usb_ll_transfer_continue(ep, receive_len);
     } else {
       // DATA0/1 mismatched, 0 for re-try next frame
+      silent_retry = true;
     }
   } else if (receive_pid == USB_PID_NAK) {
     // NAK try again next frame
+    silent_retry = true;
   } else if (receive_pid == USB_PID_STALL) {
     pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_STALLED_BITS);
   } else {
@@ -524,6 +530,18 @@ static int __no_inline_not_in_flash_func(usb_in_transaction)(pio_port_t *pp,
 
   if (res == 0) {
     ep->failed_count = 0; // a sound response ends the run of failures
+  }
+
+  // Some devices (e.g. Sinowealth-based keyboards right after power-up) NAK the
+  // first control request for longer than the spec allows. Without a limit the
+  // transfer would wait forever and enumeration would hang silently.
+  if (((ep->ep_num & 0x7f) == 0) && ep->has_transfer) {
+    if (!silent_retry) {
+      ep->silent_retries = 0;
+    } else if (++ep->silent_retries >= CTRL_IN_SILENT_RETRY_MAX) {
+      ep->silent_retries = 0;
+      pio_usb_ll_transfer_complete(ep, PIO_USB_INTS_ENDPOINT_ERROR_BITS);
+    }
   }
 
   pio_sm_set_enabled(pp->pio_usb_rx, pp->sm_rx, false);
