@@ -366,11 +366,16 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
     if (kb->nkro_count == 0)
         return -1;
 
+    /* Some keyboards split the NKRO bitmap across interfaces and only one of them
+       carries modifiers, so a bitmap without a modifier field is still valid */
+    bool has_modifier = kb->modifier.size != 0;
+
     /* We expect modifier to be 8 bits long, otherwise we'll fallback to boot mode */
-    if (kb->modifier.size != MODIFIER_BIT_LENGTH || kb->modifier.offset_idx >= len)
+    if (has_modifier && (kb->modifier.size != MODIFIER_BIT_LENGTH || kb->modifier.offset_idx >= len))
         return -1;
 
-    report->modifier = ptr[kb->modifier.offset_idx];
+    if (has_modifier)
+        report->modifier = ptr[kb->modifier.offset_idx];
 
     /* Collect keys from every bitmap block until the outgoing 6KRO report is full */
     for (int i = 0; i < kb->nkro_count && key_count < KEYS_IN_USB_REPORT; i++) {

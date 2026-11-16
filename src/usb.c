@@ -276,6 +276,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
        - 0: Primary keyboard (the one set in tuh_hid_mount_cb)
        - 1: Mouse devices
        - MAX_DEVICES-2: Secondary keyboards (e.g., wireless keyboard through unified dongle)
+                        and extra interfaces of the primary keyboard
        - (dev_addr-1) % (MAX_DEVICES-1): Other devices
 
        Note: Slot MAX_DEVICES-1 is reserved for the remote device (used in handle_keyboard_uart_msg) */
@@ -292,6 +293,10 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     } else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE) {
         /* Mouse devices */
         device_idx = 1;
+    } else if (dev_addr == global_state.kbd_dev_addr) {
+        /* Extra interface of the primary keyboard (e.g., NKRO keys split across interfaces).
+           It must not share slot 0, or its reports would overwrite the primary keyboard state */
+        device_idx = (MAX_DEVICES - 2);
     } else {
         /* Other devices */
         device_idx = (dev_addr - 1) % (MAX_DEVICES - 1);
